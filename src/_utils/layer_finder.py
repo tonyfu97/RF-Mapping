@@ -70,9 +70,95 @@ def _layer_indices(layer, layer_type, indicies):
     return indicies
 
 
-# def test_layer_indicies(model, layer_type):
-    
-
 if __name__ == '__main__':
     model = models.alexnet()
     print(''.join(layer_indices(model)))
+
+
+def layer_counter(model, layer_type=nn.Conv2d):
+    """
+    Recursively find all layers of the type <layer_type> in a given model, then
+    returns the counts.
+
+    Parameters
+    ----------
+    model : torchvision.models or torch.nn.Module
+        The neural network model or layer object.
+    layer_type : type
+        The target type of the leave node, e.g., nn.Conv2d, nn.ReLU, etc.
+
+    Returns
+    -------
+    count : int
+        The number of <layer_type> layers in the model.
+    """
+    count = _layer_counter(model, layer_type, 0)
+    return count
+
+
+def _layer_counter(layer, layer_type, count):
+    """
+    Private function used for recursion in layer_counter().
+    """
+    # Return the index if layer is a leave node and match the target type.
+    if (len(list(layer.children())) == 0):
+        if (isinstance(layer, layer_type)):
+            return count + 1
+        else: 
+            return count
+
+    # Recurse otherwise.
+    else:
+        for i, sublayer in enumerate(layer.children()):
+            count = _layer_counter(sublayer, layer_type, count)
+    return count
+
+
+if __name__ == '__main__':
+    model = models.alexnet()
+    count = layer_counter(model, nn.Conv2d)
+    assert  count == 5, "count should be 5 for Alexnet"
+
+
+def num_units_in_layers(model, layer_type=nn.Conv2d):
+    """
+    Recursively find all layers of the type <layer_type> in a given model, then
+    returns the number of their units.
+
+    Parameters
+    ----------
+    model : torchvision.models or torch.nn.Module
+        The neural network model or layer object.
+    layer_type : type
+        The target type of the leave node, e.g., nn.Conv2d, nn.ReLU, etc.
+
+    Returns
+    -------
+    num_units_list : list of int
+        The number of units in each layer of the type <layer_type>.
+    """
+    num_units_list = []
+    _num_units_in_layers(model, layer_type, num_units_list)
+    return num_units_list
+
+
+def _num_units_in_layers(layer, layer_type, num_units_list):
+    """
+    Private function used for recursion in lnum_units_in_layers().
+    """
+    # Return the index if layer is a leave node and match the target type.
+    if (len(list(layer.children())) == 0):
+        if (isinstance(layer, layer_type)):
+            num_units_list.append(layer.weight.shape[0])
+        return
+
+    # Recurse otherwise.
+    else:
+        for i, sublayer in enumerate(layer.children()):
+            _num_units_in_layers(sublayer, layer_type, num_units_list)
+
+
+if __name__ == '__main__':
+    model = models.alexnet()
+    num_units_list = num_units_in_layers(model, nn.Conv2d)
+    print(num_units_list)
