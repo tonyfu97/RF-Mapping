@@ -71,7 +71,7 @@ def _layer_indices(layer, layer_type, indicies):
 
 
 # def test_layer_indicies(model, layer_type):
-    
+
 
 if __name__ == '__main__':
     model = models.alexnet()
