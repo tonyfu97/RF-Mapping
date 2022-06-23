@@ -104,16 +104,14 @@ if __name__ == '__main__':
     top_bottom_N_image_patches(model, nn.Conv2d, image_dir, image_names)
 
 
-class SpatialIndexConversion:
+class SpatialIndexConvertor:
     """
     A class containing the model- and image-shape-specific transformations
     of the spatial indicies across different layers. Useful for receptive
     field mapping and other tasks that involve the mappings of spatial
     locations onto an shallower or deeper layer.
     
-    This class assumes the image size can only shrink in forward passes.
-    Therefore, given a spatial location, the forward_projection method will
-    return a point, whereas the backward_projection method will return a "box"
+    Given a spatial location, the projection methods will return a "box"
     in (vx_min, hx_min, vx_max, hx_max) format. Note that the returned point(s)
     here are cooridinates with respect to the destination layer.
     """
@@ -125,17 +123,15 @@ class SpatialIndexConversion:
         ----------
         model : torchvision.models
             The neural network.
-        image_shape : tuple of int
+        image_shape : tuple of ints
             (vertical_dimension, horizontal_dimension) in pixels.
         """
         self.model = model
         self.image_shape = image_shape
-        self.layer_indicies = []
+        self.layers = []
         self.output_shapes = []
         self.rf_sizes = []
-        
-    def _one_forward_projection(self, layer, vx, hx):
-        non_spatial_transform_types = (nn.Sequential,
+        self.dont_need_conversion = (nn.Sequential,
                                       nn.ModuleList,
                                       nn.Sigmoid,
                                       nn.ReLU,
@@ -143,27 +139,34 @@ class SpatialIndexConversion:
                                       nn.Softmax2d,
                                       nn.BatchNorm2d,
                                       nn.Dropout2d,)
+        self.need_convsersion = (nn.Conv2d, nn.AvgPool2d, nn.MaxPool2d)
+        
+    def _one_forward_projection(self, layer_index, vx, hx):
+        layer = self.layers[layer_index]
+        output_size = self.output_sizes[layer_index]
+        
+        if (isinstance(layer, self.dont_need_conversion)):
+            return vx, hx, vx, hx
+        
+        if (isinstance(layer, self.need_convsersion)):
+            def clip(x, x_min, x_max):
+                x = min(x_max, x)
+                x = max(x_min, x)
+                return x
+            
+            def transform(x, stride, kernel_size, padding, max_size):          
+                x_min = math.floor((x - kernel_size)/stride + 1)
+                x_min = clip(x_min + padding, 0, max_size)
+                x_max = math.floor(x/stride)
+                x_max = clip(x_max + padding, 0, max_size)
+                return x_min, x_max
 
-        if (isinstance(layer, non_spatial_transform_types)):
-            return vx, hx
+            vx_min, vx_max = transform(vx, layer.stride[0], layer.kernel_size[0],
+                                       layer.padding[0], output_size[0])
+            hx_min, hx_max = transform(hx, layer.stride[1], layer.kernel_size[1],
+                                       layer.padding[1], output_size[1])
+            return vx_min, hx_min, vx_max, hx_max
         
-        if (isinstance(layer, nn.Conv2d)):
-            # def transform(x, stride, kernel_size, padding):
-            #     return (x*stride) + (kernel_size-1)/2 - padding
-            
-            vx = transform(vx, layer.stride[0], layer.kernel_size[0], layer.padding[0])
-            hx = transform(hx, layer.stride[1], layer.kernel_size[1], layer.padding[1])
-            return vx, hx
-        
-        if (isinstance(layer, (nn.MaxPool2d, nn.AvgPool2d))):
-            # def transform(x, stride, kernel_size, padding):
-            #     return (x*stride) + (kernel_size-1)/2 - padding
-            
-            vx = transform(vx, layer.stride[0], layer.kernel_size[0], layer.padding[0])
-            hx = transform(hx, layer.stride[1], layer.kernel_size[1], layer.padding[1])
-            return vx, hx
-        
-        # catch-all
         print(f"{type(layer)} is currently not supported.")
         raise ValueError
     
@@ -171,6 +174,10 @@ class SpatialIndexConversion:
         projection = None
         
         if (isinstance(layer, nn.Conv2d)):
+            if (layer.dilation != 1):
+                print("Dilated convolution is currently not supported.")
+                raise ValueError
+
             def transform(x, stride, kernel_size, padding):
                 return (x*stride) + (kernel_size-1)/2 - padding
             
@@ -186,22 +193,27 @@ class SpatialIndexConversion:
             hx = transform(hx, layer.stride[1], layer.kernel_size[1], layer.padding[1])
             return vx, hx
         
-        # catch-all
         return vx, hx
     
     def _process_index(self, index):
         """
         Make sure that the index is a tuple of two indicies. Unravel from 1D
         to 2D indexing if necessary.
+        
+        Returns
+        -------
+        index : tuple of ints
+            (vertical index, horizontal index)
         """
         if index.isnumeric():
             return np.unravel_index(index, self.image_shape)
+
         if (len(index)==2):
             return index
     
     def forward_projection(self, index, start_layer, end_layer):
-        index = self._process_index(index)
+        vx, hx = self._process_index(index)
         
         
     def backward_projection(self, index, start_layer, end_layer=0):
-        index = self._process_index(index)
+        vx, hx = self._process_index(index)
