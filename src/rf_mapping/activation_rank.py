@@ -40,7 +40,7 @@ class HookFunctionBase:
         self.layer_types = layer_types
         
     def hook_function(self, module, ten_in, ten_out):
-        raise NotImplementedError
+        raise NotImplementedError("Child class of HookFunctionBase must implement hookfunction(self, module, ten_in, ten_out)")
 
     def register_forward_hook_to_layers(self, layer):
         # If "model" is a leave node and matches the layer_type, register hook.
@@ -193,14 +193,10 @@ def clip(x, x_min, x_max):
 
 class SpatialIndexConverter(SizeInspector):
     """
-    A class containing the model- and image-shape-specific transformations
-    of the spatial indicies across different layers. Useful for receptive
-    field mapping and other tasks that involve the mappings of spatial
-    locations onto a different layer.
-
-    Given a spatial location, the projection methods will return a "box"
-    in (vx_min, hx_min, vx_max, hx_max) format. Note that the returned point(s)
-    here are cooridinates with respect to the destination layer.
+    A class containing the model- and image-shape-specific conversion of the
+    spatial indicies across different layers. Useful for receptive field
+    mapping and other tasks that involve the mappings of spatial locations
+    onto a different layer.
     """
     def __init__(self, model, image_shape):
         """
@@ -224,35 +220,44 @@ class SpatialIndexConverter(SizeInspector):
                                     nn.BatchNorm2d,
                                     nn.Dropout2d,)
         self.need_convsersion = (nn.Conv2d, nn.AvgPool2d, nn.MaxPool2d)
+    
+    def _forward_transform(self, x_min, x_max, stride, kernel_size, padding, max_size):
+        x_min = math.floor((x_min - kernel_size)/stride + 1)
+        x_min = clip(x_min + padding, 0, max_size)
+        x_max = math.floor(x_max/stride)
+        x_max = clip(x_max + padding, 0, max_size)
+        return x_min, x_max
+    
+    def _backward_transform(self, x_min, x_max, stride, kernel_size, padding, max_size):
+        x_min = (x_min * stride) - padding
+        x_min = clip(x_min, 0, max_size)
+        x_max = (x_max * stride) + kernel_size - 1 + padding
+        x_max = clip(x_max, 0, max_size)
+        return x_min, x_max
  
-    def _one_forward_projection(self, layer_index, vx_min, hx_min, vx_max, hx_max):
-        """
-        Maps the box bounded by (vx_min, hx_min, vx_max, hx_max) onto a deeper
-        layer with the specified index <layer_index>. The layer_index does not
-        include container layers like torch.nn.Sequential.
-        """
+    def _one_projection(self, layer_index, vx_min, hx_min, vx_max, hx_max, is_forward):
         layer = self.layers[layer_index]
-        _, v_max_size, h_max_size = self.output_sizes[layer_index]
         
+        # Check the layer types to determine if projection is necessary.
+        # or supported.
         if isinstance(layer, self.dont_need_conversion):
             return vx_min, hx_min, vx_max, hx_max
         
         if isinstance(layer, nn.Conv2d) and (layer.dilation != (1,1)):
-                print("Dilated convolution is currently not supported.")
-                raise ValueError
-        
+            raise ValueError("Dilated convolution is currently not supported by SpatialIndexConverter.")
+
         if isinstance(layer, nn.MaxPool2d) and (layer.dilation != 1):
-                print("Dilated max pooling is currently not supported.")
-                raise ValueError
+            raise ValueError("Dilated max pooling is currently not supported by SpatialIndexConverter.")
+        
+        # Evoke different transformation function depending on user's choice.
+        if is_forward:
+            _, v_max_size, h_max_size = self.output_sizes[layer_index]
+            transform = self._forward_transform
+        else:
+            _, v_max_size, h_max_size = self.input_sizes[layer_index]
+            transform = self._backward_transform
 
         if isinstance(layer, self.need_convsersion):
-            def transform(x_min, x_max, stride, kernel_size, padding, max_size):
-                x_min = math.floor((x_min - kernel_size)/stride + 1)
-                x_min = clip(x_min + padding, 0, max_size)
-                x_max = math.floor(x_max/stride)
-                x_max = clip(x_max + padding, 0, max_size)
-                return x_min, x_max
-            
             try:
                 vx_min, vx_max = transform(vx_min, vx_max,
                                         layer.stride[0], layer.kernel_size[0],
@@ -262,6 +267,8 @@ class SpatialIndexConverter(SizeInspector):
                                         layer.padding[1], h_max_size)
                 return vx_min, hx_min, vx_max, hx_max
             except:
+                # Sometimes the layer attributes do not come in the form of
+                # a tuple. 
                 vx_min, vx_max = transform(vx_min, vx_max,
                                         layer.stride, layer.kernel_size,
                                         layer.padding, v_max_size)
@@ -270,57 +277,7 @@ class SpatialIndexConverter(SizeInspector):
                                         layer.padding, h_max_size)
                 return vx_min, hx_min, vx_max, hx_max
 
-        print(f"{type(layer)} is currently not supported.")
-        raise ValueError
-
-    def _one_backward_projection(self, layer_index, vx_min, hx_min, vx_max, hx_max):
-        """
-        Maps the box bounded by (vx_min, hx_min, vx_max, hx_max) onto a
-        shallower layer with the specified index <layer_index> by undoing its
-        operation. The layer_index does not include container layers like
-        torch.nn.Sequential.
-        """
-        layer = self.layers[layer_index]
-        _, v_max_size, h_max_size = self.input_sizes[layer_index]
-
-        if isinstance(layer, self.dont_need_conversion):
-            return vx_min, hx_min, vx_max, hx_max
-        
-        if isinstance(layer, nn.Conv2d) and (layer.dilation != (1,1)):
-                print("Dilated convolution is currently not supported.")
-                raise ValueError
-
-        if isinstance(layer, nn.MaxPool2d) and (layer.dilation != 1):
-                print("Dilated max pooling is currently not supported.")
-                raise ValueError
-            
-        if isinstance(layer, self.need_convsersion):
-            def transform(x_min, x_max, stride, kernel_size, padding, max_size):
-                x_min = (x_min * stride) - padding
-                x_min = clip(x_min, 0, max_size)
-                x_max = (x_max * stride) + kernel_size - 1 + padding
-                x_max = clip(x_max, 0, max_size)
-                return x_min, x_max
-
-            try:
-                vx_min, vx_max = transform(vx_min, vx_max,
-                                        layer.stride[0], layer.kernel_size[0],
-                                        layer.padding[0], v_max_size)
-                hx_min, hx_max = transform(hx_min, hx_max,
-                                        layer.stride[1], layer.kernel_size[1],
-                                        layer.padding[1], h_max_size)
-                return vx_min, hx_min, vx_max, hx_max
-            except:
-                vx_min, vx_max = transform(vx_min, vx_max,
-                                        layer.stride, layer.kernel_size,
-                                        layer.padding, v_max_size)
-                hx_min, hx_max = transform(hx_min, hx_max,
-                                        layer.stride, layer.kernel_size,
-                                        layer.padding, h_max_size)
-                return vx_min, hx_min, vx_max, hx_max
-        
-        print(f"{type(layer)} is currently not supported.")
-        raise ValueError
+        raise ValueError(f"{type(layer)} is currently not supported by SpatialIndexConverter.")
     
     def _process_index(self, index):
         """
@@ -340,52 +297,78 @@ class SpatialIndexConverter(SizeInspector):
         if len(index)==2:
             return index
 
-    def forward_projection(self, index, start_layer_index, end_layer_index):
+    def convert(self, index, start_layer_index, end_layer_index, is_forward):
         """
-        Projects from the INPUT of the start_layer to the OUTPUT of the
-        end_layer. Returns the box indicies in (vx_min, hx_min, vx_max, hx_max)
+        Converts the spatial index across layers. Given a spatial location, the
+        convert() method will return a "box" in (vx_min, hx_min, vx_max, hx_max)
         format.
+        
+        Parameters
+        ----------
+        index : int or tuple of two ints
+            The spatial index of interest. If only one int is provided, the
+            function automatically unravel it accoording to the image's shape.
+        start_layer_index : int
+            The index of the starting layer. If you are not sure what index
+            to use, call the .print_summary() method.
+        end_layer_index : int
+            The index of the destination layer. If you are not sure what index
+            to use, call the .print_summary() method.
+        is_forward : bool
+            Is it a forward projection or backward projection. See below.
+
+        If is_forward == True, then forward projection:
+        Projects from the INPUT of the start_layer to the OUTPUT of the
+        end_layer:
                            start_layer                end_layer
                        -----------------          ----------------
                                |                         |
                          input |  output    ...    input |  output
                                |                         |
-                       -----------------          ----------------
-        Forward        
+                       -----------------          ----------------     
         projection:        * --------------------------------->
-        """
-        vx, hx = self._process_index(index)
-        vx_min, vx_max = vx, vx
-        hx_min, hx_max = hx, hx
         
-        for layer_index in range(start_layer_index, end_layer_index + 1):
-            vx_min, hx_min, vx_max, hx_max = self._one_forward_projection(layer_index, 
-                                                                          vx_min, hx_min, 
-                                                                          vx_max, hx_max)
-        return vx_min, hx_min, vx_max, hx_max
+        -----------------------------------------------------------------------
         
-    def backward_projection(self, index, start_layer_index, end_layer_index):
-        """
+        If is_forward == False, then backward projection:
         Projects from the OUTPUT of the start_layer to the INPUT of the
-        end_layer. Returns the box indicies in (vx_min, hx_min, vx_max, hx_max)
-        format.
+        end_layer:
                             end_layer                start_layer
                        -----------------          ----------------
                                |                         |
                          input |  output    ...    input |  output
                                |                         |
-                       -----------------          ----------------
-        Backward       
+                       -----------------          ----------------  
         projection:         <-------------------------------- *
+
+        This means that it is totally legal to have a start_layer_index that
+        is equal to the end_layer_index. For example, the code:
+
+            converter = SpatialIndexConverter(model, (227, 227))
+            coord = converter.convert((111,111), 0, 0, is_forward=True)
+
+        will return the coordinates of a box that include all output points
+        of layer no.0 that can be influenced by the input pixel at (111,111).
+        On the other hand, the code:
+
+            coord = converter.convert((28,28), 0, 0, is_forward=False)
+            
+        will return the coordinates of a box that include all input pixels
+        that can influence the output (of layer no.0) at (28,28).
         """
         vx, hx = self._process_index(index)
         vx_min, vx_max = vx, vx
         hx_min, hx_max = hx, hx
         
-        for layer_index in range(start_layer_index, end_layer_index - 1, -1):
-            vx_min, hx_min, vx_max, hx_max = self._one_backward_projection(layer_index, 
-                                                                          vx_min, hx_min, 
-                                                                          vx_max, hx_max)
+        if is_forward:
+            index_gen = range(start_layer_index, end_layer_index + 1)
+        else:
+            index_gen = range(start_layer_index, end_layer_index - 1, -1)
+        
+        for layer_index in index_gen:
+            vx_min, hx_min, vx_max, hx_max = self._one_projection(layer_index, 
+                                   vx_min, hx_min, vx_max, hx_max, is_forward)
+
         return vx_min, hx_min, vx_max, hx_max
 
 
@@ -393,8 +376,8 @@ if __name__ == '__main__':
     model = models.alexnet()
     
     converter = SpatialIndexConverter(model, (227, 227))
-    coord = converter.forward_projection((111,150), 0, 6)
+    coord = converter.convert((28,28), 0, 0, is_forward=False)
     print(coord)
     
-    coord = converter.backward_projection((6,6), 10, 0)
+    coord = converter.convert((6,6), 10, 0, is_forward=False)
     print(coord)
