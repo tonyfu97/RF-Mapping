@@ -210,7 +210,6 @@ class SpatialIndexConverter(SizeInspector):
             (vertical_dimension, horizontal_dimension) in pixels.
         """
         super().__init__(model, image_shape)
-        self.rf_sizes = []
         self.dont_need_conversion = (nn.Sequential,
                                     nn.ModuleList,
                                     nn.Sigmoid,
@@ -222,24 +221,23 @@ class SpatialIndexConverter(SizeInspector):
         self.need_convsersion = (nn.Conv2d, nn.AvgPool2d, nn.MaxPool2d)
     
     def _forward_transform(self, x_min, x_max, stride, kernel_size, padding, max_size):
-        x_min = math.floor((x_min - kernel_size)/stride + 1)
-        x_min = clip(x_min + padding, 0, max_size)
-        x_max = math.floor(x_max/stride)
-        x_max = clip(x_max + padding, 0, max_size)
+        x_min = math.floor((x_min + padding - kernel_size)/stride + 1)
+        x_min = clip(x_min, 0, max_size)
+        x_max = math.floor((x_max + padding)/stride)
+        x_max = clip(x_max, 0, max_size)
         return x_min, x_max
     
     def _backward_transform(self, x_min, x_max, stride, kernel_size, padding, max_size):
         x_min = (x_min * stride) - padding
         x_min = clip(x_min, 0, max_size)
-        x_max = (x_max * stride) + kernel_size - 1 + padding
+        x_max = (x_max * stride) + kernel_size - 1 - padding
         x_max = clip(x_max, 0, max_size)
         return x_min, x_max
  
     def _one_projection(self, layer_index, vx_min, hx_min, vx_max, hx_max, is_forward):
         layer = self.layers[layer_index]
         
-        # Check the layer types to determine if projection is necessary.
-        # or supported.
+        # Check the layer types to determine if a projection is necessary.
         if isinstance(layer, self.dont_need_conversion):
             return vx_min, hx_min, vx_max, hx_max
         
@@ -249,7 +247,8 @@ class SpatialIndexConverter(SizeInspector):
         if isinstance(layer, nn.MaxPool2d) and (layer.dilation != 1):
             raise ValueError("Dilated max pooling is currently not supported by SpatialIndexConverter.")
         
-        # Evoke different transformation function depending on user's choice.
+        # Evoke different transformation function depending on the projection
+        # direction.
         if is_forward:
             _, v_max_size, h_max_size = self.output_sizes[layer_index]
             transform = self._forward_transform
@@ -317,6 +316,8 @@ class SpatialIndexConverter(SizeInspector):
         is_forward : bool
             Is it a forward projection or backward projection. See below.
 
+        -----------------------------------------------------------------------
+
         If is_forward == True, then forward projection:
         Projects from the INPUT of the start_layer to the OUTPUT of the
         end_layer:
@@ -340,6 +341,8 @@ class SpatialIndexConverter(SizeInspector):
                                |                         |
                        -----------------          ----------------  
         projection:         <-------------------------------- *
+
+        -----------------------------------------------------------------------
 
         This means that it is totally legal to have a start_layer_index that
         is equal to the end_layer_index. For example, the code:
@@ -376,8 +379,49 @@ if __name__ == '__main__':
     model = models.alexnet()
     
     converter = SpatialIndexConverter(model, (227, 227))
-    coord = converter.convert((28,28), 0, 0, is_forward=False)
-    print(coord)
     
-    coord = converter.convert((6,6), 10, 0, is_forward=False)
+    coord = converter.convert((0, 0), 0, 0, is_forward=False)
     print(coord)
+
+
+def rf_sizes(model, image_shape):
+    """
+    Back project to find the receptive field (RF) sizes with respect to the
+    absolute pixel space.
+    
+    Parameters
+    ----------
+    model : torchvision.models
+        The neural network.
+    image_shape : tuple of ints
+        (vertical_dimension, horizontal_dimension) in pixels.
+
+    Returns
+    -------
+    layers : list of nn.Modules
+        The layers ordered according to how the data is propagated through
+        the model. Container layers are not included.
+    rf_size : list of tuples
+        Each tuple contains the height and width of the receptive field that
+        corresponds to the layer of the same index in the <layers> list.
+    """
+    converter = SpatialIndexConverter(model, image_shape)
+    rf_sizes = []
+    for i in range(len(converter.layers)):
+        try:
+            # Using the spatial center to avoid boundary effects.
+            _, v_size, h_size = converter.output_sizes[i]
+            coord = converter.convert((v_size//2, h_size//2), i, 0, is_forward=False)
+            rf_size = (coord[2] - coord[0] + 1, coord[3] - coord[1] + 1)
+        except:
+            # Don't care about 1D layers.
+            rf_size = (-1, -1)
+            
+        rf_sizes.append(rf_size)
+    return converter.layers, rf_sizes
+
+
+if __name__ == '__main__':
+    model = models.alexnet()
+    layers, rf_sizes = rf_sizes(model, (227, 227))
+    print(rf_sizes)
