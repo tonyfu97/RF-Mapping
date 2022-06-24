@@ -240,10 +240,8 @@ class SpatialIndexConverter(SizeInspector):
         # Check the layer types to determine if a projection is necessary.
         if isinstance(layer, self.dont_need_conversion):
             return vx_min, hx_min, vx_max, hx_max
-        
         if isinstance(layer, nn.Conv2d) and (layer.dilation != (1,1)):
             raise ValueError("Dilated convolution is currently not supported by SpatialIndexConverter.")
-
         if isinstance(layer, nn.MaxPool2d) and (layer.dilation != 1):
             raise ValueError("Dilated max pooling is currently not supported by SpatialIndexConverter.")
         
@@ -299,8 +297,7 @@ class SpatialIndexConverter(SizeInspector):
     def convert(self, index, start_layer_index, end_layer_index, is_forward):
         """
         Converts the spatial index across layers. Given a spatial location, the
-        convert() method will return a "box" in (vx_min, hx_min, vx_max, hx_max)
-        format.
+        method returns a "box" in (vx_min, hx_min, vx_max, hx_max) format.
         
         Parameters
         ----------
@@ -384,10 +381,13 @@ if __name__ == '__main__':
     print(coord)
 
 
+
+
+
 def rf_sizes(model, image_shape):
     """
-    Back project to find the receptive field (RF) sizes with respect to the
-    absolute pixel space.
+    Find the receptive field (RF) sizes of all layers (excluding containers).
+    The sizes here are in pixels with respect to the input image.
     
     Parameters
     ----------
