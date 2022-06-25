@@ -5,14 +5,51 @@ Tony Fu, Jun 22, 2022
 """
 import os
 import math
-from heapq import heapify, heappush, heappushpop, nlargest    
-from collections import OrderedDict   
+from heapq import heapify, heappush, heappushpop, nlargest 
 
 
 import numpy as np
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
+import torchvision.transforms as T
 from torchvision import models
+
+
+def clip(x, x_min, x_max):
+    """Limits x to be x_min <= x <= x_max."""
+    x = min(x_max, x)
+    x = max(x_min, x)
+    return x
+
+
+def normalize_image(image):
+    """Normalize pixel values to be between [-1, 1]."""
+    norm_image = image - image.min()
+    norm_image = norm_image/norm_image.max()
+    return norm_image
+
+
+def preprocess_image(image, image_size=None):
+    """Preprocess image before presenting it to a Pytorch model."""
+    norm_image = normalize_image(image)
+    norm_image = np.expand_dims(norm_image, axis=0)
+    image_tensor = torch.from_numpy(norm_image).type('torch.FloatTensor')
+
+    if image_size is not None:
+        resize = T.Resize(image_size)
+        image_tensor = resize(image_tensor)
+
+    return image_tensor
+
+
+def tensor_to_image(image_tensor):
+    image = image_tensor.clone().detach()
+
+    if len(image.shape) == 3 and image.shape[1] == 3:
+        return np.transpose(torch.squeeze(image),(1,2,0))
+    else:
+        return image[0,0,...].numpy()
 
 
 class HookFunctionBase:
@@ -38,7 +75,7 @@ class HookFunctionBase:
         """
         self.model = model
         self.layer_types = layer_types
-        
+
     def hook_function(self, module, ten_in, ten_out):
         raise NotImplementedError("Child class of HookFunctionBase must implement hookfunction(self, module, ten_in, ten_out)")
 
@@ -63,10 +100,10 @@ class LayerOutputInspector(HookFunctionBase):
         super().__init__(model, layer_types)
         self.layer_outputs = []
         self.register_forward_hook_to_layers(self.model)
-        
+
     def hook_function(self, module, ten_in, ten_out):
         self.layer_outputs.append(ten_out.clone().detach().numpy())
-                
+
     def inspect(self, image):
         """
         Given an image, returns the output activation volumes of all the layers
@@ -82,12 +119,7 @@ class LayerOutputInspector(HookFunctionBase):
         layer_outputs : list of numpy.arrays
             Each item is an output activation volume of a target layer.
         """
-        # Image preprocessing
-        norm_image = image - image.min()
-        norm_image = norm_image/norm_image.max()
-        norm_image = np.expand_dims(norm_image, axis=0)
-        image_tensor = torch.from_numpy(norm_image).type('torch.FloatTensor')
-        
+        image_tensor = preprocess_image(image)
         _ = self.model(image_tensor)
         return self.layer_outputs
 
@@ -101,13 +133,13 @@ class MaxHeap():
         self.h = []
         self.length = N
         heapify(self.h)
-        
+
     def add(self, element):
         if len(self.h) < self.length:
             heappush(self.h, element)
         else:
             heappushpop(self.h, element)
-            
+
     def getTop(self):
         return nlargest(self.length, self.h)
 
@@ -160,13 +192,13 @@ class SizeInspector(HookFunctionBase):
         self.output_sizes = []
         self.register_forward_hook_to_layers(self.model)
         self.model(torch.zeros((1,3,*image_shape)))
-        
+
     def hook_function(self, module, ten_in, ten_out):
         if (isinstance(module, self.layer_types)):
             self.layers.append(module)
             self.input_sizes.append(ten_in[0].shape[1:])
             self.output_sizes.append(ten_out.shape[1:])
-        
+
     def print_summary(self):
         for i, layer in enumerate(self.layers):
             print("---------------------------------------------------------")
@@ -182,13 +214,6 @@ if __name__ == '__main__':
     model = models.alexnet()
     inspector = SizeInspector(model, (227, 227))
     inspector.print_summary()
-    
-
-def clip(x, x_min, x_max):
-    """Limits x to be x_min <= x <= x_max."""
-    x = min(x_max, x)
-    x = max(x_min, x)
-    return x
 
 
 class SpatialIndexConverter(SizeInspector):
@@ -219,24 +244,24 @@ class SpatialIndexConverter(SizeInspector):
                                     nn.BatchNorm2d,
                                     nn.Dropout2d,)
         self.need_convsersion = (nn.Conv2d, nn.AvgPool2d, nn.MaxPool2d)
-    
+
     def _forward_transform(self, x_min, x_max, stride, kernel_size, padding, max_size):
         x_min = math.floor((x_min + padding - kernel_size)/stride + 1)
         x_min = clip(x_min, 0, max_size)
         x_max = math.floor((x_max + padding)/stride)
         x_max = clip(x_max, 0, max_size)
         return x_min, x_max
-    
+
     def _backward_transform(self, x_min, x_max, stride, kernel_size, padding, max_size):
         x_min = (x_min * stride) - padding
         x_min = clip(x_min, 0, max_size)
         x_max = (x_max * stride) + kernel_size - 1 - padding
         x_max = clip(x_max, 0, max_size)
         return x_min, x_max
- 
+
     def _one_projection(self, layer_index, vx_min, hx_min, vx_max, hx_max, is_forward):
         layer = self.layers[layer_index]
-        
+
         # Check the layer types to determine if a projection is necessary.
         if isinstance(layer, self.dont_need_conversion):
             return vx_min, hx_min, vx_max, hx_max
@@ -244,7 +269,7 @@ class SpatialIndexConverter(SizeInspector):
             raise ValueError("Dilated convolution is currently not supported by SpatialIndexConverter.")
         if isinstance(layer, nn.MaxPool2d) and (layer.dilation != 1):
             raise ValueError("Dilated max pooling is currently not supported by SpatialIndexConverter.")
-        
+
         # Evoke different transformation function depending on the projection
         # direction.
         if is_forward:
@@ -275,7 +300,7 @@ class SpatialIndexConverter(SizeInspector):
                 return vx_min, hx_min, vx_max, hx_max
 
         raise ValueError(f"{type(layer)} is currently not supported by SpatialIndexConverter.")
-    
+
     def _process_index(self, index):
         """
         Make sure that the index is a tuple of two indicies. Unravel from 1D
@@ -298,7 +323,7 @@ class SpatialIndexConverter(SizeInspector):
         """
         Converts the spatial index across layers. Given a spatial location, the
         method returns a "box" in (vx_min, hx_min, vx_max, hx_max) format.
-        
+
         Parameters
         ----------
         index : int or tuple of two ints
@@ -325,9 +350,9 @@ class SpatialIndexConverter(SizeInspector):
                                |                         |
                        -----------------          ----------------     
         projection:        * --------------------------------->
-        
+
         -----------------------------------------------------------------------
-        
+
         If is_forward == False, then backward projection:
         Projects from the OUTPUT of the start_layer to the INPUT of the
         end_layer:
@@ -352,19 +377,19 @@ class SpatialIndexConverter(SizeInspector):
         On the other hand, the code:
 
             coord = converter.convert((28,28), 0, 0, is_forward=False)
-            
+
         will return the coordinates of a box that include all input pixels
         that can influence the output (of layer no.0) at (28,28).
         """
         vx, hx = self._process_index(index)
         vx_min, vx_max = vx, vx
         hx_min, hx_max = hx, hx
-        
+
         if is_forward:
             index_gen = range(start_layer_index, end_layer_index + 1)
         else:
             index_gen = range(start_layer_index, end_layer_index - 1, -1)
-        
+
         for layer_index in index_gen:
             vx_min, hx_min, vx_max, hx_max = self._one_projection(layer_index, 
                                    vx_min, hx_min, vx_max, hx_max, is_forward)
@@ -374,21 +399,88 @@ class SpatialIndexConverter(SizeInspector):
 
 if __name__ == '__main__':
     model = models.alexnet()
-    
+
     converter = SpatialIndexConverter(model, (227, 227))
-    
+
     coord = converter.convert((0, 0), 0, 0, is_forward=False)
     print(coord)
 
 
+def _test_SpatialIndexConverter():
+    # Parameters: You are welcomed to change them.
+    model = models.alexnet(pretrained=True)
+    model.eval()
+    image_size = (227, 227)
+    start_index = (100, 100)
+    show = True
 
+    # Get an arbitrary image.
+    repo_dir = os.path.abspath(os.path.join(__file__, "../../.."))
+    image_dir = f"{repo_dir}/data/imagenet/0.npy"
+    test_image = np.load(image_dir)
+    test_image_tensor = preprocess_image(test_image, image_size)
+
+    if show:
+        plt.figure()
+        plt.imshow(tensor_to_image(test_image_tensor))
+        plt.title(f"Test image")
+        plt.show()
+
+    # The Converter object to be tested.
+    converter = SpatialIndexConverter(model, image_size)
+
+    # Some aliases to avoid confusion in the for loop below.
+    x = test_image_tensor.detach().clone()
+    vx_min, vx_max = start_index[0], start_index[0]
+    hx_min, hx_max = start_index[1], start_index[1]
+
+    for layer_i, layer in enumerate(converter.layers):
+        # try:
+        # Create an identical x but its data outside of the box are
+        # replaced with random values.
+        x_rand_outside = torch.rand(x.shape)
+        x_rand_outside[:, :, vx_min:vx_max, hx_min:hx_max] =\
+                    x.detach().clone()[:, :, vx_min:vx_max, hx_min:hx_max]
+
+        # Forward passes.
+        x = layer.forward(x)
+        x_rand_outside = layer.forward(x_rand_outside)
+
+        # Get the box that should contain all the points that can be
+        # influenced by image pixel at the start_index.
+        vx_min, hx_min, vx_max, hx_max = converter.convert(start_index, 
+                                                0, layer_i, is_forward=True)
+
+        # Check if the response the same to the reference and
+        # the experimental stimulus.
+        result = torch.eq(x[:, :, vx_min:vx_max, hx_min:hx_max], 
+                        x_rand_outside[:, :, vx_min:vx_max, hx_min:hx_max]).numpy()
+        if (np.sum(result) != result.shape[1]):
+            print(f"Index conversion failed for layer no.{layer_i}")
+
+        if show:
+            plt.figure(figsize=(6,3))
+            plt.suptitle(f"Layer no.{layer_i}")  
+            plt.subplot(1, 2, 1)
+            plt.imshow(tensor_to_image(x[:, :, vx_min:vx_max, hx_min:hx_max]))
+            plt.title(f"Original")  
+            plt.subplot(1, 2, 2)
+            plt.imshow(tensor_to_image(x_rand_outside[:, :, vx_min:vx_max, hx_min:hx_max]))
+            plt.title(f"Rand outside")
+            plt.show()
+        # except:
+        #     print("The rest of the layers are probably 1D.")
+        #     break
+
+if __name__ == '__main__':
+    _test_SpatialIndexConverter()
 
 
 def rf_sizes(model, image_shape):
     """
     Find the receptive field (RF) sizes of all layers (excluding containers).
     The sizes here are in pixels with respect to the input image.
-    
+
     Parameters
     ----------
     model : torchvision.models
@@ -416,7 +508,7 @@ def rf_sizes(model, image_shape):
         except:
             # Don't care about 1D layers.
             rf_size = (-1, -1)
-            
+
         rf_sizes.append(rf_size)
     return converter.layers, rf_sizes
 
