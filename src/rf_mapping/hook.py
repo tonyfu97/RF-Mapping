@@ -218,8 +218,8 @@ if __name__ == '__main__':
 
 class SpatialIndexConverter(SizeInspector):
     """
-    A class containing the model- and image-shape-specific conversion of the
-    spatial indicies across different layers. Useful for receptive field
+    A class containing the model- and image-shape-specific conversion functions
+    of the spatial indicies across different layers. Useful for receptive field
     mapping and other tasks that involve the mappings of spatial locations
     onto a different layer.
     """
@@ -399,19 +399,78 @@ class SpatialIndexConverter(SizeInspector):
 
 if __name__ == '__main__':
     model = models.alexnet()
-
     converter = SpatialIndexConverter(model, (227, 227))
-
     coord = converter.convert((0, 0), 0, 0, is_forward=False)
     print(coord)
 
 
-def _test_SpatialIndexConverter():
+def _test_forward_conversion():
+    """
+    Test function for the SpatialIndexConverter class when is_forward is set to
+    True, i.e., forward projection from the input of a shallower layer onto
+    the output of a deeper layer. This function test whether all four corners
+    of the box returned by the forward projection indeed can be influenced by
+    pertibation the starting point.
+    """
+    import random
+    # Parameters: You are welcomed to change them.
+    model = models.alexnet(pretrained=True)
+    model.eval()
+    image_size = (198, 203)
+    start_index = (random.randint(0, image_size[0]-1),
+                   random.randint(0, image_size[1]-1))
+    
+    # Get an arbitrary image.
+    repo_dir = os.path.abspath(os.path.join(__file__, "../../.."))
+    image_dir = f"{repo_dir}/data/imagenet/0.npy"
+    test_image = np.load(image_dir)
+    test_image_tensor = preprocess_image(test_image, image_size)
+    
+    # Create an identical image but the start index is set to zero.
+    image_diff_point = test_image_tensor.detach().clone()
+    image_diff_point[:, :, start_index[0], start_index[1]] = 0
+    
+    # Aliases to avoid confusion in the for loop.
+    x = test_image_tensor.detach().clone()
+    x_diff_point = image_diff_point.detach().clone()
+
+    # The Converter object to be tested.
+    converter = SpatialIndexConverter(model, image_size)
+    
+    try:
+        # TODO: finish implementing the test.
+        for layer_i, output_size in enumerate(converter.output_sizes):
+            _, max_height, max_width = output_size
+            
+            vx_min, hx_min, vx_max, hx_max = converter.convert(start_index,
+                                                0, layer_i, is_forward=True)
+
+            # Forward-pass the two images to the current layer of interest.
+            for l in converter.layers[:layer_i + 1]:
+                x = l.forward(x)
+                x_rand_outside = l.forward(x_rand_outside)
+
+    except:
+        print(f"The rest of the layers are probably 1D.")
+
+def _test_backward_conversion():
+    """
+    Test function for the SpatialIndexConverter class when is_forward is set to
+    False, i.e., backward projection from the output of a deeper layer onto
+    the input of a shallower layer. The test can be summarized as follows:
+        1. Starting from the first layer, choose a point in its output space.
+        2. Call the SpatialIndexConverter to back-project the point back onto
+           the pixel space. The class will return a the indicies of the RF.
+        3. Get an arbitrary image, then create a copy image that is identical
+           inside the RF, but are random values outside of the RF.
+        4. Present the two images to the model, and test if the responses at
+           the point in the output space are the same. If so, then the
+           backward index conversion is deemed successful.
+    """
     # Parameters: You are welcomed to change them.
     model = models.alexnet(pretrained=True)
     model.eval()
     image_size = (227, 227)
-    start_index = (100, 100)
     show = True
 
     # Get an arbitrary image.
@@ -429,51 +488,65 @@ def _test_SpatialIndexConverter():
     # The Converter object to be tested.
     converter = SpatialIndexConverter(model, image_size)
 
-    # Some aliases to avoid confusion in the for loop below.
-    x = test_image_tensor.detach().clone()
-    vx_min, vx_max = start_index[0], start_index[0]
-    hx_min, hx_max = start_index[1], start_index[1]
+    for layer_i in range(len(converter.layers)):
+        try:
+            # Use the center point of the layer output as starting point for
+            # back projection. You are welcome to change this.
+            _, max_height, max_width = converter.output_sizes[layer_i]
+            index = (max_height//2, max_width//2)
+            
+            # Get the RF box that should contain all the points in that can
+            # influence the output at the index specified above.
+            vx_min, hx_min, vx_max, hx_max = converter.convert(index, 
+                                                    layer_i, 0, is_forward=False)
+            rf_size = (vx_max - vx_min + 1, hx_max - hx_min + 1)
+            
+            # Create an identical image but its pixels outside of the RF are
+            # replaced with random values.
+            image_rand_outside = torch.rand(test_image_tensor.shape)
+            image_rand_outside[:, :, vx_min:vx_max+1, hx_min:hx_max+1] =\
+                    test_image_tensor.detach().clone()[:, :, vx_min:vx_max+1, hx_min:hx_max+1]
 
-    for layer_i, layer in enumerate(converter.layers):
-        # try:
-        # Create an identical x but its data outside of the box are
-        # replaced with random values.
-        x_rand_outside = torch.rand(x.shape)
-        x_rand_outside[:, :, vx_min:vx_max, hx_min:hx_max] =\
-                    x.detach().clone()[:, :, vx_min:vx_max, hx_min:hx_max]
+            # Aliases to avoid confusion in the for loop.
+            x = test_image_tensor.detach().clone()
+            x_rand_outside = image_rand_outside.detach().clone()
 
-        # Forward passes.
-        x = layer.forward(x)
-        x_rand_outside = layer.forward(x_rand_outside)
+            # Forward-pass the two images to the current layer of interest.
+            for l in converter.layers[:layer_i + 1]:
+                x = l.forward(x)
+                x_rand_outside = l.forward(x_rand_outside)
 
-        # Get the box that should contain all the points that can be
-        # influenced by image pixel at the start_index.
-        vx_min, hx_min, vx_max, hx_max = converter.convert(start_index, 
-                                                0, layer_i, is_forward=True)
+            # Backward conversion test: Check if the responses at the output index
+            # are the same for the two images.
+            result = torch.eq(x[:, :, index[0], index[1]], 
+                            x_rand_outside[:, :, index[0], index[1]]).numpy()
+            if (np.sum(result) != result.shape[1]):
+                print(f"Backward conversion failed for layer no.{layer_i}.")
+            else:
+                print(f"Backward conversion is successful for layer no.{layer_i}.")
 
-        # Check if the response the same to the reference and
-        # the experimental stimulus.
-        result = torch.eq(x[:, :, vx_min:vx_max, hx_min:hx_max], 
-                        x_rand_outside[:, :, vx_min:vx_max, hx_min:hx_max]).numpy()
-        if (np.sum(result) != result.shape[1]):
-            print(f"Index conversion failed for layer no.{layer_i}")
+            # Plot the two images used.
+            if show:
+                plt.figure(figsize=(6,3))
+                plt.suptitle(f"Layer no.{layer_i}, RF size = {rf_size}")  
+                
+                plt.subplot(1, 2, 1)
+                plt.imshow(tensor_to_image(test_image_tensor))
+                plt.title(f"Original")
+                
+                plt.subplot(1, 2, 2)
+                plt.imshow(tensor_to_image(image_rand_outside))
+                plt.title(f"Rand outside")
 
-        if show:
-            plt.figure(figsize=(6,3))
-            plt.suptitle(f"Layer no.{layer_i}")  
-            plt.subplot(1, 2, 1)
-            plt.imshow(tensor_to_image(x[:, :, vx_min:vx_max, hx_min:hx_max]))
-            plt.title(f"Original")  
-            plt.subplot(1, 2, 2)
-            plt.imshow(tensor_to_image(x_rand_outside[:, :, vx_min:vx_max, hx_min:hx_max]))
-            plt.title(f"Rand outside")
-            plt.show()
-        # except:
-        #     print("The rest of the layers are probably 1D.")
-        #     break
+                plt.show()
+        except:
+            print(f"The rest of the layers from layer no.{layer_i} are probably 1D.")
+            break
+
 
 if __name__ == '__main__':
-    _test_SpatialIndexConverter()
+    # _test_forward_conversion()
+    _test_backward_conversion()
 
 
 def rf_sizes(model, image_shape):
