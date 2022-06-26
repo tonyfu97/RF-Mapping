@@ -1,5 +1,5 @@
 """
-Functions that register hook functions for a variety of purposes.
+Functions that register hooks for a variety of purposes.
 
 Tony Fu, Jun 22, 2022
 """
@@ -15,9 +15,9 @@ import torch.nn as nn
 import torchvision.transforms as T
 from torchvision import models
 
-from visualization import (clip,
-                           preprocess_image,
-                           tensor_to_image,)
+from image import (clip,
+                   preprocess_image,
+                   tensor_to_image,)
 
 
 class HookFunctionBase:
@@ -45,7 +45,8 @@ class HookFunctionBase:
         self.layer_types = layer_types
 
     def hook_function(self, module, ten_in, ten_out):
-        raise NotImplementedError("Child class of HookFunctionBase must implement hookfunction(self, module, ten_in, ten_out)")
+        raise NotImplementedError("Child class of HookFunctionBase must "
+                                  "implement hookfunction(self, module, ten_in, ten_out)")
 
     def register_forward_hook_to_layers(self, layer):
         # If "model" is a leave node and matches the layer_type, register hook.
@@ -70,7 +71,7 @@ class LayerOutputInspector(HookFunctionBase):
         self.register_forward_hook_to_layers(self.model)
 
     def hook_function(self, module, ten_in, ten_out):
-        self.layer_outputs.append(ten_out.clone().detach().numpy())
+        self.layer_outputs.append(ten_out.clone().detach())
 
     def inspect(self, image):
         """
@@ -79,16 +80,17 @@ class LayerOutputInspector(HookFunctionBase):
 
         Parameters
         ----------
-        image : numpy.array
+        image : numpy.array or torch.tensor
             Input image, most likely with the dimension: [3, 2xx, 2xx].
 
         Returns
         -------
-        layer_outputs : list of numpy.arrays
+        layer_outputs : list of torch.tensors
             Each item is an output activation volume of a target layer.
         """
-        image_tensor = preprocess_image(image)
-        _ = self.model(image_tensor)
+        if (not isinstance(image, torch.Tensor)):
+            image = preprocess_image(image)
+        _ = self.model(image)
         return self.layer_outputs
 
 
@@ -172,8 +174,10 @@ class SizeInspector(HookFunctionBase):
             print("---------------------------------------------------------")
             print(f"  layer no.{i}: {layer}")
             try:
-                print(f"  input size: ({self.input_sizes[i][0]}, {self.input_sizes[i][1]}, {self.input_sizes[i][2]})")
-                print(f" output size: ({self.output_sizes[i][0]}, {self.output_sizes[i][1]}, {self.output_sizes[i][2]})")
+                print(f"  input size: ({self.input_sizes[i][0]}, "\
+                      f"{self.input_sizes[i][1]}, {self.input_sizes[i][2]})")
+                print(f" output size: ({self.output_sizes[i][0]}, "
+                      f"{self.output_sizes[i][1]}, {self.output_sizes[i][2]})")
             except:
                 print(" This layer is not 2D.")
 
@@ -220,7 +224,7 @@ class SpatialIndexConverter(SizeInspector):
         x_max = clip(x_max, 0, max_size)
         return x_min, x_max
 
-    def _backward_transform(self, x_min, x_max, stride, kernel_size, padding, max_size):
+    def _backward_transform(self, x_min, x_max, stride, kernel_size, padding,max_size):
         x_min = (x_min * stride) - padding
         x_min = clip(x_min, 0, max_size)
         x_max = (x_max * stride) + kernel_size - 1 - padding
@@ -238,8 +242,8 @@ class SpatialIndexConverter(SizeInspector):
         if isinstance(layer, nn.MaxPool2d) and (layer.dilation != 1):
             raise ValueError("Dilated max pooling is currently not supported by SpatialIndexConverter.")
 
-        # Evoke different transformation function depending on the projection
-        # direction.
+        # Use a different max size and transformation function depending on the
+        # projection direction.
         if is_forward:
             _, v_max_size, h_max_size = self.output_sizes[layer_index]
             transform = self._forward_transform
@@ -436,7 +440,7 @@ def _test_backward_conversion():
            backward index conversion is deemed successful.
     """
     # Parameters: You are welcomed to change them.
-    model = models.alexnet(pretrained=True)
+    model = models.vgg16(pretrained=True)
     model.eval()
     image_size = (227, 227)
     show = True
@@ -466,14 +470,14 @@ def _test_backward_conversion():
             # Get the RF box that should contain all the points in that can
             # influence the output at the index specified above.
             vx_min, hx_min, vx_max, hx_max = converter.convert(index, 
-                                                    layer_i, 0, is_forward=False)
+                                                layer_i, 0, is_forward=False)
             rf_size = (vx_max - vx_min + 1, hx_max - hx_min + 1)
             
             # Create an identical image but its pixels outside of the RF are
             # replaced with random values.
             image_rand_outside = torch.rand(test_image_tensor.shape)
-            image_rand_outside[:, :, vx_min:vx_max+1, hx_min:hx_max+1] =\
-                    test_image_tensor.detach().clone()[:, :, vx_min:vx_max+1, hx_min:hx_max+1]
+            image_rand_outside[:,:,vx_min:vx_max+1, hx_min:hx_max+1] =\
+                    test_image_tensor.detach().clone()[:,:,vx_min:vx_max+1, hx_min:hx_max+1]
 
             # Aliases to avoid confusion in the for loop.
             x = test_image_tensor.detach().clone()
