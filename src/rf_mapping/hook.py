@@ -5,6 +5,7 @@ Tony Fu, Jun 22, 2022
 """
 import os
 import math
+import copy
 from heapq import heapify, heappush, heappushpop, nlargest 
 
 
@@ -16,8 +17,8 @@ import torchvision.transforms as T
 from torchvision import models
 
 from image import (clip,
-                   preprocess_image,
-                   tensor_to_image,)
+                   preprocess_img,
+                   tensor_to_img,)
 
 
 class HookFunctionBase:
@@ -41,7 +42,7 @@ class HookFunctionBase:
             that all the Conv2d and ReLU layers will be registered with the
             forward hook.
         """
-        self.model = model
+        self.model = copy.deepcopy(model)
         self.layer_types = layer_types
 
     def hook_function(self, module, ten_in, ten_out):
@@ -89,9 +90,59 @@ class LayerOutputInspector(HookFunctionBase):
             Each item is an output activation volume of a target layer.
         """
         if (not isinstance(image, torch.Tensor)):
-            image = preprocess_image(image)
+            image = preprocess_img(image)
         _ = self.model(image)
         return self.layer_outputs
+    
+
+class ConvMaxInspector(HookFunctionBase):
+    """
+    A class that get the maximum activations and indicies of all unique
+    convolutional kernels, one image at a time.
+    """
+    def __init__(self, model):
+        super().__init__(model, nn.Conv2d)
+        self.all_max_activations = []
+        self.all_max_indicies = []
+        self.register_forward_hook_to_layers(self.model)
+
+    def hook_function(self, module, ten_in, ten_out):
+        layer_max_activations = []
+        layer_max_indicies = []
+        
+        for unit in range(ten_out.shape[1]):
+            layer_max_activations.append(ten_out[0,unit,:,:].max().item())
+            layer_max_indicies.append(ten_out[0,unit,:,:].max().item())
+            
+        self.all_max_activations.append(layer_max_activations)
+        self.all_max_indicies.append(layer_max_indicies)
+
+    def inspect(self, image):
+        """
+        Given an image, returns the output activation volumes of all the layers
+        of the type <layer_type>.
+
+        Parameters
+        ----------
+        image : numpy.array or torch.tensor
+            Input image, most likely with the dimension: [3, 2xx, 2xx].
+
+        Returns
+        -------
+        layer_outputs : list of torch.tensors
+            Each item is an output activation volume of a target layer.
+        """
+        if (not isinstance(image, torch.Tensor)):
+            image = preprocess_img(image)
+        _ = self.model(image)
+        
+        copy_activations = self.all_max_activations[:]
+        copy_indicies = self.all_max_indicies[:]
+        
+        self.all_max_activations = []
+        self.all_max_indicies = []
+        
+        return copy_activations, copy_indicies
 
 
 class MaxHeap():
@@ -396,7 +447,7 @@ def _test_forward_conversion():
     repo_dir = os.path.abspath(os.path.join(__file__, "../../.."))
     image_dir = f"{repo_dir}/data/imagenet/0.npy"
     test_image = np.load(image_dir)
-    test_image_tensor = preprocess_image(test_image, image_size)
+    test_image_tensor = preprocess_img(test_image, image_size)
     
     # Create an identical image but the start index is set to zero.
     image_diff_point = test_image_tensor.detach().clone()
@@ -449,11 +500,11 @@ def _test_backward_conversion():
     repo_dir = os.path.abspath(os.path.join(__file__, "../../.."))
     image_dir = f"{repo_dir}/data/imagenet/0.npy"
     test_image = np.load(image_dir)
-    test_image_tensor = preprocess_image(test_image, image_size)
+    test_image_tensor = preprocess_img(test_image, image_size)
 
     if show:
         plt.figure()
-        plt.imshow(tensor_to_image(test_image_tensor))
+        plt.imshow(tensor_to_img(test_image_tensor))
         plt.title(f"Test image")
         plt.show()
 
@@ -503,11 +554,11 @@ def _test_backward_conversion():
                 plt.suptitle(f"Layer no.{layer_i}, RF size = {rf_size}")  
                 
                 plt.subplot(1, 2, 1)
-                plt.imshow(tensor_to_image(test_image_tensor))
+                plt.imshow(tensor_to_img(test_image_tensor))
                 plt.title(f"Original")
                 
                 plt.subplot(1, 2, 2)
-                plt.imshow(tensor_to_image(image_rand_outside))
+                plt.imshow(tensor_to_img(image_rand_outside))
                 plt.title(f"Rand outside")
 
                 plt.show()
