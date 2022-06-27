@@ -15,9 +15,8 @@ from torchvision import models
 from tqdm import tqdm
 
 
-from image import ImageNetDataset, preprocess_img
+from image import ImgDataset, preprocess_img_to_tensor
 from hook import HookFunctionBase, SpatialIndexConverter
-
 
 class ConvMaxMinInspector(HookFunctionBase):
     """
@@ -64,7 +63,7 @@ class ConvMaxMinInspector(HookFunctionBase):
         
         """
         if (not isinstance(image, torch.Tensor)):
-            image = preprocess_img(image)
+            image = preprocess_img_to_tensor(image)
         _ = self.model(image)
         
         # Make copies of the list attributes and set them to empty lists before
@@ -93,8 +92,11 @@ num_images = 50000
 img_dir = "/Users/tonyfu/Desktop/Bair Lab/top_and_bottom_images/images"
 img_names = [f"{i}.npy" for i in range(num_images)]
 
+if __name__ == "__main__":
+    raise Exception("This code takes hours to run. Are you sure?")
+
 for model, model_name in zip([model1, model2], [model_name1, model_name2]):
-    imagenet_data = ImageNetDataset(img_dir, img_names)
+    imagenet_data = ImgDataset(img_dir, img_names)
     converter = SpatialIndexConverter(model, (227, 227))
     inspector = ConvMaxMinInspector(model)
 

@@ -17,7 +17,7 @@ import torchvision.transforms as T
 from torchvision import models
 
 from image import (clip,
-                   preprocess_img,
+                   preprocess_img_to_tensor,
                    tensor_to_img,)
 
 
@@ -90,7 +90,7 @@ class LayerOutputInspector(HookFunctionBase):
             Each item is an output activation volume of a target layer.
         """
         if (not isinstance(image, torch.Tensor)):
-            image = preprocess_img(image)
+            image = preprocess_img_to_tensor(image)
         _ = self.model(image)
         return self.layer_outputs
     
@@ -133,7 +133,7 @@ class ConvMaxInspector(HookFunctionBase):
             Each item is an output activation volume of a target layer.
         """
         if (not isinstance(image, torch.Tensor)):
-            image = preprocess_img(image)
+            image = preprocess_img_to_tensor(image)
         _ = self.model(image)
         
         copy_activations = self.all_max_activations[:]
@@ -324,7 +324,7 @@ class SpatialIndexConverter(SizeInspector):
 
         raise ValueError(f"{type(layer)} is currently not supported by SpatialIndexConverter.")
 
-    def _process_index(self, index):
+    def _process_index(self, index, start_layer_index):
         """
         Make sure that the index is a tuple of two indicies. Unravel from 1D
         to 2D indexing if necessary.
@@ -343,7 +343,8 @@ class SpatialIndexConverter(SizeInspector):
                 raise Exception
         
         except:
-            return np.unravel_index(index, self.image_shape)
+            _, output_height, output_width = self.output_sizes[start_layer_index]
+            return np.unravel_index(index, (output_height, output_width))
 
         
 
@@ -409,7 +410,7 @@ class SpatialIndexConverter(SizeInspector):
         will return the coordinates of a box that include all input pixels
         that can influence the output (of layer no.0) at (28,28).
         """
-        vx, hx = self._process_index(index)
+        vx, hx = self._process_index(index, start_layer_index)
         vx_min, vx_max = vx, vx
         hx_min, hx_max = hx, hx
 
@@ -452,7 +453,7 @@ def _test_forward_conversion():
     repo_dir = os.path.abspath(os.path.join(__file__, "../../.."))
     image_dir = f"{repo_dir}/data/imagenet/0.npy"
     test_image = np.load(image_dir)
-    test_image_tensor = preprocess_img(test_image, image_size)
+    test_image_tensor = preprocess_img_to_tensor(test_image, image_size)
     
     # Create an identical image but the start index is set to zero.
     image_diff_point = test_image_tensor.detach().clone()
@@ -505,7 +506,7 @@ def _test_backward_conversion():
     repo_dir = os.path.abspath(os.path.join(__file__, "../../.."))
     image_dir = f"{repo_dir}/data/imagenet/0.npy"
     test_image = np.load(image_dir)
-    test_image_tensor = preprocess_img(test_image, image_size)
+    test_image_tensor = preprocess_img_to_tensor(test_image, image_size)
 
     if show:
         plt.figure()
