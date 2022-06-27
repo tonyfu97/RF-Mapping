@@ -336,11 +336,16 @@ class SpatialIndexConverter(SizeInspector):
             (vertical index, horizontal index) format. Note that the vertical
             index increases downward.
         """
-        if isinstance(index, int):
+        try:
+            if len(index)==2:
+                return index
+            else:
+                raise Exception
+        
+        except:
             return np.unravel_index(index, self.image_shape)
 
-        if len(index)==2:
-            return index
+        
 
     def convert(self, index, start_layer_index, end_layer_index, is_forward):
         """

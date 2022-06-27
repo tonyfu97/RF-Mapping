@@ -83,75 +83,78 @@ class ConvMaxMinInspector(HookFunctionBase):
 
 
 device = ('cuda' if torch.cuda.is_available() else 'cpu')
-model = models.alexnet(pretrained=True).to(device)  # Remember to change the model name, too!
-model_name = "alexnet"  
+model1 = models.alexnet(pretrained=True).to(device)
+model_name1 = "alexnet"  
+model2 = models.vgg16(pretrained=True).to(device)
+model_name2 = "vgg16"
 
-num_images = 100
+num_images = 50000
 # img_dir = Path(__file__).parent.parent.parent.joinpath('data/imagenet')
-img_dir = Path(_-)
+img_dir = "/Users/tonyfu/Desktop/Bair Lab/top_and_bottom_images/images"
 img_names = [f"{i}.npy" for i in range(num_images)]
 
-imagenet_data = ImageNetDataset(img_dir, img_names)
-converter = SpatialIndexConverter(model, (227, 227))
-inspector = ConvMaxMinInspector(model)
+for model, model_name in zip([model1, model2], [model_name1, model_name2]):
+    imagenet_data = ImageNetDataset(img_dir, img_names)
+    converter = SpatialIndexConverter(model, (227, 227))
+    inspector = ConvMaxMinInspector(model)
 
-# Initialize arrays:
-all_activations = []
-test_img = next(iter(imagenet_data))[0]
-img_activations, _, _, _ = inspector.inspect(test_img.to(device))
-num_layers = len(img_activations)
-for layer_activations in img_activations:
-    num_units = len(layer_activations)
-    all_activations.append(np.zeros((num_images, num_units, 6), dtype=int))
+    # Initialize arrays:
+    all_activations = []
+    test_img = next(iter(imagenet_data))[0]
+    img_activations, _, _, _ = inspector.inspect(test_img.to(device))
+    num_layers = len(img_activations)
+    for layer_activations in img_activations:
+        num_units = len(layer_activations)
+        all_activations.append(np.zeros((num_images, num_units, 6), dtype=int))
 
-print("Recording responses...")
-for img_i, (img, label) in enumerate(tqdm(imagenet_data)):
-    img_max_activations, img_min_activations, img_max_indicies, img_min_indicies =\
-                                                inspector.inspect(img.to(device))
-    
-    for layer_i in range(num_layers):
-        num_units = len(img_max_activations[layer_i])
+    print("Recording responses...")
+    for img_i, (img, label) in enumerate(tqdm(imagenet_data)):
+        img_max_activations, img_min_activations, img_max_indicies, img_min_indicies =\
+                                                    inspector.inspect(img.to(device))
         
-        layer_max_activations = img_max_activations[layer_i]
-        layer_max_indicies = img_max_indicies[layer_i]
-        layer_min_activations = img_min_activations[layer_i]
-        layer_min_indicies = img_min_indicies[layer_i]
-        
-        all_activations[layer_i][img_i, :, 0] = img_i
-        all_activations[layer_i][img_i, :, 1] = np.arange(num_units)
-        all_activations[layer_i][img_i, :, 2] = layer_max_activations * 10000
-        all_activations[layer_i][img_i, :, 3] = layer_max_indicies
-        all_activations[layer_i][img_i, :, 4] = layer_min_activations * 10000
-        all_activations[layer_i][img_i, :, 5] = layer_min_indicies
+        for layer_i in range(num_layers):
+            num_units = len(img_max_activations[layer_i])
+            
+            layer_max_activations = img_max_activations[layer_i]
+            layer_max_indicies = img_max_indicies[layer_i]
+            layer_min_activations = img_min_activations[layer_i]
+            layer_min_indicies = img_min_indicies[layer_i]
+            
+            all_activations[layer_i][img_i, :, 0] = img_i
+            all_activations[layer_i][img_i, :, 1] = np.arange(num_units)
+            all_activations[layer_i][img_i, :, 2] = layer_max_activations * 10000
+            all_activations[layer_i][img_i, :, 3] = layer_max_indicies
+            all_activations[layer_i][img_i, :, 4] = layer_min_activations * 10000
+            all_activations[layer_i][img_i, :, 5] = layer_min_indicies
 
 
-print("Sorting responses...")
-sorted_activations = []
-top_n = 100
-for layer_i in tqdm(range(num_layers)):
-    num_units =  all_activations[layer_i].shape[1]
-    top_n_img_idx = np.zeros((num_units, top_n, 4), dtype=int)
-    for unit_i in range(num_units):
-        sorted_img_index = all_activations[layer_i][:,unit_i,2].argsort()
-        sorted_img_index = np.flip(sorted_img_index)  # Make it descending
-        top_n_img_idx[unit_i, :, 0] = all_activations[layer_i][:,unit_i,0][sorted_img_index][:top_n]
-        top_n_img_idx[unit_i, :, 1] = all_activations[layer_i][:,unit_i,3][sorted_img_index][:top_n]
-        
-        sorted_img_index = all_activations[layer_i][:,unit_i,4].argsort()
-        top_n_img_idx[unit_i, :, 2] = all_activations[layer_i][:,unit_i,0][sorted_img_index][:top_n]
-        top_n_img_idx[unit_i, :, 3] = all_activations[layer_i][:,unit_i,5][sorted_img_index][:top_n]
+    print("Sorting responses...")
+    sorted_activations = []
+    top_n = 100
+    for layer_i in tqdm(range(num_layers)):
+        num_units =  all_activations[layer_i].shape[1]
+        top_n_img_idx = np.zeros((num_units, top_n, 4), dtype=int)
+        for unit_i in range(num_units):
+            sorted_img_index = all_activations[layer_i][:,unit_i,2].argsort()
+            sorted_img_index = np.flip(sorted_img_index)  # Make it descending
+            top_n_img_idx[unit_i, :, 0] = all_activations[layer_i][:,unit_i,0][sorted_img_index][:top_n]
+            top_n_img_idx[unit_i, :, 1] = all_activations[layer_i][:,unit_i,3][sorted_img_index][:top_n]
+            
+            sorted_img_index = all_activations[layer_i][:,unit_i,4].argsort()
+            top_n_img_idx[unit_i, :, 2] = all_activations[layer_i][:,unit_i,0][sorted_img_index][:top_n]
+            top_n_img_idx[unit_i, :, 3] = all_activations[layer_i][:,unit_i,5][sorted_img_index][:top_n]
 
-    sorted_activations.append(top_n_img_idx)
+        sorted_activations.append(top_n_img_idx)
 
-def delete_all_npy_files(dir):
-    for f in os.listdir(dir):
-        if f.endswith('.npy'):
-            os.remove(os.path.join(dir, f))
+    def delete_all_npy_files(dir):
+        for f in os.listdir(dir):
+            if f.endswith('.npy'):
+                os.remove(os.path.join(dir, f))
 
-print("Saving responses...")
-result_dir = Path(__file__).parent.parent.parent.joinpath(f'results/ground_truth/{model_name}')
-delete_all_npy_files(result_dir)
-for layer_i in tqdm(range(num_layers)):
-    result_path = os.path.join(result_dir, f"conv{layer_i+1}.npy")
-    print(result_path)
-    np.save(result_path, sorted_activations[layer_i])
+    print("Saving responses...")
+    result_dir = Path(__file__).parent.parent.parent.joinpath(f'results/ground_truth/{model_name}')
+    delete_all_npy_files(result_dir)
+    for layer_i in tqdm(range(num_layers)):
+        result_path = os.path.join(result_dir, f"conv{layer_i+1}.npy")
+        print(result_path)
+        np.save(result_path, sorted_activations[layer_i])
