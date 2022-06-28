@@ -40,11 +40,15 @@ def preprocess_img_to_tensor(img, img_size=None):
         norm_img = np.expand_dims(norm_img, axis=0)
     img_tensor = torch.from_numpy(norm_img).type('torch.FloatTensor')
 
+    if (img_tensor.shape[3] == 3):
+        img_tensor = img_tensor.swapaxes(1, 3)
+
     if img_size is not None:
         resize = T.Resize(img_size)
         img_tensor = resize(img_tensor)
 
-    return img_tensor
+    device = ('cuda' if torch.cuda.is_available() else 'cpu')
+    return img_tensor.to(device)
 
 
 def preprocess_img_for_plot(img):
@@ -139,7 +143,7 @@ class ImgDataset(Dataset):
 
 if __name__ == "__main__":
     """
-    Testing ImgDataset: load the first <num_images> images and plot the image
+    Testing ImgDataset: plot the first <num_images> images and plot the image
     no.<image_idx>.
     """
     num_images = 100

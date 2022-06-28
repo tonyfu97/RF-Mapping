@@ -60,7 +60,8 @@ class ConvMaxMinInspector(HookFunctionBase):
 
         Returns
         -------
-        
+        max_activations : list of numpy.arrays
+            The ma
         """
         if (not isinstance(image, torch.Tensor)):
             image = preprocess_img_to_tensor(image)
@@ -84,18 +85,22 @@ class ConvMaxMinInspector(HookFunctionBase):
 device = ('cuda' if torch.cuda.is_available() else 'cpu')
 model1 = models.alexnet(pretrained=True).to(device)
 model_name1 = "alexnet"  
-model2 = models.vgg16(pretrained=True).to(device)
-model_name2 = "vgg16"
 
-num_images = 50000
+num_images = 100
 # img_dir = Path(__file__).parent.parent.parent.joinpath('data/imagenet')
 img_dir = "/Users/tonyfu/Desktop/Bair Lab/top_and_bottom_images/images"
 img_names = [f"{i}.npy" for i in range(num_images)]
 
 if __name__ == "__main__":
-    raise Exception("This code takes hours to run. Are you sure?")
+    print("Look for a command prompt:")
+    user_input = input("This code takes time to run. Are you sure? "\
+                       "Type 'y' to proceed. Type any other key to stop: ")
+    if user_input == 'y':
+        pass
+    else: 
+        raise KeyboardInterrupt("Interrupted by user")
 
-for model, model_name in zip([model1, model2], [model_name1, model_name2]):
+for model, model_name in zip([model1], [model_name1]):
     imagenet_data = ImgDataset(img_dir, img_names)
     converter = SpatialIndexConverter(model, (227, 227))
     inspector = ConvMaxMinInspector(model)
@@ -132,7 +137,7 @@ for model, model_name in zip([model1, model2], [model_name1, model_name2]):
 
     print("Sorting responses...")
     sorted_activations = []
-    top_n = 100
+    top_n = 10
     for layer_i in tqdm(range(num_layers)):
         num_units =  all_activations[layer_i].shape[1]
         top_n_img_idx = np.zeros((num_units, top_n, 4), dtype=int)
@@ -153,10 +158,10 @@ for model, model_name in zip([model1, model2], [model_name1, model_name2]):
             if f.endswith('.npy'):
                 os.remove(os.path.join(dir, f))
 
-    print("Saving responses...")
-    result_dir = Path(__file__).parent.parent.parent.joinpath(f'results/ground_truth/{model_name}')
-    delete_all_npy_files(result_dir)
-    for layer_i in tqdm(range(num_layers)):
-        result_path = os.path.join(result_dir, f"conv{layer_i+1}.npy")
-        print(result_path)
-        np.save(result_path, sorted_activations[layer_i])
+    # print("Saving responses...")
+    # result_dir = Path(__file__).parent.parent.parent.joinpath(f'results/ground_truth/{model_name}')
+    # delete_all_npy_files(result_dir)
+    # for layer_i in tqdm(range(num_layers)):
+    #     result_path = os.path.join(result_dir, f"conv{layer_i+1}.npy")
+    #     print(result_path)
+    #     np.save(result_path, sorted_activations[layer_i])
