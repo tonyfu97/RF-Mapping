@@ -187,10 +187,7 @@ def one_sided_zero_pad(patch, desired_size, box):
     elif touching_left_edge:
         padded_patch[:patch_h, -patch_w:, :] = patch
     else:
-        print(f"patch_h = {patch_h}, patch_w = {patch_w}.")
-        print(f"patch shape = {patch.shape}")
-        raise Exception(
-            "Double check one_sided_zero_padd. This should not happen.")
+        padded_patch[:patch_h, :patch_w, :] = patch
 
     return padded_patch
 
@@ -204,4 +201,5 @@ if __name__ == "__main__":
     hx_min = 0
     box = (vx_min, hx_min, vx_min + patch_h, hx_min + patch_w)
     padded_patch = one_sided_zero_pad(patch, desired_size, box)
+    print(box)
     plt.imshow(padded_patch)

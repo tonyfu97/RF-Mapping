@@ -554,7 +554,7 @@ if __name__ == '__main__':
     _test_backward_conversion()
 
 
-def rf_sizes(model, image_shape, layer_type=nn.Conv2d):
+def get_rf_sizes(model, image_shape, layer_type=nn.Conv2d):
     """
     Find the receptive field (RF) sizes of all layers of the specified type.
     The sizes here are in pixels with respect to the input image.
@@ -593,6 +593,6 @@ def rf_sizes(model, image_shape, layer_type=nn.Conv2d):
 
 if __name__ == '__main__':
     model = models.alexnet()
-    layer_indicies, rf_sizes = rf_sizes(model, (227, 227))
+    layer_indicies, rf_sizes = get_rf_sizes(model, (227, 227))
     print(layer_indicies)
     print(rf_sizes)

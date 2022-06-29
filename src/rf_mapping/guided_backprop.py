@@ -154,9 +154,9 @@ if __name__ == "__main__":
     img = np.load(img_path)
     img = preprocess_img_for_plot(img)
     
-    layer_idx = 3 # AlexNet = [0, 3, 6, 8, 10] for conv1-5
+    layer_idx = 10  # AlexNet = [0, 3, 6, 8, 10] for conv1-5
     unit_idx = 1
-    spatial_idx = (13, 13)
+    spatial_idx = (5, 5)
     gbp = GuidedBackprop(model)
     gbp_map = gbp.generate_gradients(img, layer_idx, unit_idx, spatial_idx)
 
