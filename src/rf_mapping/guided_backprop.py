@@ -132,6 +132,9 @@ class GuidedBackprop():
         # Backward pass.
         x.backward(gradient=x_target_only)
 
+        if self.gradients is None:
+            raise ValueError("Target layer must be Conv2d.")
+        
         # [0] to get rid of the first channel (1, 3, 22x, 22x).
         gradients_img = self.gradients.data.numpy()[0]
         return gradients_img

@@ -4,6 +4,7 @@ Code to for image processing, etc.
 Tony Fu, Jun 25, 2022
 """
 import os
+import math
 
 
 import numpy as np
@@ -26,7 +27,8 @@ def clip(x, x_min, x_max):
 def normalize_img(img):
     """Normalizes pixel values to be roughly between [-1, 1]."""
     norm_img = img - img.min()
-    norm_img = norm_img/norm_img.max()
+    if not math.isclose(norm_img.max(), 0):
+        norm_img = norm_img/norm_img.max()
     return norm_img
 
 
@@ -51,9 +53,12 @@ def preprocess_img_to_tensor(img, img_size=None):
     return img_tensor.to(device)
 
 
-def preprocess_img_for_plot(img):
-    """Normalizes an image for plt.imshow(). Rearranges axes if necessary."""
-    img = normalize_img(img)
+def preprocess_img_for_plot(img, norm=True):
+    """
+    Normalizes an image and makes sure it is in (height, width, 3) format.
+    """
+    if norm:
+        img = normalize_img(img)
     if (len(img.shape) == 4):
         img = np.squeeze(img)
     if (img.shape.index(3) == 0):
@@ -157,3 +162,44 @@ if __name__ == "__main__":
     img = preprocess_img_for_plot(imgs[image_idx])
     plt.imshow(img)
     plt.show()
+
+
+def one_sided_zero_pad(patch, desired_size, box):
+    patch = preprocess_img_for_plot(patch, norm=False)
+    if (len(patch.shape) != 3):
+        raise Exception("Needs color channels.")
+
+    # Return original patch if it is the right size.
+    if patch.shape[:2] == desired_size:
+        return patch
+
+    vx_min, hx_min, vx_max, hx_max = box
+    touching_top_edge = (vx_min == 0)
+    touching_left_edge = (hx_min == 0)
+
+    padded_patch = np.zeros((desired_size[0], desired_size[1], 3))
+    patch_h, patch_w = patch.shape[:2]
+
+    if touching_top_edge and touching_top_edge:
+        padded_patch[-patch_h:, -patch_w:, :] = patch
+    elif touching_top_edge:
+        padded_patch[-patch_h:, :patch_w, :] = patch
+    elif touching_left_edge:
+        padded_patch[:patch_h, -patch_w:, :] = patch
+    else:
+        raise Exception(
+            "Double check one_sided_zero_padd. This should not happen.")
+
+    return padded_patch
+
+
+if __name__ == "__main__":
+    patch_h, patch_w = (20, 15)
+    patch = np.ones((3, patch_h, patch_w))
+    desired_size = (50, 40)
+    
+    vx_min = 0
+    hx_min = 0
+    box = (vx_min, hx_min, vx_min + patch_h, hx_min + patch_w)
+    padded_patch = one_sided_zero_pad(patch, desired_size, box)
+    plt.imshow(padded_patch)
