@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 %matplotlib inline
 
 
-from spatial_index import SpatialIndexConverter
+from hook import SpatialIndexConverter
 from image import preprocess_img_for_plot, make_box
 from guided_backprop import GuidedBackprop
 

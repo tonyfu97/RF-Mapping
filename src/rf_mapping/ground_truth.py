@@ -16,8 +16,8 @@ from tqdm import tqdm
 
 
 from image import ImgDataset, preprocess_img_to_tensor
-from hook import HookFunctionBase
-from spatial_index import SpatialIndexConverter
+from hook import HookFunctionBase, SpatialIndexConverter
+
 
 class ConvMaxMinInspector(HookFunctionBase):
     """

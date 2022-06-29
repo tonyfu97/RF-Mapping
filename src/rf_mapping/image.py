@@ -187,6 +187,8 @@ def one_sided_zero_pad(patch, desired_size, box):
     elif touching_left_edge:
         padded_patch[:patch_h, -patch_w:, :] = patch
     else:
+        print(f"patch_h = {patch_h}, patch_w = {patch_w}.")
+        print(f"patch shape = {patch.shape}")
         raise Exception(
             "Double check one_sided_zero_padd. This should not happen.")
 
