@@ -160,7 +160,7 @@ for model, model_name in zip([model1], [model_name1]):
                 os.remove(os.path.join(dir, f))
 
     # print("Saving responses...")
-    # result_dir = Path(__file__).parent.parent.parent.joinpath(f'results/ground_truth/{model_name}')
+    # result_dir = Path(__file__).parent.parent.parent.joinpath(f'results/ground_truth/indicies/{model_name}')
     # delete_all_npy_files(result_dir)
     # for layer_i in tqdm(range(num_layers)):
     #     result_path = os.path.join(result_dir, f"conv{layer_i+1}.npy")

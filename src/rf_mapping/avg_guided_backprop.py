@@ -24,7 +24,7 @@ result_dir = Path(__file__).parent.parent.parent.joinpath(f'results/ground_truth
 img_dir = "/Users/tonyfu/Desktop/Bair Lab/top_and_bottom_images/images"
 layer_indicies, rf_sizes = get_rf_sizes(model, (227, 227), nn.Conv2d)
 sum_modes = {'sum', 'abs', 'sqr', 'relu'}
-sum_mode = 'abs'
+sum_mode = 'relu'
 
 gbp = GuidedBackprop(model)
 converter = SpatialIndexConverter(model, (227, 227))
@@ -33,7 +33,7 @@ converter = SpatialIndexConverter(model, (227, 227))
 model_max_sums = []
 model_min_sums = []
 for conv_i, rf_size in enumerate(rf_sizes):
-    if conv_i == 0 or conv_i == 1 or conv_i == 2:
+    if conv_i == 0:
         continue
     
     layer_idx = layer_indicies[conv_i]
