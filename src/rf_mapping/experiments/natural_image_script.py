@@ -1,12 +1,15 @@
-import os
+"""
+Visualizing top N natural images and their guided backpropation.
 
+Tony Fu, June 26, 2022
+"""
+import os
 
 import numpy as np
 from pathlib import Path
 from torchvision import models
 import matplotlib.pyplot as plt
 %matplotlib inline
-
 
 from hook import SpatialIndexConverter
 from image import preprocess_img_for_plot, make_box
@@ -23,7 +26,6 @@ layer_idx = 3
 result_path = os.path.join(result_dir, f"{layer_name}.npy")
 
 conv_results = np.load(result_path).astype(int)  # [units * top_n_img * [max_img_idx, max_idx, min_img_idx, min_idx]]
-
 
 top_n = 5
 unit_idx = 0
