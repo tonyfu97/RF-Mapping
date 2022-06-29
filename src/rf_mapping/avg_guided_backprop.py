@@ -1,6 +1,5 @@
 import os
 
-
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
@@ -10,47 +9,61 @@ from torchvision import models
 import matplotlib.pyplot as plt
 # %matplotlib inline
 
-
 from hook import get_rf_sizes, SpatialIndexConverter
 from image import one_sided_zero_pad, preprocess_img_for_plot
 from guided_backprop import GuidedBackprop
 
 
+# Script guard.
+if __name__ == "__main__":
+    user_input = input("This code takes time to run. Are you sure? "\
+                       "Enter 'y' to proceed. Type any other key to stop: ")
+    if user_input == 'y':
+        sum_mode = input("Choose a summation mode: {'sum', 'abs', 'sqr', 'relu'}: ")
+        double_check = input(f"All .npy files in the result_dir will be deleted. Are you sure? (y/n): ")
+        if user_input == 'y':
+            pass
+        else:
+            raise KeyboardInterrupt("Interrupted by user")
+    else: 
+        raise KeyboardInterrupt("Interrupted by user")
+
+
 device = ('cuda' if torch.cuda.is_available() else 'cpu')
 model = models.alexnet(pretrained = True).to(device)
 model_name = "alexnet"
-result_dir = Path(__file__).parent.parent.parent.joinpath(f'results/ground_truth/{model_name}')
+index_dir = Path(__file__).parent.parent.parent.joinpath(f'results/ground_truth/indicies/{model_name}')
 
 img_dir = "/Users/tonyfu/Desktop/Bair Lab/top_and_bottom_images/images"
 layer_indicies, rf_sizes = get_rf_sizes(model, (227, 227), nn.Conv2d)
 sum_modes = {'sum', 'abs', 'sqr', 'relu'}
-sum_mode = 'relu'
+sum_mode = 'sqr'
+result_dir = Path(__file__).parent.parent.parent.joinpath(f'results/ground_truth/backprop_sum/{model_name}/{sum_mode}')
+
+def delete_all_npy_files(dir):
+    for f in os.listdir(dir):
+        if f.endswith('.npy'):
+            os.remove(os.path.join(dir, f))
+delete_all_npy_files(result_dir)
 
 gbp = GuidedBackprop(model)
 converter = SpatialIndexConverter(model, (227, 227))
 
-
-model_max_sums = []
-model_min_sums = []
 for conv_i, rf_size in enumerate(rf_sizes):
-    if conv_i == 0:
-        continue
-    
     layer_idx = layer_indicies[conv_i]
     layer_name = f"conv{conv_i + 1}"
-    result_path = os.path.join(result_dir, f"{layer_name}.npy")
-    conv_results = np.load(result_path).astype(int)
-    num_units, num_images, _ = conv_results.shape
+    index_path = os.path.join(index_dir, f"{layer_name}.npy")
+    max_min_indicies = np.load(index_path).astype(int)
+    num_units, num_images, _ = max_min_indicies.shape
     print(f"Summing guided backprop results for {layer_name}...")
-    layer_max_sums = []
-    layer_min_sums = []
  
     for unit_i in tqdm(range(num_units)):
         unit_max_sum = np.zeros((rf_size[0], rf_size[1], 3))
         unit_min_sum = np.zeros((rf_size[0], rf_size[1], 3))
         
         for img_i in range(num_images):
-            max_img_idx, max_idx, min_img_idx, min_idx = conv_results[unit_i, img_i, :]
+            # TODO: Do the same for min sum.
+            max_img_idx, max_idx, min_img_idx, min_idx = max_min_indicies[unit_i, img_i, :]
             
             vx_min, hx_min, vx_max, hx_max = converter.convert(max_idx, layer_idx, 0, is_forward=False)
             img_path = os.path.join(img_dir, f"{img_i}.npy")
@@ -71,14 +84,24 @@ for conv_i, rf_size in enumerate(rf_sizes):
             else:
                 raise KeyError("sum mode must be 'abs', 'sqr', or 'relu'.")
             
-        layer_max_sums.append(unit_max_sum/num_units)
-        layer_min_sums.append(unit_min_sum/num_units)
-        print(preprocess_img_for_plot(layer_max_sums[-1]).shape)
-        plt.imshow(preprocess_img_for_plot(layer_max_sums[-1]))
+        unit_max_sum_norm = unit_max_sum/num_units
+        unit_min_sum_norm = unit_min_sum/num_units
+        plt.figure(figsize=(8,15))
+        plt.suptitle(f"conv{conv_i+1} unit no.{unit_i} sum mode: {sum_mode}")
+        plt.subplot(1, 2, 1)
+        plt.imshow(preprocess_img_for_plot(unit_max_sum_norm))
+        plt.title("max")
+        plt.subplot(1, 2, 2)
+        plt.imshow(preprocess_img_for_plot(unit_min_sum_norm))
+        plt.title("min")
         plt.show()
-    
-    model_max_sums.append(layer_max_sums)
-    model_min_sums.append(layer_min_sums)
+        
+        print("Saving responses...")
+        max_result_path = os.path.join(result_dir, f"max_conv{conv_i+1}.{unit_i}.npy")
+        min_result_path = os.path.join(result_dir, f"min_conv{conv_i+1}.{unit_i}.npy")
+        np.save(max_result_path, unit_max_sum_norm)
+        np.save(min_result_path, unit_min_sum_norm)
+
 
 
 

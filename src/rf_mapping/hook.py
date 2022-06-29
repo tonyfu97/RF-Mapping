@@ -89,7 +89,53 @@ class LayerOutputInspector(HookFunctionBase):
             image = preprocess_img_to_tensor(image)
         _ = self.model(image)
         return self.layer_outputs
+
+
+class ConvUnitCounter(HookFunctionBase):
+    """
+    A class that counts the number of unique kernels of each convolutional
+    layers of the given model.
+    """
+    def __init__(self, model):
+        super().__init__(model, nn.Module)
+        self._layer_counter = 0
+        self.layer_indicies = []
+        self.num_units = [] 
+        self.register_forward_hook_to_layers(self.model)
+
+    def hook_function(self, module, ten_in, ten_out):
+        if isinstance(module, nn.Conv2d):
+            self.layer_indicies.append(self._layer_counter)
+            self.num_units.append(module.out_channels)
+            self._layer_counter += 1
+
+    def count(self):
+        """
+        Returns
+        -------
+        layer_indicies : [int, ...]
+            The indicies of nn.Conv2d layers. For torchvision.model.alexnet(),
+            this will be [0, 3, 6, 8, 10].
+        num_units : [int, ...]
+            The count of unique kernels of each convoltional layers.
+            
+        layer_indicies and num_units have the same length, and their elements
+        correspond to each other.
+        """
+        # Forward pass.
+        dummy_input = torch.tensor((1, 3, 227, 227))
+        self.model(dummy_input)
+        
+        return self.layer_indicies, self.num_units
     
+
+if __name__ == "__main__":
+    model = models.alexnet()
+    counter = ConvUnitCounter(model)
+    layer_indicies, num_units = counter.count()
+    print(layer_indicies)
+    print(num_units)
+
 
 class ConvMaxInspector(HookFunctionBase):
     """

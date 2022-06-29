@@ -5,7 +5,6 @@ Tony Fu, Jun 25, 2022
 """
 import os
 
-
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -14,9 +13,18 @@ import torch.nn as nn
 from torchvision import models
 from tqdm import tqdm
 
-
 from image import ImgDataset, preprocess_img_to_tensor
 from hook import HookFunctionBase, SpatialIndexConverter
+
+
+# Script guard.
+if __name__ == "__main__":
+    user_input = input("This code takes time to run. Are you sure? "\
+                       "Enter 'y' to proceed. Type any other key to stop: ")
+    if user_input == 'y':
+        pass
+    else: 
+        raise KeyboardInterrupt("Interrupted by user")
 
 
 class ConvMaxMinInspector(HookFunctionBase):
@@ -91,15 +99,6 @@ num_images = 100
 # img_dir = Path(__file__).parent.parent.parent.joinpath('data/imagenet')
 img_dir = "/Users/tonyfu/Desktop/Bair Lab/top_and_bottom_images/images"
 img_names = [f"{i}.npy" for i in range(num_images)]
-
-if __name__ == "__main__":
-    print("Look for a command prompt:")
-    user_input = input("This code takes time to run. Are you sure? "\
-                       "Type 'y' to proceed. Type any other key to stop: ")
-    if user_input == 'y':
-        pass
-    else: 
-        raise KeyboardInterrupt("Interrupted by user")
 
 for model, model_name in zip([model1], [model_name1]):
     imagenet_data = ImgDataset(img_dir, img_names)
