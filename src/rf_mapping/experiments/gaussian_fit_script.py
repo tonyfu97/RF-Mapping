@@ -51,11 +51,3 @@ for conv_i in range(len(layer_indicies)):
         min_backprop_sum_path = os.path.join(backprop_sum_dir, f"min_conv{conv_i+1}.{unit_i}.npy")
         max_backprop_sum = np.load(max_backprop_sum_path)
         min_backprop_sum = np.load(min_backprop_sum_path)
-        
-        
-        
-        
-        
-
-
-

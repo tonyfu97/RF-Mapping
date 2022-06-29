@@ -12,15 +12,28 @@ import matplotlib.pyplot as plt
 from hook import get_rf_sizes, SpatialIndexConverter
 from image import one_sided_zero_pad, preprocess_img_for_plot
 from guided_backprop import GuidedBackprop
+from files import delete_all_npy_files
 
+device = ('cuda' if torch.cuda.is_available() else 'cpu')
+
+# Please specify the model details here:
+model = models.alexnet(pretrained = True).to(device)
+model_name = "alexnet"
+sum_mode = 'sqr'  # {'sum', 'abs', 'sqr', 'relu'}
+
+# Please double-check the directories:
+img_dir = "/Users/tonyfu/Desktop/Bair Lab/top_and_bottom_images/images"
+index_dir = Path(__file__).parent.parent.parent.joinpath(f'results/ground_truth/indicies/{model_name}')
+result_dir = Path(__file__).parent.parent.parent.joinpath(f'results/ground_truth/backprop_sum/{model_name}/{sum_mode}')
+
+###############################################################################
 
 # Script guard.
 if __name__ == "__main__":
     user_input = input("This code takes time to run. Are you sure? "\
                        "Enter 'y' to proceed. Type any other key to stop: ")
     if user_input == 'y':
-        sum_mode = input("Choose a summation mode: {'sum', 'abs', 'sqr', 'relu'}: ")
-        double_check = input(f"All .npy files in the result_dir will be deleted. Are you sure? (y/n): ")
+        double_check = input(f"All .npy files in {result_dir} will be deleted. Are you sure? (y/n): ")
         if user_input == 'y':
             pass
         else:
@@ -28,27 +41,17 @@ if __name__ == "__main__":
     else: 
         raise KeyboardInterrupt("Interrupted by user")
 
-
-device = ('cuda' if torch.cuda.is_available() else 'cpu')
-model = models.alexnet(pretrained = True).to(device)
-model_name = "alexnet"
-index_dir = Path(__file__).parent.parent.parent.joinpath(f'results/ground_truth/indicies/{model_name}')
-
-img_dir = "/Users/tonyfu/Desktop/Bair Lab/top_and_bottom_images/images"
-layer_indicies, rf_sizes = get_rf_sizes(model, (227, 227), nn.Conv2d)
-sum_modes = {'sum', 'abs', 'sqr', 'relu'}
-sum_mode = 'sqr'
-result_dir = Path(__file__).parent.parent.parent.joinpath(f'results/ground_truth/backprop_sum/{model_name}/{sum_mode}')
-
-def delete_all_npy_files(dir):
-    for f in os.listdir(dir):
-        if f.endswith('.npy'):
-            os.remove(os.path.join(dir, f))
+# Delete previous results from result directory.
 delete_all_npy_files(result_dir)
 
+# Initiate helper objects.
 gbp = GuidedBackprop(model)
 converter = SpatialIndexConverter(model, (227, 227))
 
+# Get info of conv layers.
+layer_indicies, rf_sizes = get_rf_sizes(model, (227, 227), nn.Conv2d)
+
+# Loop through layers...
 for conv_i, rf_size in enumerate(rf_sizes):
     layer_idx = layer_indicies[conv_i]
     layer_name = f"conv{conv_i + 1}"
