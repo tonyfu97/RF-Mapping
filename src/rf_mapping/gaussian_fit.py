@@ -221,16 +221,10 @@ def make_pdf(data_dir, best_file_names, worst_file_names, pdf_dir, pdf_name,
             best_file_name = check_extension(best_file_name, '.npy')
             best_file_path = os.path.join(data_dir, best_file_name)
             best_backprop_sum_np = np.load(best_file_path)
-            # TODO: delete the commented lines below.
-            # best_backprop_sum_img = Image.open(best_file_path)
-            # best_backprop_sum_np = np.asarray(best_backprop_sum_img)
 
             worst_file_name = check_extension(worst_file_name, '.npy')
             worst_file_path = os.path.join(data_dir, worst_file_name)
             worst_backprop_sum_np = np.load(worst_file_path)
-            # TODO: delete the commented lines below.
-            # best_backprop_sum_img = Image.open(best_file_path)
-            # best_backprop_sum_np = np.asarray(best_backprop_sum_img)
 
             # Fit 2D Gaussian, and plot them.
             plt.figure(figsize=(20, 10))
@@ -280,15 +274,6 @@ def make_pdf(data_dir, best_file_names, worst_file_names, pdf_dir, pdf_name,
 
 
 if __name__ == '__main__':
-    # TODO: delete the commented lines below.
-    # repo_path = os.path.abspath(os.path.join(__file__, "../../.."))
-    # data_dir = f"{repo_path}/data/conv2_ppm"
-    # num_units = 256
-    # best_file_names = [f"b_conv2.{i}.mu.ppm" for i in range(num_units)]
-    # worst_file_names = [f"w_conv2.{i}.mu.ppm" for i in range(num_units)]
-    # pdf_dir = f"{repo_path}/results"
-    # make_pdf(data_dir, best_file_names, worst_file_names, pdf_dir)
-
     model_name = 'alexnet'
     sum_mode = 'abs'
 
