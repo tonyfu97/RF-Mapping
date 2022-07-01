@@ -2,14 +2,12 @@ import os
 import copy
 import warnings
 
-
 from pathlib import Path
 import numpy as np
 import torch
 import torch.nn as nn
 from torchvision import models
 import torch.nn.functional as F
-
 
 from hook import SizeInspector
 from image import preprocess_img_to_tensor, preprocess_img_for_plot
@@ -128,8 +126,7 @@ class GuidedBackprop():
         x_target_only = torch.zeros(x.shape, dtype=torch.float)
         x_target_only[0, target_unit, target_spatial_idx[0], target_spatial_idx[1]] =\
                         x[0, target_unit, target_spatial_idx[0], target_spatial_idx[1]]
-        
-        # Backward pass.
+
         x.backward(gradient=x_target_only)
 
         if self.gradients is None:

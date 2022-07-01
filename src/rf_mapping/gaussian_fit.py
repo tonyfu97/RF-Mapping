@@ -7,13 +7,15 @@ This code is the modified version of the code found on the following thread:
 https://stackoverflow.com/questions/21566379/fitting-a-2d-gaussian-function-using-scipy-optimize-curve-fit-valueerror-and-m
 """
 import os
-from PIL import Image
 
 import numpy as np
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
+from pathlib import Path
+
+from files import check_extension
 
 
 def twoD_Gaussian(xycoord, amplitude, mu_x, mu_y, sigma_1, sigma_2,
@@ -127,7 +129,7 @@ def gaussian_fit(image, initial_guess=None, plot=True, show=False):
     y = np.arange(y_size)
     x, y = np.meshgrid(x, y)
 
-    # Initialize intial guess if necessary.
+    # Initialize intial guess.
     if initial_guess is None:
         sigma_1_guess = 40
         sigma_2_guess = 30
@@ -138,20 +140,25 @@ def gaussian_fit(image, initial_guess=None, plot=True, show=False):
                          theta_guess, offset_guess)
 
     # Fit the 2D Gaussian.
-    param_estimate, params_covar = opt.curve_fit(twoD_Gaussian, (x, y),
-                                                 image.flatten(),
-                                                 p0=initial_guess,
-                                                 method='trf')
-    param_sem = np.sqrt(np.diag(params_covar))
+    try:
+        param_estimate, params_covar = opt.curve_fit(twoD_Gaussian, (x, y),
+                                                    image.flatten(),
+                                                    p0=initial_guess,
+                                                    method='trf')
+        param_sem = np.sqrt(np.diag(params_covar))
+    except:
+        param_estimate = np.full(len(initial_guess), -1)
+        param_sem = np.full(len(initial_guess), -1)
+        print("bad fit")
 
-    # (Optional): plot the original image with the fitted curves.
+    # Plot the original image with the fitted curves.
     if plot:
         image_fitted = twoD_Gaussian((x, y), *param_estimate)
         # fig, ax = plt.subplots(1, 1)
         plt.imshow(image, cmap=plt.cm.jet)
         # plt.colorbar()
         plt.contour(x, y, image_fitted.reshape(y_size, x_size), 7, colors='w')
-
+        
     if show:
         plt.show()
 
@@ -172,7 +179,7 @@ def test_gaussian_fit():
     data_noisy = data + 0.2 * np.random.normal(size=data.shape)
 
     # Test fit.
-    param_estimate, param_sem = gaussian_fit(data_noisy, show=True)
+    param_estimate, param_sem = gaussian_fit(data_noisy, plot=True)
     print(param_estimate)
     print(param_sem)
     assert np.all(param_sem < 1), 'SEM too high.'
@@ -182,47 +189,64 @@ if __name__ == '__main__':
     test_gaussian_fit()
 
 
-def make_pdf(data_dir, best_file_names, worst_file_names, pdf_dir,
-             title="2D Gaussian of Average Backpropagation"):
+def make_pdf(data_dir, best_file_names, worst_file_names, both_file_names, 
+             pdf_dir, pdf_name, plot_title):
     """
     Creates a multi-page pdf file, each page contains the Gaussian fit of the
     (average guided-backpropagation of the) best and the worst image patches
     for each unit.
+    
+    The parameters and the corresponding errors of each gaussian fit will be
+    saved to same file names given as {best/worst/both_file_names} in pdf_dir.
 
     Parameters
     ----------
     data_dir : str
         The directory to the data files.
-    best_file_names : list of str
-        The file names of the images  in data_path.
+    best/worst/both_file_names : list of str
+        The file names of the images in data_path.
     pdf_dir : str
         The directory to save the result pdf, does not have to exist in the
         first place.
-    title : str, optional
+    pdf_name : str
+        The name of the pdf file.
+    plot_title : str
         The title string on each pdf page.
     """
-    pdf_path = os.path.join(pdf_dir, "gaussianFitResults.pdf")
+    pdf_name = check_extension(pdf_name, 'pdf')
+    pdf_path = os.path.join(pdf_dir, pdf_name)
 
     with PdfPages(pdf_path) as pdf:
         page_count = 0
-        for best_file_name, worst_file_name in tqdm(zip(best_file_names,
-                                                        worst_file_names)):
-            # Load the average back-propagation of the image patches.
+        for best_file_name, worst_file_name, both_file_name in tqdm(zip(best_file_names,
+                                                                        worst_file_names,
+                                                                        both_file_names)):
+            # Load the back-propagation sum of the image patches.
+            best_file_name = check_extension(best_file_name, '.npy')
             best_file_path = os.path.join(data_dir, best_file_name)
-            best_avg_backprop = Image.open(best_file_path)
-            best_avg_backprop_np = np.asarray(best_avg_backprop)
+            best_backprop_sum_np = np.load(best_file_path)
 
+            worst_file_name = check_extension(worst_file_name, '.npy')
             worst_file_path = os.path.join(data_dir, worst_file_name)
-            worst_avg_backprop = Image.open(worst_file_path)
-            worst_avg_backprop_np = np.asarray(worst_avg_backprop)
+            worst_backprop_sum_np = np.load(worst_file_path)
+
+            both_file_name = check_extension(both_file_name, '.npy')
+            both_file_path = os.path.join(data_dir, both_file_name)
+            both_backprop_sum_np = np.load(both_file_path)
 
             # Fit 2D Gaussian, and plot them.
-            plt.figure(figsize=(20, 10))
-            plt.suptitle(f"{title}: unit no.{page_count}", fontsize=20)
+            plt.figure(figsize=(30, 10))
+            plt.suptitle(f"{plot_title}: unit no.{page_count}", fontsize=20)
             page_count += 1
 
-            plt.subplot(1, 2, 1)
-            params, sems = gaussian_fit(best_avg_backprop_np[:, :, 0])
+            plt.subplot(1, 3, 1)
+            params, sems = gaussian_fit(best_backprop_sum_np[:, :, 0], plot=True, show=False)
+
+            param_file_name = os.path.join(pdf_dir, best_file_name)
+            param_arr = np.vstack((params, sems))
+            np.save(param_file_name, param_arr)
+            # Saved as [[param0, param1, ....],[sem0, sem1, ...]]
+                
             subtitle1 = f"A={params[0]:.2f}(err={sems[0]:.2f}), "\
                         f"mu_x={params[1]:.2f}(err={sems[1]:.2f}), "\
                         f"mu_y={params[2]:.2f}(err={sems[2]:.2f}),"
@@ -230,11 +254,17 @@ def make_pdf(data_dir, best_file_names, worst_file_names, pdf_dir,
                         f"sigma_2={params[4]:.2f}(err={sems[4]:.2f}),"
             subtitle3 = f"theta={params[5]:.2f}(err={sems[5]:.2f}), "\
                         f"offset={params[6]:.2f}(err={sems[6]:.2f})"
-            plt.title(f"Best Image Patches\n({subtitle1}\n{subtitle2}"\
+            plt.title(f"Max Image Patches\n({subtitle1}\n{subtitle2}"\
                       f"\n{subtitle3})", fontsize=14)
 
-            plt.subplot(1, 2, 2)
-            params, param_sem = gaussian_fit(worst_avg_backprop_np[:, :, 0])
+            plt.subplot(1, 3, 2)
+            params, sems = gaussian_fit(worst_backprop_sum_np[:, :, 0], plot=True, show=False)
+            
+            param_file_name = os.path.join(pdf_dir, worst_file_name)
+            param_arr = np.vstack((params, sems))
+            np.save(param_file_name, param_arr)
+            # Saved as [[param0, param1, ....],[sem0, sem1, ...]]
+
             subtitle1 = f"A={params[0]:.2f}(err={sems[0]:.2f}), "\
                         f"mu_x={params[1]:.2f}(err={sems[1]:.2f}), "\
                         f"mu_y={params[2]:.2f}(err={sems[2]:.2f}),"
@@ -242,7 +272,26 @@ def make_pdf(data_dir, best_file_names, worst_file_names, pdf_dir,
                         f"sigma_2={params[4]:.2f}(err={sems[4]:.2f}),"
             subtitle3 = f"theta={params[5]:.2f}(err={sems[5]:.2f}), "\
                         f"offset={params[6]:.2f}(err={sems[6]:.2f})"
-            plt.title(f"Worst Image Patches\n({subtitle1}\n{subtitle2}"\
+            plt.title(f"Min Image Patches\n({subtitle1}\n{subtitle2}"\
+                    f"\n{subtitle3})", fontsize=14)
+                
+            
+            plt.subplot(1, 3, 3)
+            params, sems = gaussian_fit(both_backprop_sum_np[:, :, 0], plot=True, show=False)
+
+            param_file_name = os.path.join(pdf_dir, both_file_name)
+            param_arr = np.vstack((params, sems))
+            np.save(param_file_name, param_arr)
+            # Saved as [[param0, param1, ....],[sem0, sem1, ...]]
+
+            subtitle1 = f"A={params[0]:.2f}(err={sems[0]:.2f}), "\
+                        f"mu_x={params[1]:.2f}(err={sems[1]:.2f}), "\
+                        f"mu_y={params[2]:.2f}(err={sems[2]:.2f}),"
+            subtitle2 = f"sigma_1={params[3]:.2f}(err={sems[3]:.2f}), "\
+                        f"sigma_2={params[4]:.2f}(err={sems[4]:.2f}),"
+            subtitle3 = f"theta={params[5]:.2f}(err={sems[5]:.2f}), "\
+                        f"offset={params[6]:.2f}(err={sems[6]:.2f})"
+            plt.title(f"Max + Min Image Patches\n({subtitle1}\n{subtitle2}"\
                       f"\n{subtitle3})", fontsize=14)
 
             pdf.savefig()
@@ -250,11 +299,20 @@ def make_pdf(data_dir, best_file_names, worst_file_names, pdf_dir,
 
 
 if __name__ == '__main__':
-    repo_path = os.path.abspath(os.path.join(__file__, "../../.."))
-    data_dir = f"{repo_path}/data/conv2_ppm"
-    num_units = 256
-    best_file_names = [f"b_conv2.{i}.mu.ppm" for i in range(num_units)]
-    worst_file_names = [f"w_conv2.{i}.mu.ppm" for i in range(num_units)]
-    pdf_dir = f"{repo_path}/results"
+    model_name = 'alexnet'
+    sum_mode = 'abs'
 
-    make_pdf(data_dir, best_file_names, worst_file_names, pdf_dir)
+    backprop_sum_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/backprop_sum/{model_name}/{sum_mode}')
+
+    pdf_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/gaussian_fit/{model_name}/{sum_mode}')
+
+    layer_name = "conv5"
+    num_units = 256
+    best_file_names = [f"max_{layer_name}.{unit_i}.npy" for unit_i in range(num_units)]
+    worst_file_names = [f"min_{layer_name}.{unit_i}.npy" for unit_i in range(num_units)]
+    both_file_names = [f"both_{layer_name}.{unit_i}.npy" for unit_i in range(num_units)]
+    pdf_name = f"{layer_name}.gaussian.pdf"
+    plot_title = f"{model_name} {layer_name} (sum mode = {sum_mode})"
+
+    make_pdf(backprop_sum_dir, best_file_names, worst_file_names, both_file_names,
+             pdf_dir, pdf_name, plot_title)

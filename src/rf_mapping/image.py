@@ -6,7 +6,6 @@ Tony Fu, Jun 25, 2022
 import os
 import math
 
-
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -58,7 +57,8 @@ def preprocess_img_for_plot(img, norm=True):
     Normalizes an image and makes sure it is in (height, width, 3) format.
     """
     if norm:
-        img = normalize_img(img)
+        img = img - img.min()
+        img = img/img.max()
     if (len(img.shape) == 4):
         img = np.squeeze(img)
     if (img.shape.index(3) == 0):
