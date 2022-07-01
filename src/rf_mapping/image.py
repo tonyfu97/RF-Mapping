@@ -25,7 +25,7 @@ def clip(x, x_min, x_max):
 
 def normalize_img(img):
     """Normalizes pixel values to be roughly between [-1, 1]."""
-    norm_img = img - (img.min()/2)
+    norm_img = img - img.mean()
     if not math.isclose(norm_img.max(), 0):
         norm_img = norm_img/norm_img.max()
     return norm_img
