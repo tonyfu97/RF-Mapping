@@ -93,10 +93,10 @@ class ConvMaxMinInspector(HookFunctionBase):
 
 
 device = ('cuda' if torch.cuda.is_available() else 'cpu')
-model1 = models.alexnet(pretrained=True).to(device)
-model_name1 = "alexnet"  
+model1 = models.vgg16(pretrained=True).to(device)
+model_name1 = "vgg16"  
 
-num_images = 100
+num_images = 50000
 # img_dir = Path(__file__).parent.parent.parent.joinpath('data/imagenet')
 img_dir = "/Users/tonyfu/Desktop/Bair Lab/top_and_bottom_images/images"
 img_names = [f"{i}.npy" for i in range(num_images)]
@@ -138,7 +138,7 @@ for model, model_name in zip([model1], [model_name1]):
 
     print("Sorting responses...")
     sorted_activations = []
-    top_n = 10
+    top_n = 100
     for layer_i in tqdm(range(num_layers)):
         num_units =  all_activations[layer_i].shape[1]
         top_n_img_idx = np.zeros((num_units, top_n, 4), dtype=int)
@@ -155,7 +155,7 @@ for model, model_name in zip([model1], [model_name1]):
         sorted_activations.append(top_n_img_idx)
 
     print("Saving responses...")
-    result_dir = Path(__file__).parent.parent.parent.joinpath(f'results/ground_truth/top_n/{model_name}')
+    result_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/top_n/{model_name}')
     delete_all_npy_files(result_dir)
     for layer_i in tqdm(range(num_layers)):
         result_path = os.path.join(result_dir, f"conv{layer_i+1}.npy")

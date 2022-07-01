@@ -244,7 +244,7 @@ def make_pdf(data_dir, best_file_names, worst_file_names, both_file_names,
             page_count += 1
 
             plt.subplot(1, 3, 1)
-            params, sems = gaussian_fit(best_backprop_sum_np[:, :, 0], plot=True, show=False)
+            params, sems = gaussian_fit(best_backprop_sum_np, plot=True, show=False)
 
             param_file_name = os.path.join(pdf_dir, best_file_name)
             param_arr = np.vstack((params, sems))
@@ -262,7 +262,7 @@ def make_pdf(data_dir, best_file_names, worst_file_names, both_file_names,
                       f"\n{subtitle3})", fontsize=14)
 
             plt.subplot(1, 3, 2)
-            params, sems = gaussian_fit(worst_backprop_sum_np[:, :, 0], plot=True, show=False)
+            params, sems = gaussian_fit(worst_backprop_sum_np, plot=True, show=False)
             
             param_file_name = os.path.join(pdf_dir, worst_file_name)
             param_arr = np.vstack((params, sems))
@@ -281,7 +281,7 @@ def make_pdf(data_dir, best_file_names, worst_file_names, both_file_names,
                 
             
             plt.subplot(1, 3, 3)
-            params, sems = gaussian_fit(both_backprop_sum_np[:, :, 0], plot=True, show=False)
+            params, sems = gaussian_fit(both_backprop_sum_np, plot=True, show=False)
 
             param_file_name = os.path.join(pdf_dir, both_file_name)
             param_arr = np.vstack((params, sems))

@@ -21,7 +21,7 @@ from hook import ConvUnitCounter
 # Please specify some details here:
 model = models.alexnet(pretrained=True)
 model_name = 'alexnet'
-sum_modes = ['abs', 'sum']
+sum_modes = ['abs', 'sqr']
 
 # Please double-check the directories:
 backprop_sum_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/backprop_sum/{model_name}')
@@ -50,7 +50,7 @@ for sum_mode in sum_modes:
     
     for conv_i in range(len(layer_indicies)):
         layer_name = f"conv{conv_i + 1}"
-        num_units = nums_units[conv_i]
+        num_units = 5 #nums_units[conv_i]
         
         best_file_names = [f"max_{layer_name}.{unit_i}.npy" for unit_i in range(num_units)]
         worst_file_names = [f"min_{layer_name}.{unit_i}.npy" for unit_i in range(num_units)]

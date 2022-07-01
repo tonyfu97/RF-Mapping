@@ -59,6 +59,8 @@ def preprocess_img_for_plot(img, norm=True):
     if norm:
         img = img - img.min()
         img = img/img.max()
+    if (len(img.shape)== 2):
+        return img
     if (len(img.shape) == 4):
         img = np.squeeze(img)
     if (img.shape.index(3) == 0):
@@ -154,7 +156,7 @@ if __name__ == "__main__":
     num_images = 100
     image_idx = 0
     
-    img_dir = Path(__file__).parent.parent.parent.joinpath('data/imagenet')
+    img_dir = Path(__file__).parent.parent.parent.parent.joinpath('data/imagenet')
     img_names = [f"{i}.npy" for i in range(num_images)]
     imagenet_data = ImgDataset(img_dir, img_names)
     imagenet_dataloader = DataLoader(imagenet_data, batch_size=64, shuffle=False)
@@ -165,36 +167,32 @@ if __name__ == "__main__":
 
 
 def one_sided_zero_pad(patch, desired_size, box):
-    patch = preprocess_img_for_plot(patch, norm=False)
-    if (len(patch.shape) != 3):
-        raise Exception("Needs color channels.")
-
     # Return original patch if it is the right size.
-    if patch.shape[:2] == desired_size:
+    if patch.shape == desired_size:
         return patch
 
     vx_min, hx_min, vx_max, hx_max = box
     touching_top_edge = (vx_min == 0)
     touching_left_edge = (hx_min == 0)
 
-    padded_patch = np.zeros((desired_size[0], desired_size[1], 3))
-    patch_h, patch_w = patch.shape[:2]
+    padded_patch = np.zeros((desired_size[0], desired_size[1]))
+    patch_h, patch_w = patch.shape
 
     if touching_top_edge and touching_top_edge:
-        padded_patch[-patch_h:, -patch_w:, :] = patch
+        padded_patch[-patch_h:, -patch_w:] = patch
     elif touching_top_edge:
-        padded_patch[-patch_h:, :patch_w, :] = patch
+        padded_patch[-patch_h:, :patch_w] = patch
     elif touching_left_edge:
-        padded_patch[:patch_h, -patch_w:, :] = patch
+        padded_patch[:patch_h, -patch_w:] = patch
     else:
-        padded_patch[:patch_h, :patch_w, :] = patch
+        padded_patch[:patch_h, :patch_w] = patch
 
     return padded_patch
 
 
 if __name__ == "__main__":
     patch_h, patch_w = (20, 15)
-    patch = np.ones((3, patch_h, patch_w))
+    patch = np.ones((patch_h, patch_w))
     desired_size = (50, 40)
     
     vx_min = 0
