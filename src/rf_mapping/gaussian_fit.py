@@ -212,6 +212,10 @@ def make_pdf(data_dir, best_file_names, worst_file_names, both_file_names,
         The name of the pdf file.
     plot_title : str
         The title string on each pdf page.
+    save_params : bool
+        If true, the parameters and the corresponding errors of each gaussian
+        fit will be saved to same file names given as {best_file_names} and
+        {worst_file_names} to pdf_dir.
     """
     pdf_name = check_extension(pdf_name, 'pdf')
     pdf_path = os.path.join(pdf_dir, pdf_name)

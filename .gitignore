@@ -131,11 +131,7 @@ dmypy.json
 # Editor
 .vscode/
 
-<<<<<<< HEAD
-
-=======
 # Testing phase:
 *.npy
 *.pdf
 *.icloud
->>>>>>> 28d20ebc3e0b3cb2d56eb9fa9c5b10b25e596f6c
