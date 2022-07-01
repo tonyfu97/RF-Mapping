@@ -107,11 +107,7 @@ class ConvUnitCounter(HookFunctionBase):
         if isinstance(module, nn.Conv2d):
             self.layer_indicies.append(self._layer_counter)
             self.num_units.append(module.out_channels)
-<<<<<<< HEAD
         self._layer_counter += 1
-=======
-            self._layer_counter += 1
->>>>>>> 28d20ebc3e0b3cb2d56eb9fa9c5b10b25e596f6c
 
     def count(self):
         """
@@ -127,11 +123,7 @@ class ConvUnitCounter(HookFunctionBase):
         correspond to each other.
         """
         # Forward pass.
-<<<<<<< HEAD
         dummy_input = torch.zeros((1, 3, 227, 227))
-=======
-        dummy_input = torch.tensor((1, 3, 227, 227))
->>>>>>> 28d20ebc3e0b3cb2d56eb9fa9c5b10b25e596f6c
         self.model(dummy_input)
         
         return self.layer_indicies, self.num_units
