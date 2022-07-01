@@ -19,9 +19,10 @@ from image import preprocess_img_for_plot
 
 
 # Please specify some details here:
-model = models.alexnet()
-model_name = "alexnet"
-sum_modes = ['abs', 'sqr']
+model = models.vgg16()
+model_name = "vgg16"
+sum_modes = ['sqr']
+this_is_a_test_run = True
 
 # Please double-check the directories:
 backprop_sum_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/backprop_sum/{model_name}')
@@ -46,7 +47,11 @@ for sum_mode in sum_modes:
         pdf_path = os.path.join(pdf_dir_with_sum_modes, f"{layer_name}.pdf")
         with PdfPages(pdf_path) as pdf:
 
-            for unit_i in tqdm(range(5)): #num_units)):
+            for unit_i in tqdm(range(num_units)):
+                # Do only the first 5 unit during testing phase
+                if this_is_a_test_run and unit_i >= 5:
+                    break
+
                 max_sum_path = os.path.join(backprop_sum_dir_with_modes, f"max_conv{conv_i+1}.{unit_i}.npy")
                 min_sum_path = os.path.join(backprop_sum_dir_with_modes, f"min_conv{conv_i+1}.{unit_i}.npy")
                 both_sum_path = os.path.join(backprop_sum_dir_with_modes, f"both_conv{conv_i+1}.{unit_i}.npy")

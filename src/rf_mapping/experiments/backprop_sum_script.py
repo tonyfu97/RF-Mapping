@@ -25,12 +25,12 @@ from files import delete_all_npy_files
 device = ('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Please specify some details here:
-model = models.alexnet(pretrained = True).to(device)
-model_name = "alexnet"
+model = models.vgg16(pretrained = True).to(device)
+model_name = "vgg16"
 sum_modes = ['abs', 'sqr']
 grad_method = GuidedBackprop(model)
-top_n = 100
-
+top_n = 50
+this_is_a_test_run = True
 
 # Please double-check the directories:
 img_dir = "/Users/tonyfu/Desktop/Bair Lab/top_and_bottom_images/images"
@@ -116,7 +116,11 @@ for conv_i, rf_size in enumerate(rf_sizes):
     num_units, num_images, _ = max_min_indicies.shape
     print(f"Summing gradient results for {layer_name}...")
         
-    for unit_i in tqdm(range(5)): #num_units)):
+    for unit_i in tqdm(range(num_units)):
+        # Do only the first 5 unit during testing phase
+        if this_is_a_test_run and unit_i >= 5:
+            break
+        
         max_sum = np.zeros((len(sum_modes), rf_size[0], rf_size[1]))
         min_sum = np.zeros((len(sum_modes), rf_size[0], rf_size[1]))
         

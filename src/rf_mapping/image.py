@@ -25,7 +25,7 @@ def clip(x, x_min, x_max):
 
 def normalize_img(img):
     """Normalizes pixel values to be roughly between [-1, 1]."""
-    norm_img = img - img.min()
+    norm_img = img - (img.min()/2)
     if not math.isclose(norm_img.max(), 0):
         norm_img = norm_img/norm_img.max()
     return norm_img
@@ -85,7 +85,7 @@ def make_box(box_indicies):
     top_left = (hx_min, vx_min)  # (x, y) format.
     height = vx_max - vx_min + 1
     width = hx_max - hx_min + 1
-    rect = patches.Rectangle(top_left, width, height, linewidth=2,
+    rect = patches.Rectangle(top_left, width, height, linewidth=1,
                              edgecolor='r', facecolor='none')
     return rect
 
