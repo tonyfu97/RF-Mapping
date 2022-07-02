@@ -24,10 +24,10 @@ def clip(x, x_min, x_max):
 
 
 def normalize_img(img):
-    """Normalizes pixel values to be roughly between [-1, 1]."""
+    """Normalizes pixel values to be roughly Norm(0, 1)."""
     norm_img = img - img.mean()
-    if not math.isclose(norm_img.max(), 0):
-        norm_img = norm_img/norm_img.max()
+    if not math.isclose(norm_img.std(), 0):
+        norm_img = norm_img/norm_img.std()
     return norm_img
 
 
@@ -36,13 +36,18 @@ def preprocess_img_to_tensor(img, img_size=None):
     Preprocesses an image numpy array into a normalized tensor before
     presenting it to a Pytorch model. Adjusts the dimensions if necessary.
     """
-    norm_img = normalize_img(img)
-    if len(norm_img.shape) != 4:
-        norm_img = np.expand_dims(norm_img, axis=0)
-    img_tensor = torch.from_numpy(norm_img).type('torch.FloatTensor')
-
-    if (img_tensor.shape[3] == 3):
-        img_tensor = img_tensor.swapaxes(1, 3)
+    # This normalization only applies to the imagenet dataset we have.
+    transform = T.Compose([
+                T.ToTensor(),
+                T.Normalize(
+        mean=[-0.01618503, -0.01468056, -0.01345447],
+        std=[0.09958131, 0.0980152,  0.10090139],),
+    ])
+    if img.shape.index(3) == 0:
+        img = np.transpose(img, (1, 2, 0))
+    img_tensor = transform(img).type('torch.FloatTensor')
+    
+    img_tensor = torch.unsqueeze(img_tensor, dim=0)
 
     if img_size is not None:
         resize = T.Resize(img_size)

@@ -2,6 +2,8 @@
 Code to generate stimulus bars.
 
 Wyeth Bair, date unknown
+
+Modified slightly by Tony Fu, July 1, 2022
 """
 import math
 import numpy as np
@@ -424,7 +426,7 @@ def stimset_1pix(xn,yn,i0,i1,fgval,bgval):
 #                                STIMSET_LINES                                #
 #                                                                             #
 ###############################################################################
-
+# Cannot use njit
 def stimset_lines(n0,n1,fgval,bgval):
     #
     #  Return a full set of 1-pixel vertical and horizontal lines
@@ -526,6 +528,7 @@ def stimset_barmap_showrange(xn,rf,xmin,xmax,dx,ori0,dori,blen,bwid,aa):
 #  and anti-aliasing.                                                         #
 #                                                                             #
 ###############################################################################
+# Cannot use njit.
 def stimset_make_barmap_bw(splist,xn,xmin,xmax,dx,ori0,dori,blen,bwid,aa):
     #
     #  splist - stimulus parameter list - APPEND TO THIS LIST
@@ -854,7 +857,7 @@ def barmap_run4_as_7c(splist,srlist,m,xn,max_rf,arat,showflag,r1,g1,b1,
 
     xmax = np.empty(n)
     for i in range(n):
-    xmax[i] = round((max_rf/dx[i]) / 2.0) * dx[i]
+        xmax[i] = round((max_rf/dx[i]) / 2.0) * dx[i]
 
     aa = 0.5       # Antialias distance (pix)
 

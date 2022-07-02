@@ -4,6 +4,7 @@ Functions that register hooks for a variety of purposes.
 Tony Fu, Jun 22, 2022
 """
 import os
+import sys
 import copy
 import math
 
@@ -14,6 +15,7 @@ import torch.nn as nn
 from torchvision import models
 import matplotlib.pyplot as plt
 
+sys.path.append('..')
 from image import clip, preprocess_img_to_tensor, tensor_to_img
 
 
@@ -198,7 +200,7 @@ def top_bottom_N_image_patches(model, layer_type, image_dir, image_names):
 
 if __name__ == '__main__':
     model = models.alexnet(pretrained=True)
-    repo_dir = os.path.abspath(os.path.join(__file__, "../../.."))
+    repo_dir = os.path.abspath(os.path.join(__file__, "../../../.."))
     image_dir = f"{repo_dir}/data/imagenet"
     image_names = ["0.npy"]
     top_bottom_N_image_patches(model, nn.Conv2d, image_dir, image_names)
@@ -525,7 +527,7 @@ def _test_backward_conversion():
     show = True
 
     # Get an arbitrary image.
-    repo_dir = os.path.abspath(os.path.join(__file__, "../../.."))
+    repo_dir = os.path.abspath(os.path.join(__file__, "../../../.."))
     image_dir = f"{repo_dir}/data/imagenet/0.npy"
     test_image = np.load(image_dir)
     test_image_tensor = preprocess_img_to_tensor(test_image, image_size)

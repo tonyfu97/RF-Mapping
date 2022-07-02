@@ -4,6 +4,7 @@ Code to find the image patches that drive the units the most/least.
 Tony Fu, Jun 25, 2022
 """
 import os
+import sys
 
 import numpy as np
 from pathlib import Path
@@ -12,16 +13,17 @@ import torch.nn as nn
 from torchvision import models
 from tqdm import tqdm
 
-from image import ImgDataset, preprocess_img_to_tensor
-from hook import HookFunctionBase, SpatialIndexConverter
+sys.path.append('..')
+from image import preprocess_img_to_tensor
+from hook import HookFunctionBase, SpatialIndexConverter, ConvUnitCounter
 from files import delete_all_npy_files
 
 device = ('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Please specify some details here:
-model = models.vgg16(pretrained=True).to(device)
-model_name = "vgg16"  
-num_images = 20000
+model = models.alexnet(pretrained=True).to(device)
+model_name = "alexnet"  
+num_images = 50000
 top_n = 100
 
 # Please double-check the directories:
@@ -87,7 +89,7 @@ class ConvMaxMinInspector(HookFunctionBase):
         max_activations : list of numpy.arrays
             The ma
         """
-        if (not isinstance(image, torch.Tensor)):
+        if not isinstance(image, torch.Tensor):
             image = preprocess_img_to_tensor(image)
         _ = self.model(image)
         
@@ -105,25 +107,28 @@ class ConvMaxMinInspector(HookFunctionBase):
         
         return copy_max_activations, copy_min_activations, copy_max_indicies, copy_min_indicies
 
+
 # Initiate helper objects.
-imagenet_data = ImgDataset(img_dir, img_names)
 converter = SpatialIndexConverter(model, (227, 227))
 inspector = ConvMaxMinInspector(model)
 
+# Get info of conv layers.
+unit_counter = ConvUnitCounter(model)
+layer_indicies, nums_units = unit_counter.count()
+
 # Initialize arrays:
 all_activations = []
-test_img = next(iter(imagenet_data))[0]
-img_activations, _, _, _ = inspector.inspect(test_img.to(device))
-num_layers = len(img_activations)
-for layer_activations in img_activations:
-    num_units = len(layer_activations)
+num_layers = len(layer_indicies)
+for num_units in nums_units:
     all_activations.append(np.zeros((num_images, num_units, 6), dtype=int))
 
 
 print("Recording responses...")
-for img_i, (img, label) in enumerate(tqdm(imagenet_data)):
+for img_i, img_name in enumerate(tqdm(img_names)):
+    img_path = os.path.join(img_dir, img_name)
+    img = np.load(img_path)
     img_max_activations, img_min_activations, img_max_indicies, img_min_indicies =\
-                                                inspector.inspect(img.to(device))
+                                                inspector.inspect(img)
     
     for layer_i in range(num_layers):
         num_units = len(img_max_activations[layer_i])
@@ -135,9 +140,9 @@ for img_i, (img, label) in enumerate(tqdm(imagenet_data)):
         
         all_activations[layer_i][img_i, :, 0] = img_i
         all_activations[layer_i][img_i, :, 1] = np.arange(num_units)
-        all_activations[layer_i][img_i, :, 2] = layer_max_activations * 10000
+        all_activations[layer_i][img_i, :, 2] = layer_max_activations * 100000
         all_activations[layer_i][img_i, :, 3] = layer_max_indicies
-        all_activations[layer_i][img_i, :, 4] = layer_min_activations * 10000
+        all_activations[layer_i][img_i, :, 4] = layer_min_activations * 100000
         all_activations[layer_i][img_i, :, 5] = layer_min_indicies
 
 
@@ -147,11 +152,13 @@ for layer_i in tqdm(range(num_layers)):
     num_units =  all_activations[layer_i].shape[1]
     top_n_img_idx = np.zeros((num_units, top_n, 4), dtype=int)
     for unit_i in range(num_units):
+        # Top N patches:
         sorted_img_index = all_activations[layer_i][:,unit_i,2].argsort()
         sorted_img_index = np.flip(sorted_img_index)  # Make it descending
         top_n_img_idx[unit_i, :, 0] = all_activations[layer_i][:,unit_i,0][sorted_img_index][:top_n]
         top_n_img_idx[unit_i, :, 1] = all_activations[layer_i][:,unit_i,3][sorted_img_index][:top_n]
         
+        # Bottom N patches:
         sorted_img_index = all_activations[layer_i][:,unit_i,4].argsort()
         top_n_img_idx[unit_i, :, 2] = all_activations[layer_i][:,unit_i,0][sorted_img_index][:top_n]
         top_n_img_idx[unit_i, :, 3] = all_activations[layer_i][:,unit_i,5][sorted_img_index][:top_n]

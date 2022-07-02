@@ -22,8 +22,8 @@ from guided_backprop import GuidedBackprop
 device = ('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Please specify some details here:
-model = models.vgg16(pretrained=True).to(device)
-model_name = "vgg16"
+model = models.alexnet(pretrained=True).to(device)
+model_name = "alexnet"
 top_n = 5
 grad_method = GuidedBackprop(model)
 
