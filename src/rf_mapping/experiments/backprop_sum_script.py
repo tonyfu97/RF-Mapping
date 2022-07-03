@@ -25,12 +25,12 @@ from files import delete_all_npy_files
 device = ('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Please specify some details here:
-model = models.vgg16(pretrained = True).to(device)
-model_name = "vgg16"
+model = models.alexnet(pretrained = True).to(device)
+model_name = "alexnet"
 sum_modes = ['abs', 'sqr']
 grad_method = GuidedBackprop(model)
-top_n = 50
-this_is_a_test_run = True
+top_n = 100
+this_is_a_test_run = False
 
 # Please double-check the directories:
 img_dir = "/Users/tonyfu/Desktop/Bair Lab/top_and_bottom_images/images"

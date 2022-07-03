@@ -148,7 +148,7 @@ def gaussian_fit(image, initial_guess=None, plot=True, show=False):
         param_sem = np.sqrt(np.diag(params_covar))
     except:
         param_estimate = np.full(len(initial_guess), -1)
-        param_sem = np.full(len(initial_guess), -1)
+        param_sem = np.full(len(initial_guess), 999)
         print("bad fit")
 
     # Plot the original image with the fitted curves.
@@ -222,9 +222,8 @@ def make_pdf(data_dir, best_file_names, worst_file_names, both_file_names,
 
     with PdfPages(pdf_path) as pdf:
         page_count = 0
-        for best_file_name, worst_file_name, both_file_name in tqdm(zip(best_file_names,
-                                                                        worst_file_names,
-                                                                        both_file_names)):
+        for best_file_name, worst_file_name, both_file_name in\
+                tqdm(zip(best_file_names, worst_file_names, both_file_names)):
             # Load the back-propagation sum of the image patches.
             best_file_name = check_extension(best_file_name, '.npy')
             best_file_path = os.path.join(data_dir, best_file_name)
@@ -279,7 +278,7 @@ def make_pdf(data_dir, best_file_names, worst_file_names, both_file_names,
             plt.title(f"Min Image Patches\n({subtitle1}\n{subtitle2}"\
                     f"\n{subtitle3})", fontsize=14)
                 
-            
+
             plt.subplot(1, 3, 3)
             params, sems = gaussian_fit(both_backprop_sum_np, plot=True, show=False)
 
@@ -308,7 +307,7 @@ if __name__ == '__main__':
 
     backprop_sum_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/backprop_sum/{model_name}/{sum_mode}')
 
-    pdf_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/gaussian_fit/{model_name}/{sum_mode}')
+    pdf_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/gaussian_fit/{model_name}/test')
 
     layer_name = "conv5"
     num_units = 256

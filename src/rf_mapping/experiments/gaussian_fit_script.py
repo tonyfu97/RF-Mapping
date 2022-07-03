@@ -19,10 +19,10 @@ from gaussian_fit import make_pdf
 from hook import ConvUnitCounter
 
 # Please specify some details here:
-model = models.vgg16(pretrained=True)
-model_name = 'vgg16'
-sum_modes = ['sqr']
-this_is_a_test_run = True
+model = models.alexnet(pretrained=True)
+model_name = 'alexnet'
+sum_modes = ['abs', 'sqr']
+this_is_a_test_run = False
 
 # Please double-check the directories:
 backprop_sum_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/backprop_sum/{model_name}')
