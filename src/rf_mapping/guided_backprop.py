@@ -139,7 +139,7 @@ class GuidedBackprop():
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    device = ('cuda' if torch.cuda.is_available() else 'cpu')
+    device = ('mps' if torch.has_mps else 'cpu')
     model = models.alexnet(pretrained = True).to(device)
     
     inspector = SizeInspector(model, (227, 227))

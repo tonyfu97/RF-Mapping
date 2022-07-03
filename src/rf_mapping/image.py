@@ -53,7 +53,7 @@ def preprocess_img_to_tensor(img, img_size=None):
         resize = T.Resize(img_size)
         img_tensor = resize(img_tensor)
 
-    device = ('cuda' if torch.cuda.is_available() else 'cpu')
+    device = ('mps' if torch.has_mps else 'cpu')
     return img_tensor.to(device)
 
 

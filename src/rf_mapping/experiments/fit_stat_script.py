@@ -118,9 +118,10 @@ for sum_mode in sum_modes:
 
                 layer_params = filter_params(layer_params, layer_sems, rf_size)
                 model_params.append(layer_params)
+                num_units_left = layer_params.shape[0]
 
                 plt.figure(figsize=(15,5))
-                plt.suptitle(f"{model_name} elliptical fit summary for {layer_name} ({max_or_min}, n = {num_units}, sum mode: {sum_mode})", fontsize=20)
+                plt.suptitle(f"{model_name} elliptical fit summary for {layer_name} ({max_or_min}, n = {num_units_left}, sum mode: {sum_mode})", fontsize=20)
 
                 plt.subplot(1, 3, 1)
                 plt.scatter(layer_params[:, 2], layer_params[:, 1])

@@ -19,7 +19,7 @@ from hook import SpatialIndexConverter, ConvUnitCounter
 from image import preprocess_img_for_plot, make_box
 from guided_backprop import GuidedBackprop
 
-device = ('cuda' if torch.cuda.is_available() else 'cpu')
+device = ('mps' if torch.has_mps else 'cpu')
 
 # Please specify some details here:
 model = models.alexnet(pretrained=True).to(device)

@@ -291,7 +291,7 @@ def _map_to_earlier_layer(x, stride, kernel_size, padding):
 def get_activation_std_mean(pretrained_model):
     """
     """
-    device = ('cuda' if torch.cuda.is_available() else 'cpu')
+    device = ('mps' if torch.has_mps else 'cpu')
     pretrained_model.to(device=device)
     pretrained_model.eval()
     xn = yn = 227

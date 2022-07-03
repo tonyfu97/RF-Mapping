@@ -22,7 +22,7 @@ from image import one_sided_zero_pad, preprocess_img_for_plot
 from guided_backprop import GuidedBackprop
 from files import delete_all_npy_files
 
-device = ('cuda' if torch.cuda.is_available() else 'cpu')
+device = ('mps' if torch.has_mps else 'cpu')
 
 # Please specify some details here:
 model = models.alexnet(pretrained = True).to(device)

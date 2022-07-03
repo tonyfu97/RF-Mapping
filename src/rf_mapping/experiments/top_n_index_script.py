@@ -18,11 +18,11 @@ from image import preprocess_img_to_tensor
 from hook import HookFunctionBase, SpatialIndexConverter, ConvUnitCounter
 from files import delete_all_npy_files
 
-device = ('cuda' if torch.cuda.is_available() else 'cpu')
+device = ('mps' if torch.has_mps else 'cpu')
 
 # Please specify some details here:
-model = models.alexnet(pretrained=True).to(device)
-model_name = "alexnet"  
+model = models.vgg16(pretrained=True).to(device)
+model_name = "vgg16"  
 num_images = 50000
 top_n = 100
 
