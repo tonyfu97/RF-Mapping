@@ -7,6 +7,7 @@ This code is the modified version of the code found on the following thread:
 https://stackoverflow.com/questions/21566379/fitting-a-2d-gaussian-function-using-scipy-optimize-curve-fit-valueerror-and-m
 """
 import os
+import sys
 
 import numpy as np
 import scipy.optimize as opt
@@ -15,6 +16,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
 from pathlib import Path
 
+sys.path.append('..')
 from files import check_extension
 
 
@@ -310,15 +312,15 @@ if __name__ == '__main__':
     pdf_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/gaussian_fit/{model_name}/test')
 
     layer_name = "conv5"
-    num_units = 256
+    num_units = 10
     best_file_names = [f"max_{layer_name}.{unit_i}.npy" for unit_i in range(num_units)]
     worst_file_names = [f"min_{layer_name}.{unit_i}.npy" for unit_i in range(num_units)]
     both_file_names = [f"both_{layer_name}.{unit_i}.npy" for unit_i in range(num_units)]
     pdf_name = f"{layer_name}.gaussian.pdf"
     plot_title = f"{model_name} {layer_name} (sum mode = {sum_mode})"
 
-    make_pdf(backprop_sum_dir, best_file_names, worst_file_names, both_file_names,
-             pdf_dir, pdf_name, plot_title)
+    # make_pdf(backprop_sum_dir, best_file_names, worst_file_names, both_file_names,
+            #  pdf_dir, pdf_name, plot_title)
 
 
 class GaussianFitParamFormat:
@@ -345,10 +347,18 @@ class ParamCleaner(GaussianFitParamFormat):
     to the GaussianFitParamFormat class.
     """
     def __init__(self, sem_thres=1):
-        super().__init__(self)
+        """
+        Constructs a ParamCleaner object.
+
+        Parameters
+        ----------
+        sem_thres : int, optional
+            An SEM value is considered too big if it is above this threshold.
+        """
+        super().__init__()
         self.sem_thres = sem_thres
     
-    def _err_is_too_big(self, params, sems):
+    def _err_is_too_big(self, sems):
         """
         Checks if any parameter has a SEM value (error) greater than the
         threshold. Returns True if the error is too big.
@@ -401,12 +411,33 @@ class ParamCleaner(GaussianFitParamFormat):
         return self._wrap_angle_180(theta - 90)
         
     def clean(self, params, sems, rf_size):
-        if self._err_is_too_big(params, sems):
+        """
+        Cleans the parameters of a single unit.
+
+        Parameters
+        ----------
+        params : numpy array [7, ]
+            The parameters of the elliptical Gaussian. Ordered according to
+            GaussianFitParamFormat.
+        sems : numpy array [7, ]
+            The standard errors of the means (SEMs) of the parameters.
+        rf_size : (int, int)
+            The size of receptive field in (y, x) direction.
+
+        Returns
+        -------
+        cleaned_params : array-like
+            The original params with modifications. Returns None if error is
+            too big or mu is outside of RF.
+        """
+        if self._err_is_too_big(sems):
             return None
         if self._mu_is_outside_rf(params[self.MU_X_IDX], params[self.MU_Y_IDX],
                                   rf_size):
             return None
         cleaned_params = params.copy()
+        cleaned_params[self.SIGMA_1_IDX] = np.absolute(cleaned_params[self.SIGMA_1_IDX])
+        cleaned_params[self.SIGMA_2_IDX] = np.absolute(cleaned_params[self.SIGMA_2_IDX])
         cleaned_params[self.THETA_IDX] = self._theta_to_ori(params[self.SIGMA_1_IDX], 
                                                             params[self.SIGMA_2_IDX], 
                                                             params[self.THETA_IDX], 
@@ -414,9 +445,55 @@ class ParamCleaner(GaussianFitParamFormat):
         return cleaned_params
 
 
-class GaussianFitLayerStats(GaussianFitParamFormat):
-    def __init__(self, sem_thres=1):
-        super().__init___(self)
-        self.sem_thres = sem_thres
-    
-    def 
+class ParamLoader(ParamCleaner):
+    """
+    Loads the parameters of the inidividual units and sorts them into lists of
+    individual parameters. Needs this class because the gaussia fit data was
+    stored on a unit-basis, and we need to aggregate them to analyze
+    population results. The parameters are loaded once the ParamLoader is
+    constructed.
+    """
+    def __init__(self, data_dir, file_names, rf_size, sem_thres=1):
+        super().__init__(sem_thres)
+        self.data_dir = data_dir
+        self.file_names = file_names
+        self.rf_size = rf_size
+
+        self.As = []
+        self.mu_xs = []
+        self.mu_ys = []
+        self.sigma_1s = []
+        self.sigma_2s = []
+        self.orientations = []
+        self.offsets = []
+        self._load_params()
+
+    def _load_params(self):
+        for file_name in self.file_names:
+            param_file_path = os.path.join(self.data_dir, file_name)
+            unit_params_sems = np.load(param_file_path)
+            cleaned_params = self.clean(unit_params_sems[0, :],
+                                        unit_params_sems[1, :],
+                                        self.rf_size)
+            if cleaned_params is not None:
+                self.As.append(cleaned_params[self.A_IDX])
+                self.mu_xs.append(cleaned_params[self.MU_X_IDX])
+                self.mu_ys.append(cleaned_params[self.MU_Y_IDX])
+                self.sigma_1s.append(cleaned_params[self.SIGMA_1_IDX])
+                self.sigma_2s.append(cleaned_params[self.SIGMA_2_IDX])
+                self.orientations.append(cleaned_params[self.THETA_IDX])
+                self.offsets.append(cleaned_params[self.OFFSET_IDX])
+
+
+if __name__ == '__main__':
+    model_name = 'alexnet'
+    sum_mode = 'sqr'
+    max_or_min = 'max'
+    layer_name = 'conv2'
+    rf_size = (51, 51)
+    num_units = 192
+
+    backprop_sum_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/gaussian_fit/{model_name}/{sum_mode}')
+    file_names = [f"{max_or_min}_{layer_name}.{i}.npy" for i in range(num_units)]
+    param_loader = ParamLoader(backprop_sum_dir, file_names, rf_size)
+

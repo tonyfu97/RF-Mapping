@@ -97,7 +97,7 @@ def theta_to_orientation(params, sems, thres=1):
         sigma_1 = sigma_1s[unit_i]
         sigma_2 = sigma_2s[unit_i]
         if (sigma_1 < sigma_2):
-            orientations[unit_i] =orientations[unit_i] - 90
+            orientations[unit_i] = orientations[unit_i] - 90
     
     return wrap_angles_180(orientations)
 
