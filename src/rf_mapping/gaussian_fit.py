@@ -427,8 +427,13 @@ class ParamCleaner(GaussianFitParamFormat):
         Returns
         -------
         cleaned_params : array-like
-            The original params with modifications. Returns None if error is
-            too big or mu is outside of RF.
+            The original params with following modifications:
+            (1) Take the absolute value of sigma_1 and 2.
+            (2) Theta is translated into orientation.
+        Returns None if :
+            (1) Have at least one parameter with a SEM greater than the
+                threshold.
+            (2) Have a center (mu_y, mu_x) that is outside of receptive field.
         """
         if self._err_is_too_big(sems):
             return None
@@ -483,6 +488,19 @@ class ParamLoader(ParamCleaner):
                 self.sigma_2s.append(cleaned_params[self.SIGMA_2_IDX])
                 self.orientations.append(cleaned_params[self.THETA_IDX])
                 self.offsets.append(cleaned_params[self.OFFSET_IDX])
+            
+        # Converts all of them into numpy arrays.
+        self.As = np.array(self.As)
+        self.mu_xs = np.array(self.mu_xs)
+        self.mu_ys = np.array(self.mu_ys)
+        self.sigma_1s = np.array(self.sigma_1s)
+        self.sigma_2s = np.array(self.sigma_2s)
+        self.offsets = np.array(self.As)
+        
+        # Removes NAN entries from orientations.
+        self.orientations = np.array(self.orientations)
+        self.orientations = self.orientations[np.isfinite(self.orientations)]
+            
 
 
 if __name__ == '__main__':
