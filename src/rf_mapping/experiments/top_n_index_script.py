@@ -19,6 +19,7 @@ from hook import HookFunctionBase, SpatialIndexConverter, ConvUnitCounter
 from files import delete_all_npy_files
 
 device = ('mps' if torch.has_mps else 'cpu')
+PYTORCH_ENABLE_MPS_FALLBACK=1
 
 # Please specify some details here:
 model = models.vgg16(pretrained=True).to(device)
@@ -89,9 +90,9 @@ class ConvMaxMinInspector(HookFunctionBase):
         max_activations : list of numpy.arrays
             The ma
         """
-        if not isinstance(image, torch.Tensor):
+        if isinstance(image, np.ndarray):
             image = preprocess_img_to_tensor(image)
-        _ = self.model(image)
+        _ = self.model(image.to(device))
         
         # Make copies of the list attributes and set them to empty lists before
         # returning them. Otherwise, they would use up too much memory.

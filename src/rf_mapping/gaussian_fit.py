@@ -110,9 +110,9 @@ def gaussian_fit(image, initial_guess=None, plot=True, show=False):
         amplitude: int or float
             The amplitude of the Gaussian, i.e., the max of the Gaussian if the
             offset is zero. Unitless.
-        mu_x and mu_y: int or float
+        mu_x & mu_y: int or float
             The center coordiates of the Gaussian, in unit pixels.
-        sigma_1, sigma_2: int or float
+        sigma_1 & sigma_2: int or float
             The std. dev. of the two orthogonal axis in unit pixels. sigma_1
             should be the horizontal axis if theta = 0 degree.
         theta: int or float
@@ -319,3 +319,104 @@ if __name__ == '__main__':
 
     make_pdf(backprop_sum_dir, best_file_names, worst_file_names, both_file_names,
              pdf_dir, pdf_name, plot_title)
+
+
+class GaussianFitParamFormat:
+    """
+    Currently, the results of elliptical Gaussian fit is formatted as an array
+    of 7 parameters ordered as follows:
+        [A, mu_x, mu_y, sigma_1, sigma_2, theta, offset]
+    """
+    NUM_PARAMS  = 7
+    
+    A_IDX       = 0
+    MU_X_IDX    = 1
+    MU_Y_IDX    = 2
+    SIGMA_1_IDX = 3
+    SIGMA_2_IDX = 4
+    THETA_IDX   = 5
+    OFFSET_IDX  = 6
+
+
+class ParamCleaner(GaussianFitParamFormat):
+    """
+    A class that cleans a single parameter vector that contains the results
+    of an elliptical Gaussian fit. The parameters should be ordered according
+    to the GaussianFitParamFormat class.
+    """
+    def __init__(self, sem_thres=1):
+        super().__init__(self)
+        self.sem_thres = sem_thres
+    
+    def _err_is_too_big(self, params, sems):
+        """
+        Checks if any parameter has a SEM value (error) greater than the
+        threshold. Returns True if the error is too big.
+
+        The SEM value of theta is ignored because most units have circular
+        receptive fields such that the error for theta is often big.
+        """
+        for i, sem in enumerate(sems):
+            if i != self.THETA_IDX and sem > self.sem_thres:
+                return True
+        return False
+    
+    def _mu_is_outside_rf(self, mu_x, mu_y, rf_size):
+        return not(0 < mu_y < rf_size[0] and 0 < mu_x < rf_size[1])
+
+    def _wrap_angle_180(self, angle):
+        while angle >= 180:
+            angle -= 180
+        while angle < 0:
+            angle += 180
+        return angle
+
+    def _theta_to_ori(self, sigma_1, sigma_2, theta, theta_sem):
+        """
+        Translates theta into orientation. Needs this function because theta
+        tells us the orientation of sigma_1, which may or may not be the semi-
+        major axis, whereas orientation is always about the semi-major axis.
+        Therefore, when sigma_2 > sigma_1, our theta is off by 90 degrees from
+        the actual orientation.
+
+        Parameters
+        ----------
+        sigma_1 & sigma_2 : float
+            The std. dev.'s of the semi-major and -minor axes. The larger of
+            of the two is the semi-major.
+        theta : float
+            The orientation of sigma_1 in degrees.
+        theta_sem : float
+            The error value of the fit of theta.
+
+        Returns
+        -------
+        orientation: float
+            The orientation of the unit's receptive field in degrees.
+        """
+        if theta_sem > self.sem_thres:
+            return np.NAN
+        if sigma_1 > sigma_2:
+            return self._wrap_angle_180(theta)
+        return self._wrap_angle_180(theta - 90)
+        
+    def clean(self, params, sems, rf_size):
+        if self._err_is_too_big(params, sems):
+            return None
+        if self._mu_is_outside_rf(params[self.MU_X_IDX], params[self.MU_Y_IDX],
+                                  rf_size):
+            return None
+        cleaned_params = params.copy()
+        cleaned_params[self.THETA_IDX] = self._theta_to_ori(params[self.SIGMA_1_IDX], 
+                                                            params[self.SIGMA_2_IDX], 
+                                                            params[self.THETA_IDX], 
+                                                            sems[self.THETA_IDX])
+        return cleaned_params
+
+
+class GaussianFitLayerStats(GaussianFitParamFormat):
+    def __init__(self, sem_thres=1):
+        super().__init___(self)
+        self.sem_thres = sem_thres
+    
+    def 

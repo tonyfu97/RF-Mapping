@@ -9,6 +9,7 @@ import warnings
 
 import numpy as np
 from pathlib import Path
+import torch
 import torch.nn as nn
 from torchvision import models
 import matplotlib.pyplot as plt
@@ -19,9 +20,11 @@ sys.path.append('..')
 from hook import ConvUnitCounter, get_rf_sizes
 from image import preprocess_img_for_plot
 
+device = ('mps' if torch.has_mps else 'cpu')
+PYTORCH_ENABLE_MPS_FALLBACK=1
 
 # Please specify some details here:
-model = models.alexnet()
+model = models.alexnet().to(device)
 model_name = "alexnet"
 sum_modes = ['abs', 'sqr']
 this_is_a_test_run = False
@@ -40,16 +43,63 @@ _, rf_sizes = get_rf_sizes(model, (227, 227), nn.Conv2d)
 
 def wrap_angles_180(angles):
     """Makes sure all angles in an array is 0 <= angle < 180 degrees."""
-    wrapped_angles = np.zeros(len(angles))
+    # If "angles" is array-like
+    if isinstance(angles, (np.ndarray, list, tuple)):
+        wrapped_angles = np.zeros(len(angles))
+        for i, angle in enumerate(angles):
+            while angle >= 180:
+                angle -= 180
+            while angle < 0:
+                angle += 180
+            wrapped_angles[i] = angle
 
-    for i, angle in enumerate(angles):
-        while angle >= 180:
-            angle -= 180
-        while angle < 0:
-            angle += 180
-        wrapped_angles[i] = angle
+        return wrapped_angles
+    else: # If "angles" is a scalar
+        while angles >= 180:
+                angles -= 180
+        while angles < 0:
+            angles += 180
+        return angles
 
-    return wrapped_angles
+
+def theta_to_orientation(params, sems, thres=1):
+    """
+    Translates theta into orientation. Needs this function because theta tells
+    us the orientation of sigma_1, which may or may not be the semi-major axis,
+    whereas orientation is always about the semi-major axis. Therefore, when
+    sigma_2 > sigma_1, our theta is will off by 90 degrees from the actual
+    orientation.
+
+    Parameters
+    ----------
+    params : numpy array [num_units, 7]
+        The parameters of the elliptical Gaussian. , the rows are orderred as:
+        A, mu_x, mu_y, sigma_1, sigma_2, theta, and offset.
+    sems : numpy array [num_units, 7]
+        The standard errors of the means (SEMs) of the parameters.
+    thres : int, optional
+        Orientation will be replaced by NAN if its SEM is above this threshold,
+        by default 1.
+
+    Returns
+    -------
+    orientations: numpy array [num_units, 1]
+        A row vector. Each row is the orientation of the unit's receptive
+        field.
+    """
+    sigma_1s = params[:, 3]
+    sigma_2s = params[:, 4]
+    orientations = params[:, 5]
+    orientations[sems[:, 5] > thres] = np.NAN
+    num_units = len(orientations)
+    
+    for unit_i in range(num_units):
+        sigma_1 = sigma_1s[unit_i]
+        sigma_2 = sigma_2s[unit_i]
+        if (sigma_1 < sigma_2):
+            orientations[unit_i] =orientations[unit_i] - 90
+    
+    return wrap_angles_180(orientations)
 
 
 def filter_params(params, sems, rf_size, thres=1):
@@ -63,32 +113,39 @@ def filter_params(params, sems, rf_size, thres=1):
     
     Paramters
     ---------
-    params : np.array
-        [num_units, 7]. Each row corresponds to a unit.
-    sem : np.array
-        Same dimension as params. The standard errors of the means (SEMs) of
-        the parameters.
+    params : numpy array [num_units, 7]
+        The parameters of the elliptical Gaussian. , the rows are orderred as:
+        A, mu_x, mu_y, sigma_1, sigma_2, theta, and offset.
+    sems : numpy array [num_units, 7]
+        The standard errors of the means (SEMs) of the parameters.
+    thres : int, optional
+        Orientation will be replaced by NAN if its SEM is above this threshold,
+        by default 1.
 
     Returns
     -------
     filtered_params : np.array
         Just like params, but without the poorly fitted units.
+    filtered_sems : np.array
+        Just like sems, but without the poorly fitted units.
     """
     num_units = params.shape[0]
     filtered_params = []
+    filtered_sems = []
 
     for unit_i in range(num_units):
         mu_x = params[unit_i, 1]
         mu_y = params[unit_i, 2]
         unit_params = params[unit_i, :]
-        unit_sems = sems[unit_i, :-2] # Don't care about angle and offset
+        unit_sems = sems[unit_i, :]
 
-        if np.all(unit_sems < thres) and\
+        if np.all(unit_sems[:-2] < thres) and\
            np.all(unit_params != -1) and\
            0 < mu_y < rf_size[0] and 0 < mu_x < rf_size[1]:
             filtered_params.append(np.absolute(unit_params))
+            filtered_sems.append(unit_sems)
 
-    return np.array(filtered_params)
+    return np.array(filtered_params), np.array(filtered_sems)
 
 
 for sum_mode in sum_modes:
@@ -116,38 +173,37 @@ for sum_mode in sum_modes:
                     layer_params[unit_i, :] = params_sems[0, :]
                     layer_sems[unit_i, :] = params_sems[1, :]
 
-                layer_params = filter_params(layer_params, layer_sems, rf_size)
+                layer_params, layer_sems = filter_params(layer_params, layer_sems, rf_size)
                 model_params.append(layer_params)
                 num_units_left = layer_params.shape[0]
 
                 plt.figure(figsize=(15,5))
                 plt.suptitle(f"{model_name} elliptical fit summary for {layer_name} ({max_or_min}, n = {num_units_left}, sum mode: {sum_mode})", fontsize=20)
 
-                plt.subplot(1, 3, 1)
+                plt.subplot(1, 4, 1)
                 plt.scatter(layer_params[:, 2], layer_params[:, 1])
                 plt.xlim([0, rf_size[1]])
                 plt.ylim([0, rf_size[0]])
                 plt.xlabel("mu_x")
                 plt.ylabel("mu_y")
 
-                plt.subplot(1, 3, 2)
+                plt.subplot(1, 4, 2)
                 plt.hist(layer_params[:, 0])
                 plt.xlabel("A")
 
-                plt.subplot(1, 3, 3)
+                plt.subplot(1, 4, 3)
                 plt.scatter(layer_params[:, 4], layer_params[:, 3])
                 plt.xlim([0, rf_size[1]//2])
                 plt.ylim([0, rf_size[0]//2])
                 plt.xlabel("sigma_2")
                 plt.ylabel("sigma_1")
 
-                # plt.subplot(1, 5, 4)
-                # plt.hist(wrap_angles_180(layer_params[:, 5]))
-                # plt.xlabel("theta")
-
-                # plt.subplot(1, 5, 5)
-                # plt.hist(layer_params[:, 6])
-                # plt.xlabel("offset")
+                plt.subplot(1, 4, 4)
+                layer_thetas = layer_params[:, 5]
+                layer_thetas = layer_thetas[np.isfinite(layer_thetas)]
+                layer_orientations = theta_to_orientation(layer_params, layer_sems)
+                plt.hist(layer_orientations[np.isfinite(layer_orientations)])
+                plt.xlabel(f"theta (n = {len(layer_thetas)})")
 
                 pdf.savefig()
                 plt.close()

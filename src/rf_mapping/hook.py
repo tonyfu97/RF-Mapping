@@ -87,7 +87,7 @@ class LayerOutputInspector(HookFunctionBase):
         layer_outputs : list of torch.tensors
             Each item is an output activation volume of a target layer.
         """
-        if (not isinstance(image, torch.Tensor)):
+        if (isinstance(image, np.ndarray)):
             image = preprocess_img_to_tensor(image)
         _ = self.model(image)
         return self.layer_outputs
@@ -125,7 +125,8 @@ class ConvUnitCounter(HookFunctionBase):
         correspond to each other.
         """
         # Forward pass.
-        dummy_input = torch.zeros((1, 3, 227, 227))
+        device = ('mps' if torch.has_mps else 'cpu')
+        dummy_input = torch.zeros((1, 3, 227, 227)).to(device)
         self.model(dummy_input)
         
         return self.layer_indicies, self.num_units
@@ -236,7 +237,10 @@ class SizeInspector(HookFunctionBase):
         self.input_sizes = []
         self.output_sizes = []
         self.register_forward_hook_to_layers(self.model)
-        self.model(torch.zeros((1,3,*image_shape)))
+        
+        device = ('mps' if torch.has_mps else 'cpu')
+        
+        self.model(torch.zeros((1,3,*image_shape)).to(device))
 
     def hook_function(self, module, ten_in, ten_out):
         if (isinstance(module, self.layer_types)):
