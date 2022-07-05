@@ -1,7 +1,11 @@
-#
-#  cd w/y/python/pytorch/demo
-#  python
-#
+"""
+RFMp4a - Paradigm 4a Examples
+See http://wartburg.biostr.washington.edu/loc/course/artiphys/data/rfmap_par.html
+
+Wyeth Bair, date unknown
+
+Modified slightly by Tony Fu, July 1, 2022
+"""
 import numpy as np
 import torch
 from torchvision import models

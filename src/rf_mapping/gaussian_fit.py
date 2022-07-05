@@ -30,7 +30,9 @@ def twoD_Gaussian(xycoord, amplitude, mu_x, mu_y, sigma_1, sigma_2,
     ----------
     According to the official documentation of scipy.optimize.curve_fit(), the
     first argument of f (this function) should be the indepedent variable(s),
-    and the rest of the arguments should be function parameters.
+    and the rest of the arguments should be function parameters. The order
+    of the parameters must be also specified in the GaussianFitParamFormat
+    class (excluding xycoord).
 
     xycoord: a two-tuple of 2D numpy arrays = (x, y)
         The x and y coordinates, in unit pixels. x and y should be 2D array,
@@ -328,6 +330,8 @@ class GaussianFitParamFormat:
     Currently, the results of elliptical Gaussian fit is formatted as an array
     of 7 parameters ordered as follows:
         [A, mu_x, mu_y, sigma_1, sigma_2, theta, offset]
+    This indices must match the order of the arguments of the twoD_Gaussian()
+    function.
     """
     NUM_PARAMS  = 7
     
@@ -437,9 +441,11 @@ class ParamCleaner(GaussianFitParamFormat):
         """
         if self._err_is_too_big(sems):
             return None
-        if self._mu_is_outside_rf(params[self.MU_X_IDX], params[self.MU_Y_IDX],
+        if self._mu_is_outside_rf(params[self.MU_X_IDX],
+                                  params[self.MU_Y_IDX],
                                   rf_size):
             return None
+
         cleaned_params = params.copy()
         cleaned_params[self.SIGMA_1_IDX] = np.absolute(cleaned_params[self.SIGMA_1_IDX])
         cleaned_params[self.SIGMA_2_IDX] = np.absolute(cleaned_params[self.SIGMA_2_IDX])
@@ -454,7 +460,7 @@ class ParamLoader(ParamCleaner):
     """
     Loads the parameters of the inidividual units and sorts them into lists of
     individual parameters. Needs this class because the gaussia fit data was
-    stored on a unit-basis, and we need to aggregate them to analyze
+    stored on a unit-basis, but we need to aggregate them to analyze
     population results. The parameters are loaded once the ParamLoader is
     constructed.
     """
@@ -480,7 +486,7 @@ class ParamLoader(ParamCleaner):
             cleaned_params = self.clean(unit_params_sems[0, :],
                                         unit_params_sems[1, :],
                                         self.rf_size)
-            if cleaned_params is not None:
+            if cleaned_params is not None:  # ignore poorly fit units.
                 self.As.append(cleaned_params[self.A_IDX])
                 self.mu_xs.append(cleaned_params[self.MU_X_IDX])
                 self.mu_ys.append(cleaned_params[self.MU_Y_IDX])
@@ -488,7 +494,7 @@ class ParamLoader(ParamCleaner):
                 self.sigma_2s.append(cleaned_params[self.SIGMA_2_IDX])
                 self.orientations.append(cleaned_params[self.THETA_IDX])
                 self.offsets.append(cleaned_params[self.OFFSET_IDX])
-            
+
         # Converts all of them into numpy arrays.
         self.As = np.array(self.As)
         self.mu_xs = np.array(self.mu_xs)
@@ -496,7 +502,7 @@ class ParamLoader(ParamCleaner):
         self.sigma_1s = np.array(self.sigma_1s)
         self.sigma_2s = np.array(self.sigma_2s)
         self.offsets = np.array(self.As)
-        
+
         # Removes NAN entries from orientations.
         self.orientations = np.array(self.orientations)
         self.orientations = self.orientations[np.isfinite(self.orientations)]
@@ -514,4 +520,3 @@ if __name__ == '__main__':
     backprop_sum_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/gaussian_fit/{model_name}/{sum_mode}')
     file_names = [f"{max_or_min}_{layer_name}.{i}.npy" for i in range(num_units)]
     param_loader = ParamLoader(backprop_sum_dir, file_names, rf_size)
-

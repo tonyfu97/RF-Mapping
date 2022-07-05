@@ -75,7 +75,9 @@ def plot_one_grad_map(img_idx, layer_idx, unit_idx, patch_idx, box):
 for conv_i, layer_idx in enumerate(layer_indices):
     layer_name = f"conv{conv_i + 1}"
     index_path = os.path.join(index_dir, f"{layer_name}.npy")
-    max_min_indices = np.load(index_path).astype(int)  # [units * top_n_img * [max_img_idx, max_idx, min_img_idx, min_idx]]
+    max_min_indices = np.load(index_path).astype(int)  
+    # with dimension: [units, top_n_img, [max_img_idx, max_idx, min_img_idx, min_idx]]
+
     num_units = nums_units[conv_i]
     print(f"Making pdf for {layer_name}...")
     

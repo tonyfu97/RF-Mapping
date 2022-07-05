@@ -106,7 +106,7 @@ def stimfr_bar(xn,yn,x0,y0,theta,blen,bwid,laa,fgval,bgval):
     for i in range(ix0,ix1):    # for i in range(0,xn):
         xx = (i-xc) - x0     # relative to bar center
         for j in range (iy0,iy1):    # for j in range (0,yn):
-            yy = j-yc - y0     # relative to bar center
+            yy = (j-yc) - y0     # relative to bar center
             
             x = a*xx + c*yy    # rotate back
             y = b*xx + d*yy
