@@ -21,11 +21,10 @@ from hook import get_rf_sizes, SpatialIndexConverter
 from image import one_sided_zero_pad, preprocess_img_for_plot
 from guided_backprop import GuidedBackprop
 from files import delete_all_npy_files
-
-device = ('mps' if torch.has_mps else 'cpu')
+import constants as c
 
 # Please specify some details here:
-model = models.alexnet(pretrained = True).to(device)
+model = models.alexnet(pretrained = True).to(c.DEVICE)
 model_name = "alexnet"
 sum_modes = ['abs', 'sqr']
 grad_method = GuidedBackprop(model)

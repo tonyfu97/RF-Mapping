@@ -18,12 +18,11 @@ from tqdm import tqdm
 sys.path.append('..')
 from hook import ConvUnitCounter, get_rf_sizes
 from gaussian_fit import ParamLoader
+import constants as c
 
-device = ('mps' if torch.has_mps else 'cpu')
-PYTORCH_ENABLE_MPS_FALLBACK=1
 
 # Please specify some details here:
-model = models.alexnet().to(device)
+model = models.alexnet().to(c.DEVICE)
 model_name = "alexnet"
 sum_modes = ['abs', 'sqr']
 
@@ -82,7 +81,7 @@ for sum_mode in sum_modes:
             for layer_i, layer_param_loader in enumerate(model_param_loaders):
                 rf_size = rf_sizes_1d[layer_i]
                 plt.subplot(1, num_layers, layer_i + 1)
-                plt.scatter(layer_param_loader.mu_xs, layer_param_loader.mu_ys)
+                plt.scatter(layer_param_loader.mu_xs, layer_param_loader.mu_ys, alpha=0.5)
                 plt.xlim([0, rf_size])
                 plt.ylim([0, rf_size])
                 plt.xlabel("mu_x")

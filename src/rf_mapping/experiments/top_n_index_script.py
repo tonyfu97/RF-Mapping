@@ -17,17 +17,15 @@ sys.path.append('..')
 from image import preprocess_img_to_tensor
 from hook import HookFunctionBase, SpatialIndexConverter, ConvUnitCounter
 from files import delete_all_npy_files
-
-device = ('mps' if torch.has_mps else 'cpu')
-PYTORCH_ENABLE_MPS_FALLBACK=1
+import constants as c
 
 # Please specify some details here:
-model = models.vgg16(pretrained=True).to(device)
+model = models.vgg16(pretrained=True).to(c.DEVICE)
 model_name = "vgg16"  
 num_images = 50000
 top_n = 100
 
-# Please double-check the directories:
+# Please double-check the directories:y
 # img_dir = Path(__file__).parent.parent.parent.joinpath('data/imagenet')
 img_dir = "/Users/tonyfu/Desktop/Bair Lab/top_and_bottom_images/images"
 img_names = [f"{i}.npy" for i in range(num_images)]
@@ -92,7 +90,7 @@ class ConvMaxMinInspector(HookFunctionBase):
         """
         if isinstance(image, np.ndarray):
             image = preprocess_img_to_tensor(image)
-        _ = self.model(image.to(device))
+        _ = self.model(image)
         
         # Make copies of the list attributes and set them to empty lists before
         # returning them. Otherwise, they would use up too much memory.

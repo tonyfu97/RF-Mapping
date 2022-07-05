@@ -11,6 +11,7 @@ import torch.nn.functional as F
 
 from hook import SizeInspector
 from image import preprocess_img_to_tensor, preprocess_img_for_plot
+import constants as c
 
 
 class GuidedBackprop():
@@ -139,8 +140,7 @@ class GuidedBackprop():
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    device = ('mps' if torch.has_mps else 'cpu')
-    model = models.alexnet(pretrained = True).to(device)
+    model = models.alexnet(pretrained = True).to(c.DEVICE)
     
     inspector = SizeInspector(model, (227, 227))
     inspector.print_summary()

@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 
 sys.path.append('..')
 from image import clip, preprocess_img_to_tensor, tensor_to_img
+import constants as c
 
 
 class HookFunctionBase:
@@ -125,8 +126,7 @@ class ConvUnitCounter(HookFunctionBase):
         correspond to each other.
         """
         # Forward pass.
-        device = ('mps' if torch.has_mps else 'cpu')
-        dummy_input = torch.zeros((1, 3, 227, 227)).to(device)
+        dummy_input = torch.zeros((1, 3, 227, 227)).to(c.DEVICE)
         self.model(dummy_input)
         
         return self.layer_indicies, self.num_units
@@ -231,16 +231,13 @@ class SizeInspector(HookFunctionBase):
     """
     def __init__(self, model, image_shape):
         super().__init__(model, layer_types=(torch.nn.Module))
-        self.model = model
         self.image_shape = image_shape
         self.layers = []
         self.input_sizes = []
         self.output_sizes = []
         self.register_forward_hook_to_layers(self.model)
         
-        device = ('mps' if torch.has_mps else 'cpu')
-        
-        self.model(torch.zeros((1,3,*image_shape)).to(device))
+        self.model(torch.zeros((1,3,*image_shape)).to(c.DEVICE))
 
     def hook_function(self, module, ten_in, ten_out):
         if (isinstance(module, self.layer_types)):

@@ -18,11 +18,10 @@ sys.path.append('..')
 from hook import SpatialIndexConverter, ConvUnitCounter
 from image import preprocess_img_for_plot, make_box
 from guided_backprop import GuidedBackprop
-
-device = ('mps' if torch.has_mps else 'cpu')
+import constants as c
 
 # Please specify some details here:
-model = models.alexnet(pretrained=True).to(device)
+model = models.alexnet(pretrained=True).to(c.DEVICE)
 model_name = "alexnet"
 top_n = 5
 grad_method = GuidedBackprop(model)

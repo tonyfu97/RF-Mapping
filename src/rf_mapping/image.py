@@ -15,6 +15,8 @@ import torchvision.transforms as T
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
+import constants as c
+
 
 def clip(x, x_min, x_max):
     """Limits x to be x_min <= x <= x_max."""
@@ -53,8 +55,7 @@ def preprocess_img_to_tensor(img, img_size=None):
         resize = T.Resize(img_size)
         img_tensor = resize(img_tensor)
 
-    device = ('mps' if torch.has_mps else 'cpu')
-    return img_tensor.to(device)
+    return img_tensor.to(c.DEVICE)
 
 
 def preprocess_img_for_plot(img, norm=True):
