@@ -102,13 +102,13 @@ class ConvUnitCounter(HookFunctionBase):
     def __init__(self, model):
         super().__init__(model, nn.Module)
         self._layer_counter = 0
-        self.layer_indicies = []
+        self.layer_indices = []
         self.num_units = [] 
         self.register_forward_hook_to_layers(self.model)
 
     def hook_function(self, module, ten_in, ten_out):
         if isinstance(module, nn.Conv2d):
-            self.layer_indicies.append(self._layer_counter)
+            self.layer_indices.append(self._layer_counter)
             self.num_units.append(module.out_channels)
         self._layer_counter += 1
 
@@ -116,51 +116,51 @@ class ConvUnitCounter(HookFunctionBase):
         """
         Returns
         -------
-        layer_indicies : [int, ...]
-            The indicies of nn.Conv2d layers. For torchvision.model.alexnet(),
+        layer_indices : [int, ...]
+            The indices of nn.Conv2d layers. For torchvision.model.alexnet(),
             this will be [0, 3, 6, 8, 10].
         num_units : [int, ...]
             The count of unique kernels of each convoltional layers.
             
-        layer_indicies and num_units have the same length, and their elements
+        layer_indices and num_units have the same length, and their elements
         correspond to each other.
         """
         # Forward pass.
         dummy_input = torch.zeros((1, 3, 227, 227)).to(c.DEVICE)
         self.model(dummy_input)
         
-        return self.layer_indicies, self.num_units
+        return self.layer_indices, self.num_units
     
 
 if __name__ == "__main__":
     model = models.alexnet()
     counter = ConvUnitCounter(model)
-    layer_indicies, num_units = counter.count()
-    print(layer_indicies)
+    layer_indices, num_units = counter.count()
+    print(layer_indices)
     print(num_units)
 
 
 class ConvMaxInspector(HookFunctionBase):
     """
-    A class that get the maximum activations and indicies of all unique
+    A class that get the maximum activations and indices of all unique
     convolutional kernels, one image at a time.
     """
     def __init__(self, model):
         super().__init__(model, nn.Conv2d)
         self.all_max_activations = []
-        self.all_max_indicies = []
+        self.all_max_indices = []
         self.register_forward_hook_to_layers(self.model)
 
     def hook_function(self, module, ten_in, ten_out):
         layer_max_activations = []
-        layer_max_indicies = []
+        layer_max_indices = []
         
         for unit in range(ten_out.shape[1]):
             layer_max_activations.append(ten_out[0,unit,:,:].max().item())
-            layer_max_indicies.append(ten_out[0,unit,:,:].max().item())
+            layer_max_indices.append(ten_out[0,unit,:,:].max().item())
             
         self.all_max_activations.append(layer_max_activations)
-        self.all_max_indicies.append(layer_max_indicies)
+        self.all_max_indices.append(layer_max_indices)
 
     def inspect(self, image):
         """
@@ -182,12 +182,12 @@ class ConvMaxInspector(HookFunctionBase):
         _ = self.model(image)
         
         copy_activations = self.all_max_activations[:]
-        copy_indicies = self.all_max_indicies[:]
+        copy_indices = self.all_max_indices[:]
         
         self.all_max_activations = []
-        self.all_max_indicies = []
+        self.all_max_indices = []
         
-        return copy_activations, copy_indicies
+        return copy_activations, copy_indices
 
 
 def top_bottom_N_image_patches(model, layer_type, image_dir, image_names):
@@ -267,7 +267,7 @@ if __name__ == '__main__':
 class SpatialIndexConverter(SizeInspector):
     """
     A class containing the model- and image-shape-specific conversion functions
-    of the spatial indicies across different layers. Useful for receptive field
+    of the spatial indices across different layers. Useful for receptive field
     mapping and other tasks that involve the mappings of spatial locations
     onto a different layer.
     """
@@ -351,7 +351,7 @@ class SpatialIndexConverter(SizeInspector):
 
     def _process_index(self, index, start_layer_index):
         """
-        Make sure that the index is a tuple of two indicies. Unravel from 1D
+        Make sure that the index is a tuple of two indices. Unravel from 1D
         to 2D indexing if necessary.
 
         Returns
@@ -514,7 +514,7 @@ def _test_backward_conversion():
     the input of a shallower layer. The test can be summarized as follows:
         1. Starting from the first layer, choose a point in its output space.
         2. Call the SpatialIndexConverter to back-project the point back onto
-           the pixel space. The class will return a the indicies of the RF.
+           the pixel space. The class will return a the indices of the RF.
         3. Get an arbitrary image, then create a copy image that is identical
            inside the RF, but are random values outside of the RF.
         4. Present the two images to the model, and test if the responses at
@@ -619,29 +619,29 @@ def get_rf_sizes(model, image_shape, layer_type=nn.Conv2d):
 
     Returns
     -------
-    layer_indicies : [int, ...]
-        The indicies of the layers of the specified layer type.
+    layer_indices : [int, ...]
+        The indices of the layers of the specified layer type.
     rf_size : [(int, int), ...]
         Each tuple contains the height and width of the receptive field that
         corresponds to the layer of the same index in the <layers> list.
     """
     converter = SpatialIndexConverter(model, image_shape)
-    layer_indicies = []
+    layer_indices = []
     rf_sizes = []
     for i, layer in enumerate(converter.layers):
         if isinstance(layer, layer_type):
-            layer_indicies.append(i)
+            layer_indices.append(i)
             # Using the spatial center to avoid boundary effects.
             _, v_size, h_size = converter.output_sizes[i]
             coord = converter.convert((v_size//2, h_size//2), i, 0, is_forward=False)
             rf_size = (coord[2] - coord[0] + 1, coord[3] - coord[1] + 1)
             rf_sizes.append(rf_size)
         
-    return layer_indicies, rf_sizes
+    return layer_indices, rf_sizes
 
 
 if __name__ == '__main__':
     model = models.alexnet()
-    layer_indicies, rf_sizes = get_rf_sizes(model, (227, 227))
-    print(layer_indicies)
+    layer_indices, rf_sizes = get_rf_sizes(model, (227, 227))
+    print(layer_indices)
     print(rf_sizes)

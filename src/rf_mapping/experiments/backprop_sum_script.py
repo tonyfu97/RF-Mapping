@@ -58,7 +58,7 @@ for sum_mode in sum_modes:
 converter = SpatialIndexConverter(model, (227, 227))
 
 # Get info of conv layers.
-layer_indicies, rf_sizes = get_rf_sizes(model, (227, 227), nn.Conv2d)
+layer_indices, rf_sizes = get_rf_sizes(model, (227, 227), nn.Conv2d)
 
 
 def add_patch_to_sum(new_patch, sum, sum_mode):
@@ -108,11 +108,11 @@ def get_grad_patch(img, layer_idx, unit_i, spatial_idx, rf_size):
 
 # Loop through layers...
 for conv_i, rf_size in enumerate(rf_sizes):
-    layer_idx = layer_indicies[conv_i]
+    layer_idx = layer_indices[conv_i]
     layer_name = f"conv{conv_i + 1}"
     index_path = os.path.join(index_dir, f"{layer_name}.npy")
-    max_min_indicies = np.load(index_path).astype(int)
-    num_units, num_images, _ = max_min_indicies.shape
+    max_min_indices = np.load(index_path).astype(int)
+    num_units, num_images, _ = max_min_indices.shape
     print(f"Summing gradient results for {layer_name}...")
         
     for unit_i in tqdm(range(num_units)):
@@ -125,8 +125,8 @@ for conv_i, rf_size in enumerate(rf_sizes):
         
         for img_i in range(top_n):
             try:
-                # Fatch indicies
-                max_img_idx, max_idx, min_img_idx, min_idx = max_min_indicies[unit_i, img_i, :]
+                # Fatch indices
+                max_img_idx, max_idx, min_img_idx, min_idx = max_min_indices[unit_i, img_i, :]
             except:
                 print(f"top_n of {top_n} exceeds the number of images in the ranking data.")
                 break

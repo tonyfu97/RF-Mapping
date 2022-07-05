@@ -12,7 +12,7 @@ from torchvision import models
 def layer_indices(model, layer_type=nn.Conv2d):
     """
     Recursively find all layers of the type <layer_type> in a given model, then
-    returns their indicies of the model. All Pytorch neural networks are tree
+    returns their indices of the model. All Pytorch neural networks are tree
     data structures: the "model" is the root node, the container layers such as
     Sequential layers are the intermediate nodes, and layers like Conv2d, ReLU,
     MaxPool2d, and Linear are leave nodes.
@@ -26,9 +26,9 @@ def layer_indices(model, layer_type=nn.Conv2d):
 
     Returns
     -------
-    indicies: list of lists
-        Each sublist is a sequence of child indicies from the "model" root node
-        to a target layer. For example, if the indicies returned for layer_type
+    indices: list of lists
+        Each sublist is a sequence of child indices from the "model" root node
+        to a target layer. For example, if the indices returned for layer_type
         nn.Conv2d is [0, [0, 3], 1, []], then the first nn.Conv2d layer can be
         accessed with the code:
             list(list(model.children())[0].children())[0]
@@ -38,36 +38,36 @@ def layer_indices(model, layer_type=nn.Conv2d):
         model has been checked, and there is no nn.Conv2d in it. There are only
         two nn.Conv2d layers in this example model.
     """
-    indicies = _layer_indices(model, layer_type, [])
+    indices = _layer_indices(model, layer_type, [])
 
     # Remove trailing comma.
-    indicies[-1] = indicies[-1].split(',')[0]
+    indices[-1] = indices[-1].split(',')[0]
 
-    return indicies
+    return indices
 
 
-def _layer_indices(layer, layer_type, indicies):
+def _layer_indices(layer, layer_type, indices):
     """
-    Private function used for recursion in layer_indicies().
+    Private function used for recursion in layer_indices().
     """
     # Return the index if layer is a leave node and match the target type.
     if (len(list(layer.children())) == 0):
         if (not isinstance(layer, layer_type)):
-            indicies.pop(-1)
-        return indicies
+            indices.pop(-1)
+        return indices
 
     # Recurse otherwise.
     else:
-        indicies.append("[")
+        indices.append("[")
         for i, sublayer in enumerate(layer.children()):
-            indicies.append(f"{i}, ")
-            indicies = _layer_indices(sublayer, layer_type, indicies)
+            indices.append(f"{i}, ")
+            indices = _layer_indices(sublayer, layer_type, indices)
 
         # Remove trailing comma.
-        indicies[-1] = indicies[-1].split(',')[0]
+        indices[-1] = indices[-1].split(',')[0]
 
-        indicies.append("], ")
-    return indicies
+        indices.append("], ")
+    return indices
 
 
 if __name__ == '__main__':

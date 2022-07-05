@@ -955,7 +955,7 @@ def shift_coord(xn, yn, x_raw, y_raw, target_origin="top left"):
         The raw coordinate along vertical image axis
     target_origin : str, default="top left"
         Where you would like the origin of the transformed coordinate system to 
-        be? Options are: "top left" (if there are not any negative indicies. 
+        be? Options are: "top left" (if there are not any negative indices. 
         True for most 2d arrays.) and "center". Raise NotImplemented Error
         for invalid input.
     

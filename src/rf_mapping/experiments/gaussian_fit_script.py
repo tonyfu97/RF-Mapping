@@ -43,13 +43,13 @@ if __name__ == "__main__":
 
 # Get info of conv layers.
 unit_counter = ConvUnitCounter(model)
-layer_indicies, nums_units = unit_counter.count()
+layer_indices, nums_units = unit_counter.count()
 
 for sum_mode in sum_modes:
     backprop_sum_dir_with_mode = os.path.join(backprop_sum_dir, sum_mode)
     result_dir_with_mode = os.path.join(result_dir, sum_mode)
     
-    for conv_i in range(len(layer_indicies)):
+    for conv_i in range(len(layer_indices)):
         layer_name = f"conv{conv_i + 1}"
         num_units = nums_units[conv_i]
         

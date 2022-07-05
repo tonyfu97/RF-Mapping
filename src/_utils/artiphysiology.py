@@ -912,7 +912,7 @@ def plot_strength_of_selectivity(matrics, layer_name, test_name, N=25, figsize=(
     # Get indices of the N units that have the lowest SOI and CP
     top_side_of_ownership_idx = sorted(range(len(side_of_ownership)), key = lambda sub: side_of_ownership[sub])[:N+1]
     top_contrast_polarity_idx = sorted(range(len(contrast_polarity)), key = lambda sub: contrast_polarity[sub])[:N+1]
-    # Remove duplicate indicies
+    # Remove duplicate indices
     top_reliability_idx = top_side_of_ownership_idx + list(set(top_contrast_polarity_idx) - set(top_side_of_ownership_idx))
     # Plot (overlay) the scatter plots of the units of top reliability
     top_units = []
@@ -1053,7 +1053,7 @@ def plot_dependabilities(dependabilities, layer_name, N=25, figsize=(24,8)):
         # Get indices of the N units that have the lowest SOI_std and CPI_std
         top_SOI_std_idx = sorted(range(len(SOI_std)), key = lambda sub: SOI_std[sub])[:N+1]
         top_CPI_std_idx = sorted(range(len(CPI_std)), key = lambda sub: CPI_std[sub])[:N+1]
-        # Remove duplicate indicies
+        # Remove duplicate indices
         top_std_idx = top_SOI_std_idx + list(set(top_CPI_std_idx) - set(top_SOI_std_idx))
         # Plot (overlay) the scatter plots of the units of top reliability
         top_units = []
@@ -1084,7 +1084,7 @@ def plot_dependabilities(dependabilities, layer_name, N=25, figsize=(24,8)):
         # Get indices of the N units that have the HIGHEST side_dependability and contrast_dependability
         top_side_dependability_idx = sorted(range(len(side_dependability)), key = lambda sub: side_dependability[sub], reverse=True)[:N+1]
         top_contrast_dependability_idx = sorted(range(len(contrast_dependability)), key = lambda sub: contrast_dependability[sub], reverse=True)[:N+1]
-        # Remove duplicate indicies
+        # Remove duplicate indices
         top_std_idx = top_side_dependability_idx + list(set(top_contrast_dependability_idx) - set(top_side_dependability_idx))
         # Plot (overlay) the scatter plots of the units of top reliability
         top_units = []
@@ -1133,7 +1133,7 @@ if __name__ == "__main__":
     dependabilities = get_dependability(pm)
     plot_dependabilities(dependabilities, layer_name, N=25, figsize=(24,8))
 
-def visualize_activation(img_tensor, pretrained_model, layer_idx, unit_indicies):
+def visualize_activation(img_tensor, pretrained_model, layer_idx, unit_indices):
     """
     Plots the activations of the species units.
 
@@ -1145,8 +1145,8 @@ def visualize_activation(img_tensor, pretrained_model, layer_idx, unit_indicies)
         The pretrained PyTorch model.
     layer_idx: int
         The layer index.
-    unit_indicies: list of int
-        The indicies of the units.
+    unit_indices: list of int
+        The indices of the units.
         
     Example
     -------
@@ -1169,10 +1169,10 @@ def visualize_activation(img_tensor, pretrained_model, layer_idx, unit_indicies)
     activation = features.forward(img_tensor).detach()
     
     activations_dict = {}
-    num_units = len(unit_indicies)
+    num_units = len(unit_indices)
     
     plt.figure(figsize=(12,14))
-    for i, unit in enumerate(unit_indicies):
+    for i, unit in enumerate(unit_indices):
         plt.subplot(math.ceil(num_units/8), 8, i+1)
         act = activation[:,unit,:,:]
         plt.imshow(np.squeeze(act.numpy()), cmap='gray', vmax=3, vmin=-3)

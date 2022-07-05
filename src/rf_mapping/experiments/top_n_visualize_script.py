@@ -47,7 +47,7 @@ converter = SpatialIndexConverter(model, (227, 227))
 conv_counter = ConvUnitCounter(model)
 
 # Get info of conv layers.
-layer_indicies, nums_units = conv_counter.count()
+layer_indices, nums_units = conv_counter.count()
 
 
 def plot_one_img(img_idx, box):
@@ -72,10 +72,10 @@ def plot_one_grad_map(img_idx, layer_idx, unit_idx, patch_idx, box):
     ax.add_patch(make_box(box))
 
 
-for conv_i, layer_idx in enumerate(layer_indicies):
+for conv_i, layer_idx in enumerate(layer_indices):
     layer_name = f"conv{conv_i + 1}"
     index_path = os.path.join(index_dir, f"{layer_name}.npy")
-    max_min_indicies = np.load(index_path).astype(int)  # [units * top_n_img * [max_img_idx, max_idx, min_img_idx, min_idx]]
+    max_min_indices = np.load(index_path).astype(int)  # [units * top_n_img * [max_img_idx, max_idx, min_img_idx, min_idx]]
     num_units = nums_units[conv_i]
     print(f"Making pdf for {layer_name}...")
     
@@ -83,18 +83,18 @@ for conv_i, layer_idx in enumerate(layer_indicies):
     with PdfPages(pdf_path) as pdf:
         
         for unit_i in tqdm(range(num_units)):
-            # Fatch indicies
-            max_n_img_indicies = max_min_indicies[unit_i, :top_n, 0]
-            max_n_patch_indicies = max_min_indicies[unit_i, :top_n, 1]
-            min_n_img_indicies = max_min_indicies[unit_i, :top_n, 2]
-            min_n_patch_indicies = max_min_indicies[unit_i, :top_n, 3]
+            # Fatch indices
+            max_n_img_indices = max_min_indices[unit_i, :top_n, 0]
+            max_n_patch_indices = max_min_indices[unit_i, :top_n, 1]
+            min_n_img_indices = max_min_indices[unit_i, :top_n, 2]
+            min_n_patch_indices = max_min_indices[unit_i, :top_n, 3]
 
             plt.figure(figsize=(20, 15))
             plt.suptitle(f"{layer_name} unit no.{unit_i}", fontsize=20)
 
             # Top N images and gradient patches:
-            for i, (max_img_idx, max_patch_idx) in enumerate(zip(max_n_img_indicies,
-                                                            max_n_patch_indicies)):
+            for i, (max_img_idx, max_patch_idx) in enumerate(zip(max_n_img_indices,
+                                                            max_n_patch_indices)):
                 box = converter.convert(max_patch_idx, layer_idx, 0, is_forward=False)
                 plt.subplot(4, top_n, i+1)
                 plot_one_img(max_img_idx, box)
@@ -105,8 +105,8 @@ for conv_i, layer_idx in enumerate(layer_indicies):
                 plt.title(f"top {i+1} gradient")
 
             # Bottom N images and gradient patches:
-            for i, (min_img_idx, min_patch_idx) in enumerate(zip(min_n_img_indicies,
-                                                            min_n_patch_indicies)):
+            for i, (min_img_idx, min_patch_idx) in enumerate(zip(min_n_img_indices,
+                                                            min_n_patch_indices)):
                 box = converter.convert(min_patch_idx, layer_idx, 0, is_forward=False)
                 plt.subplot(4, top_n, i+2*top_n+1)
                 plot_one_img(min_img_idx, box)

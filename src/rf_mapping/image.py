@@ -74,9 +74,9 @@ def preprocess_img_for_plot(img, norm=True):
     return img
 
 
-def make_box(box_indicies):
+def make_box(box_indices):
     """
-    Given box indicies in (vx_min, hx_min, vx_max, hx_max) format, returns a
+    Given box indices in (vx_min, hx_min, vx_max, hx_max) format, returns a
     matplotlib.patches.Rectangle object. Example usage:
 
         plt.imshow(img)
@@ -87,7 +87,7 @@ def make_box(box_indicies):
     This script plots a red rectangle box with height 100 and width 50 on the
     top-left corner of the img.
     """
-    vx_min, hx_min, vx_max, hx_max = box_indicies
+    vx_min, hx_min, vx_max, hx_max = box_indices
     top_left = (hx_min, vx_min)  # (x, y) format.
     height = vx_max - vx_min + 1
     width = hx_max - hx_min + 1

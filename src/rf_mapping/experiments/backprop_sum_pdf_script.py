@@ -32,8 +32,8 @@ pdf_dir = backprop_sum_dir
 
 # Get info of conv layers.
 conv_counter = ConvUnitCounter(model)
-layer_indicies, nums_units = conv_counter.count()
-num_layers = len(layer_indicies)
+layer_indices, nums_units = conv_counter.count()
+num_layers = len(layer_indices)
 
 for sum_mode in sum_modes:
     backprop_sum_dir_with_modes = os.path.join(backprop_sum_dir, sum_mode)

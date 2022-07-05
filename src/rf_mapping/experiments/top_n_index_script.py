@@ -45,33 +45,33 @@ if __name__ == "__main__":
 
 class ConvMaxMinInspector(HookFunctionBase):
     """
-    A class that get the maximum activations and indicies of all unique
+    A class that get the maximum activations and indices of all unique
     convolutional kernels, one image at a time.
     """
     def __init__(self, model):
         super().__init__(model, nn.Conv2d)
         self.img_max_activations = []
-        self.img_max_indicies = []
+        self.img_max_indices = []
         self.img_min_activations = []
-        self.img_min_indicies = []
+        self.img_min_indices = []
         self.register_forward_hook_to_layers(self.model)
 
     def hook_function(self, module, ten_in, ten_out):
         layer_max_activations = np.zeros(ten_out.shape[1])
-        layer_max_indicies = np.zeros(ten_out.shape[1])
+        layer_max_indices = np.zeros(ten_out.shape[1])
         layer_min_activations = np.zeros(ten_out.shape[1])
-        layer_min_indicies = np.zeros(ten_out.shape[1])
+        layer_min_indices = np.zeros(ten_out.shape[1])
         
         for unit in range(ten_out.shape[1]):
             layer_max_activations[unit] = ten_out[0,unit,:,:].max().item()
-            layer_max_indicies[unit] = ten_out[0,unit,:,:].argmax().item()
+            layer_max_indices[unit] = ten_out[0,unit,:,:].argmax().item()
             layer_min_activations[unit] = ten_out[0,unit,:,:].min().item()
-            layer_min_indicies[unit] = ten_out[0,unit,:,:].argmin().item()
+            layer_min_indices[unit] = ten_out[0,unit,:,:].argmin().item()
             
         self.img_max_activations.append(layer_max_activations)
-        self.img_max_indicies.append(layer_max_indicies)
+        self.img_max_indices.append(layer_max_indices)
         self.img_min_activations.append(layer_min_activations)
-        self.img_min_indicies.append(layer_min_indicies)
+        self.img_min_indices.append(layer_min_indices)
 
     def inspect(self, image):
         """
@@ -95,16 +95,16 @@ class ConvMaxMinInspector(HookFunctionBase):
         # Make copies of the list attributes and set them to empty lists before
         # returning them. Otherwise, they would use up too much memory.
         copy_max_activations = self.img_max_activations[:]
-        copy_max_indicies = self.img_max_indicies[:]
+        copy_max_indices = self.img_max_indices[:]
         copy_min_activations = self.img_min_activations[:]
-        copy_min_indicies = self.img_min_indicies[:]
+        copy_min_indices = self.img_min_indices[:]
         
         self.img_max_activations = []
-        self.img_max_indicies = []
+        self.img_max_indices = []
         self.img_min_activations = []
-        self.img_min_indicies = []
+        self.img_min_indices = []
         
-        return copy_max_activations, copy_min_activations, copy_max_indicies, copy_min_indicies
+        return copy_max_activations, copy_min_activations, copy_max_indices, copy_min_indices
 
 
 # Initiate helper objects.
@@ -113,11 +113,11 @@ inspector = ConvMaxMinInspector(model)
 
 # Get info of conv layers.
 unit_counter = ConvUnitCounter(model)
-layer_indicies, nums_units = unit_counter.count()
+layer_indices, nums_units = unit_counter.count()
 
 # Initialize arrays:
 all_activations = []
-num_layers = len(layer_indicies)
+num_layers = len(layer_indices)
 for num_units in nums_units:
     all_activations.append(np.zeros((num_images, num_units, 6), dtype=int))
 
@@ -126,23 +126,23 @@ print("Recording responses...")
 for img_i, img_name in enumerate(tqdm(img_names)):
     img_path = os.path.join(img_dir, img_name)
     img = np.load(img_path)
-    img_max_activations, img_min_activations, img_max_indicies, img_min_indicies =\
+    img_max_activations, img_min_activations, img_max_indices, img_min_indices =\
                                                 inspector.inspect(img)
     
     for layer_i in range(num_layers):
         num_units = len(img_max_activations[layer_i])
         
         layer_max_activations = img_max_activations[layer_i]
-        layer_max_indicies = img_max_indicies[layer_i]
+        layer_max_indices = img_max_indices[layer_i]
         layer_min_activations = img_min_activations[layer_i]
-        layer_min_indicies = img_min_indicies[layer_i]
+        layer_min_indices = img_min_indices[layer_i]
         
         all_activations[layer_i][img_i, :, 0] = img_i
         all_activations[layer_i][img_i, :, 1] = np.arange(num_units)
         all_activations[layer_i][img_i, :, 2] = layer_max_activations * 100000
-        all_activations[layer_i][img_i, :, 3] = layer_max_indicies
+        all_activations[layer_i][img_i, :, 3] = layer_max_indices
         all_activations[layer_i][img_i, :, 4] = layer_min_activations * 100000
-        all_activations[layer_i][img_i, :, 5] = layer_min_indicies
+        all_activations[layer_i][img_i, :, 5] = layer_min_indices
 
 
 print("Sorting responses...")
