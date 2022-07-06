@@ -1,3 +1,11 @@
+"""
+Functions for receptive field mapping paradigm 4a.
+
+Note: all code assumes that the y-axis points downward.
+
+Modified from Dr. Wyeth Bair's d06_mrf.py
+Tony Fu, July 4th, 2022
+"""
 import math
 
 import numpy as np
@@ -8,100 +16,113 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 
+#######################################.#######################################
+#                                                                             #
+#                                  DRAW_BAR                                   #
+#                                                                             #
+###############################################################################
+@njit
 def clip(val, vmin, vmax):
-    """Limit value to be vmin <= val <= vmax."""
+    """Limits value to be vmin <= val <= vmax."""
     val = min(val, vmax)
     val = max(val, vmin)
     return val
 
-#######################################.#######################################
-#                                                                             #
-#                                 STIMFR_BAR                                  #
-#                                                                             #
-###############################################################################
-@njit  # sped up by 5x
-def stimfr_bar(xn,yn,x0,y0,theta,blen,bwid,laa,fgval,bgval):
-    #
-    #  Return a numpy array that has a bar on a background:
-    #
-    #  xn    - (int) horizontal width of returned array
-    #  yn    - (int) vertical height of returned array
-    #  x0    - (float) horizontal offset of center (pix)
-    #  y0    - (float) vertical offset of center (pix)
-    #  theta - (float) orientation (pix)
-    #  blen  - (float) length of bar (pix)
-    #  bwid  - (float) width of bar (pix)
-    #  laa   - (float) length scale for anti-aliasing (pix)
-    #  fgval - (float) bar luminance [0..1]
-    #  bgval - (float) background luminance [0..1]
-    #
+
+@njit
+def rotate(dx, dy, theta_deg):
+    """
+    Applies the rotation matrix:
+    [dx, dy] * [[a, b], [c, d]]  = [dx_r, dy_r]
+    
+    To undo the rotation, apply again with negative theta_deg.
+    """
+    thetar = theta_deg * math.pi / 180.0
+    a =  math.cos(thetar); b = math.sin(thetar)
+    c = math.sin(thetar); d = -math.cos(thetar) # because y axis points downward.
+    dx_r = a*dx + c*dy
+    dy_r = b*dx + d*dy
+    return dx_r, dy_r
+
+
+@njit  # sped up by 182x
+def draw_bar(xn, yn, x0, y0, theta, blen, bwid, laa, fgval, bgval):
+    """
+    Creates a bar stimulus.
+
+    Parameters
+    ----------
+    xn : int
+        The horizontal width of returned array.
+    yn : int
+        The vertical height of returned array.
+    x0 : float
+        The horizontal coordinate (origin is top left) of center (pix).
+    y0 : float
+        The vertical coordinate (origin is top left) of center (pix).
+    theta : float
+        The orientation of the bar (deg).
+    blen : float
+        The length of bar (pix).
+    bwid : float
+        The width of bar (pix).
+    laa : float
+        The length scale for anti-aliasing (pix).
+    fgval : float
+        The bar luminance [-1..1].
+    bgval : float
+        The background luminance [-1..1].
+
+    Returns
+    -------
+    s : numpy array of size [yn, xn]
+        The bar stimulus with a background.
+    """
     s = np.full((yn,xn), bgval, dtype='float32')  # Fill w/ BG value
     dval = fgval - bgval  # Luminance difference
-    thetar = theta * math.pi/180.0
-
-    # while theta >= 180.0:  # Make sure theta is in [0,180]  (DOES THIS MATTER?)
-    #     theta -= 180.0
-    # while theta < 0.0:
-    #     theta += 180.0
-
-    # Forward rot. matrix
-    rot_a =  math.cos(thetar); rot_b = math.sin(thetar)
-    rot_c = -math.sin(thetar); rot_d = math.cos(thetar)
-
-    # Reverse rotation matrix
-    a =  math.cos(-thetar); b = math.sin(-thetar)
-    c = -math.sin(-thetar); d = math.cos(-thetar)
   
     # Maximum extent of unrotated bar corners in zero-centered frame:
-    dx = 0.5*bwid
-    dy = 0.5*blen
+    dx = bwid/2
+    dy = blen/2
 
     # Rotate top-left corner from (-dx, dy) to (dx1, dy1)
-    dx1 = -rot_a*dx + rot_c*dy
-    dy1 = -rot_b*dx + rot_d*dy
+    dx1, dy1 = rotate(-dx, dy, theta)
     
     # Rotate top-right corner from (dx, dy) to (dx2, dy2)
-    dx2 =  rot_a*dx + rot_c*dy
-    dy2 =  rot_b*dx + rot_d*dy
-
-    # Center of stimulus field
-    xc = (xn-1.0)/2.0
-    yc = (yn-1.0)/2.0
+    dx2, dy2 = rotate(dx, dy, theta)
 
     # Maximum extent of rotated bar corners in zero-centered frame:
-    maxx = laa + max(abs(dx1),abs(dx2))
-    maxy = laa + max(abs(dy1),abs(dy2))
+    maxx = laa + max(abs(dx1), abs(dx2))
+    maxy = laa + max(abs(dy1), abs(dy2))
 
-    # 
-    ix0 = int(round( xc + x0 - maxx ))     # "xc + x0" is bar x-center in image
-    ix1 = int(round( xc + x0 + maxx )) + 1 # Add 1 because of stupid python range
-    iy0 = int(round( yc + y0 - maxy ))     # "yc + y0" is bar y-center in image
-    iy1 = int(round( yc + y0 + maxy )) + 1 # Add 1 because of stupid python range
+    # Define the 4 corners a box that contains the rotated bar.
+    bar_left_i   = round(x0 - maxx)
+    bar_right_i  = round(x0 + maxx) + 1
+    bar_top_i    = round(y0 - maxy)
+    bar_bottom_i = round(y0 + maxy) + 1
 
-    ix0 = clip(ix0, 0, xn)
-    ix1 = clip(ix1, 0, xn)
-    iy0 = clip(iy0, 0, yn)
-    iy1 = clip(iy1, 0, yn)
-  
-    for i in range(ix0,ix1):    # for i in range(0,xn):
-        xx = (i-xc) - x0     # relative to bar center
-        for j in range (iy0,iy1):    # for j in range (0,yn):
-            yy = (j-yc) - y0     # relative to bar center
-            
-            x = a*xx + c*yy    # rotate back
-            y = b*xx + d*yy
-            
+    bar_left_i   = clip(bar_left_i  , 0, xn)
+    bar_right_i  = clip(bar_right_i , 0, xn)
+    bar_top_i    = clip(bar_top_i   , 0, yn)
+    bar_bottom_i = clip(bar_bottom_i, 0, yn)
+
+    for i in range(bar_left_i, bar_right_i):    # for i in range(0,xn):
+        xx = i - x0  # relative to bar center
+        for j in range (bar_top_i, bar_bottom_i):    # for j in range (0,yn):
+            yy = j - y0  # relative to bar center
+            x, y = rotate(xx, yy, -theta)  # rotate back
+
             # Compute distance from bar edge, 'db'
             if x > 0.0:
                 dbx = bwid/2 - x   # +/- indicates inside/outside
             else:
                 dbx = x + bwid/2
-            
+
             if y > 0.0:
                 dby = blen/2 - y    # +/- indicates inside/outside
             else:
                 dby = y + blen/2
-            
+
             if dbx < 0.0:      # x outside
                 if dby < 0.0:
                     db = -math.sqrt(dbx*dbx + dby*dby)  # Both outside
@@ -115,12 +136,12 @@ def stimfr_bar(xn,yn,x0,y0,theta,blen,bwid,laa,fgval,bgval):
                         db = dby
                     else:
                         db = dbx
-            
+
             if laa > 0.0:
                 if db > laa:
-                    f = 1.0     # This point is far inside the bar
+                    f = 1.0     # This point is inside the bar
                 elif db < -laa:
-                    f = 0.0     # This point is far outside the bar
+                    f = 0.0     # This point is outside the bar
                 else:         # Use sinusoidal sigmoid
                     f = 0.5 + 0.5*math.sin(db/laa * 0.25*math.pi)
             else:
@@ -128,12 +149,55 @@ def stimfr_bar(xn,yn,x0,y0,theta,blen,bwid,laa,fgval,bgval):
                     f = 1.0   # inside
                 else:
                     f = 0.0   # outside
-            
-            s[yn-1-j,i] += f * dval  #  add a fraction 'f' of the 'dval'
-            #if (f < 0.01):
-            #  s[yn-1-j,i] += 0.5   ### FOR TESTING THE mininmal box coords
+
+            s[j, i] += f * dval  #  add a fraction 'f' of the 'dval'
 
     return s
+
+
+def _test_draw_bar():
+    xn = 200
+    yn = 300
+    # rotate test
+    for theta in np.linspace(0, 180, 10):
+        bar = draw_bar(xn, yn, xn//2, yn//2, theta, 100, 50, 1, 1, -1)
+        plt.imshow(bar, cmap='gray')
+        plt.title(f"{theta}")
+        plt.show()
+
+    # move from left to right
+    for x0 in np.linspace(0, yn, 10):
+        bar = draw_bar(xn, yn, x0, yn//2, 45, 80, 30, 2, 1, 0)
+        plt.imshow(bar, cmap='gray')
+        plt.title(f"{x0:.2f}")
+        plt.show()
+
+
+if __name__ == "__main__":
+    _test_draw_bar()
+
+
+def rfmp4a(max_rf):
+    """
+    The bar lengths are 3/32, 3/16, 3/8 and 3/4 times M.
+    The grid spacing is 1/2 of the bar length.
+    Each of the four bar lengths is repeated at 3 aspect ratios, such that bar
+    width/length = 1/2, 1/5 and 1/10.
+    At each grid point, bar orientation is varied at 22.5 deg increments.
+    Each bar is shown as white on black and also as black on white.
+    The anti-aliasing parameter is set to 0.5 pix
+    There are 33,984 bar stimuli in total.
+    """
+    blen = np.array([48/64 * max_rf,     #  Array of bar lengths
+                    24/64 * max_rf,
+                    12/64 * max_rf,
+                    6/64 * max_rf,
+                    6/64 * max_rf,
+                    6/64 * max_rf,
+                    6/64 * max_rf])
+    dx = blen / 2.0                     #  Array of grid spacing
+
+
 
 
 #######################################.#######################################
@@ -143,12 +207,10 @@ def stimfr_bar(xn,yn,x0,y0,theta,blen,bwid,laa,fgval,bgval):
 ###############################################################################
 @njit  # Sped up by 115x
 def stimfr_bar_thresh_list(xn,yn,x0,y0,theta,blen,bwid,laa,thr):
-    #
-    #  Return a list of coordinates that are above threshold for this
-    #    stimulus.
-    #
-    #  *** CODE MUST MATCH EXACTLY TO THAT OF:  'stimfr_bar'
-    #
+    """
+    Return a list of coordinates that are above threshold for this stimulus.
+    See stimfr_bar for details.
+    """
 
     lo2 = blen/2.0
     wo2 = bwid/2.0
