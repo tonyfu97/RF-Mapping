@@ -94,6 +94,13 @@ class LayerOutputInspector(HookFunctionBase):
         return self.layer_outputs
 
 
+def get_conv_output_shapes(model, image_shape):
+    inspector = LayerOutputInspector(model, nn.Conv2d)
+    dummy_img = np.zeros((3, image_shape[0], image_shape[1]))
+    layer_outputs = inspector.inspect(dummy_img)
+    return [layer_output.shape[1:] for layer_output in layer_outputs]
+
+
 class ConvUnitCounter(HookFunctionBase):
     """
     A class that counts the number of unique kernels of each convolutional

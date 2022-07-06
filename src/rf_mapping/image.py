@@ -9,6 +9,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+from pyparsing import line
 import torch
 from pathlib import Path
 import torchvision.transforms as T
@@ -74,7 +75,7 @@ def preprocess_img_for_plot(img, norm=True):
     return img
 
 
-def make_box(box_indices):
+def make_box(box_indices, linewidth=1):
     """
     Given box indices in (vx_min, hx_min, vx_max, hx_max) format, returns a
     matplotlib.patches.Rectangle object. Example usage:
@@ -91,7 +92,7 @@ def make_box(box_indices):
     top_left = (hx_min, vx_min)  # (x, y) format.
     height = vx_max - vx_min + 1
     width = hx_max - hx_min + 1
-    rect = patches.Rectangle(top_left, width, height, linewidth=1,
+    rect = patches.Rectangle(top_left, width, height, linewidth=linewidth,
                              edgecolor='r', facecolor='none')
     return rect
 
