@@ -6,7 +6,10 @@ Note: all code assumes that the y-axis points downward.
 Modified from Dr. Wyeth Bair's d06_mrf.py
 Tony Fu, July 4th, 2022
 """
+from curses.ascii import SP
+import sys
 import math
+import copy
 
 import numpy as np
 from numba import njit
@@ -14,6 +17,9 @@ import torch
 from torchvision import models
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+
+sys.path.append('..')
+from hook import SpatialIndexConverter, get_rf_sizes
 
 
 #######################################.#######################################
@@ -35,11 +41,13 @@ def rotate(dx, dy, theta_deg):
     Applies the rotation matrix:
     [dx, dy] * [[a, b], [c, d]]  = [dx_r, dy_r]
     
-    To undo the rotation, apply again with negative theta_deg.
+    To undo rotation, apply again with negative theta_deg.
     """
     thetar = theta_deg * math.pi / 180.0
-    a =  math.cos(thetar); b = math.sin(thetar)
-    c = math.sin(thetar); d = -math.cos(thetar) # because y axis points downward.
+    a = math.cos(thetar); b = math.sin(thetar)
+    c = math.sin(thetar); d = -math.cos(thetar)
+    # Usually, the negative sign is given to c instead of d, but y axis points
+    # downward.
     dx_r = a*dx + c*dy
     dy_r = b*dx + d*dy
     return dx_r, dy_r
@@ -67,11 +75,11 @@ def draw_bar(xn, yn, x0, y0, theta, blen, bwid, laa, fgval, bgval):
     bwid : float
         The width of bar (pix).
     laa : float
-        The length scale for anti-aliasing (pix).
+        The thickness of anti-aliasing smoothing (pix).
     fgval : float
-        The bar luminance [-1..1].
+        The bar luminance. Preferably [-1..1].
     bgval : float
-        The background luminance [-1..1].
+        The background luminance. Preferably [-1..1].
 
     Returns
     -------
@@ -106,32 +114,32 @@ def draw_bar(xn, yn, x0, y0, theta, blen, bwid, laa, fgval, bgval):
     bar_top_i    = clip(bar_top_i   , 0, yn)
     bar_bottom_i = clip(bar_bottom_i, 0, yn)
 
-    for i in range(bar_left_i, bar_right_i):    # for i in range(0,xn):
+    for i in range(bar_left_i, bar_right_i):  # for i in range(0,xn):
         xx = i - x0  # relative to bar center
-        for j in range (bar_top_i, bar_bottom_i):    # for j in range (0,yn):
+        for j in range (bar_top_i, bar_bottom_i):  # for j in range (0,yn):
             yy = j - y0  # relative to bar center
             x, y = rotate(xx, yy, -theta)  # rotate back
 
             # Compute distance from bar edge, 'db'
             if x > 0.0:
-                dbx = bwid/2 - x   # +/- indicates inside/outside
+                dbx = bwid/2 - x  # +/- indicates inside/outside
             else:
                 dbx = x + bwid/2
 
             if y > 0.0:
-                dby = blen/2 - y    # +/- indicates inside/outside
+                dby = blen/2 - y  # +/- indicates inside/outside
             else:
                 dby = y + blen/2
 
-            if dbx < 0.0:      # x outside
+            if dbx < 0.0:  # x outside
                 if dby < 0.0:
                     db = -math.sqrt(dbx*dbx + dby*dby)  # Both outside
                 else:
                     db = dbx
-            else:              # x inside
-                if dby < 0.0:    #   y outside
+            else:  # x inside
+                if dby < 0.0:  # y outside
                     db = dby
-                else:            #   Both inside - take the smallest distance
+                else:  # Both inside - take the smallest distance
                     if dby < dbx:
                         db = dby
                     else:
@@ -139,18 +147,18 @@ def draw_bar(xn, yn, x0, y0, theta, blen, bwid, laa, fgval, bgval):
 
             if laa > 0.0:
                 if db > laa:
-                    f = 1.0     # This point is inside the bar
+                    f = 1.0  # This point is inside the bar
                 elif db < -laa:
-                    f = 0.0     # This point is outside the bar
-                else:         # Use sinusoidal sigmoid
+                    f = 0.0  # This point is outside the bar
+                else:  # Use sinusoidal sigmoid
                     f = 0.5 + 0.5*math.sin(db/laa * 0.25*math.pi)
             else:
                 if db >= 0.0:
-                    f = 1.0   # inside
+                    f = 1.0  # inside
                 else:
-                    f = 0.0   # outside
+                    f = 0.0  # outside
 
-            s[j, i] += f * dval  #  add a fraction 'f' of the 'dval'
+            s[j, i] += f * dval  # add a fraction 'f' of the 'dval'
 
     return s
 
@@ -177,6 +185,84 @@ if __name__ == "__main__":
     _test_draw_bar()
 
 
+class RfGrid:
+    def __init__(self, model, image_shape):
+        self.model = copy.deepcopy(model)
+        self.image_shape = image_shape
+        self.converter = SpatialIndexConverter(model, image_shape)
+    
+    def _divide_from_middle(self, min, max, increment):
+        """
+        For example, if given min = 15, max = 24, increment = 4:
+
+          -15---16---17---18---19---20---21---22---23---24-
+
+        Divides it into:
+
+              |                   |                   |
+          -15-|-16---17---18---19-|-20---21---22---23-|-24-
+              |                   |                   |
+        
+        Then rounds the numbers to the nearest intergers:
+
+                |                   |                   |
+          -15---16---17---18---19---20---21---22---23---24-
+                |                   |                   |
+        
+        Returns [16, 20, 24] in this case.
+        """
+        middle = (min + max)/2
+        indices = [middle]
+        
+        # Find indices that are smaller than the middle.
+        while (indices[-1] - increment >= min):
+            indices.append(indices[-1] - increment)
+        indices = indices[::-1]
+
+        # Find indices that are larger than the middle.
+        while (indices[-1] + increment <= max):
+            indices.append(indices[-1] + increment)
+
+        return [round(i) for i in indices]
+
+    def get_grid_coords(self, layer_idx, spatial_index, grid_spacing):
+        """
+        Generates a list of coordinates that equally divide the receptive
+        field of a unit up to some rounding. The grid is centered at the center
+        of the receptive field.
+
+        Parameters
+        ----------
+        layer_idx : int
+            The index of the layer. See 'hook.py' module for details.
+        spatial_index : int or (int, int)
+            The spatial position of the unit of interest. Either in (y, x)
+            format or a flatten index.
+        grid_spacing : float
+            The spacing between the grid lines.
+
+        Returns
+        -------
+        grid_coords : [(int, int), ...]
+            The coordinates of the intersections in [(x0, y0), (x1, y1), ...]
+            format.
+        """
+        # Project the unit backward to the image space.
+        y_min, x_min, y_max, x_max = self.converter.convert(spatial_index,
+                                                            layer_idx,
+                                                            end_layer_index=0,
+                                                            is_forward=False)
+        x_list = self._divide_from_middle(x_min, x_max, grid_spacing)
+        y_list = self._divide_from_middle(y_min, y_max, grid_spacing)
+        
+        grid_coords = []
+        for x in x_list:
+            for y in y_list:
+                grid_coords.append((x, y))
+
+        return grid_coords
+
+
 def rfmp4a(max_rf):
     """
     The bar lengths are 3/32, 3/16, 3/8 and 3/4 times M.
@@ -196,9 +282,7 @@ def rfmp4a(max_rf):
                     6/64 * max_rf,
                     6/64 * max_rf])
     dx = blen / 2.0                     #  Array of grid spacing
-
-
-
+    
 
 #######################################.#######################################
 #                                                                             #

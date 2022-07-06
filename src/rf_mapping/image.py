@@ -173,7 +173,11 @@ if __name__ == "__main__":
 
 
 def one_sided_zero_pad(patch, desired_size, box):
-    # Return original patch if it is the right size.
+    """
+    Return original patch if it is the right size. Assumes that the patch
+    given is always smaller or equal to the desired size. The box tells us
+    the spatial location of the patch on the image.
+    """
     if patch.shape == desired_size:
         return patch
 
@@ -185,13 +189,13 @@ def one_sided_zero_pad(patch, desired_size, box):
     patch_h, patch_w = patch.shape
 
     if touching_top_edge and touching_top_edge:
-        padded_patch[-patch_h:, -patch_w:] = patch
+        padded_patch[-patch_h:, -patch_w:] = patch  # fill from bottom right
     elif touching_top_edge:
-        padded_patch[-patch_h:, :patch_w] = patch
+        padded_patch[-patch_h:, :patch_w] = patch  # fill from bottom left
     elif touching_left_edge:
-        padded_patch[:patch_h, -patch_w:] = patch
+        padded_patch[:patch_h, -patch_w:] = patch  # fill from top right
     else:
-        padded_patch[:patch_h, :patch_w] = patch
+        padded_patch[:patch_h, :patch_w] = patch  # fill from top left
 
     return padded_patch
 
