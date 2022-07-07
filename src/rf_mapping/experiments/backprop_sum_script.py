@@ -15,7 +15,7 @@ from torchvision import models
 import matplotlib.pyplot as plt
 
 sys.path.append('..')
-from hook import get_rf_sizes, SpatialIndexConverter
+from spatial import get_rf_sizes, SpatialIndexConverter
 from image import one_sided_zero_pad, preprocess_img_for_plot
 from guided_backprop import GuidedBackprop
 from files import delete_all_npy_files

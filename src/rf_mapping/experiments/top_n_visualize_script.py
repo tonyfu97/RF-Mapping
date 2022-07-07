@@ -15,8 +15,9 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 sys.path.append('..')
-from hook import SpatialIndexConverter, ConvUnitCounter
+from hook import ConvUnitCounter
 from image import preprocess_img_for_plot, make_box
+from spatial import SpatialIndexConverter
 from guided_backprop import GuidedBackprop
 import constants as c
 

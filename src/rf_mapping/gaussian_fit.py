@@ -14,7 +14,6 @@ import scipy.optimize as opt
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
-from pathlib import Path
 
 sys.path.append('..')
 from files import check_extension

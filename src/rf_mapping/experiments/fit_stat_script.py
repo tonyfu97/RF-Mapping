@@ -16,7 +16,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
 
 sys.path.append('..')
-from hook import ConvUnitCounter, get_rf_sizes
+from hook import ConvUnitCounter
+from spatial import get_rf_sizes
 from gaussian_fit import ParamLoader
 import constants as c
 

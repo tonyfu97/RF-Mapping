@@ -15,7 +15,8 @@ from tqdm import tqdm
 
 sys.path.append('..')
 from image import preprocess_img_to_tensor
-from hook import HookFunctionBase, SpatialIndexConverter, ConvUnitCounter
+from hook import HookFunctionBase, ConvUnitCounter
+from spatial import SpatialIndexConverter
 from files import delete_all_npy_files
 import constants as c
 

@@ -13,7 +13,6 @@ import copy
 
 import numpy as np
 from numba import njit
-from pathlib import Path
 import torch
 import torch.nn as nn
 from torchvision import models
@@ -21,7 +20,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 sys.path.append('..')
-from hook import get_conv_output_shapes, SpatialIndexConverter, get_rf_sizes
+from spatial import get_conv_output_shapes, SpatialIndexConverter, get_rf_sizes
 from image import make_box
 import constants as c
 
