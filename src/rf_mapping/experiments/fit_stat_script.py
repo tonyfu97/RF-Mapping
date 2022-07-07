@@ -1,5 +1,6 @@
 """
-
+Code to summarize the statistics and visualize the trend of elliptical
+Gaussian fit results.
 
 Tony Fu, June 30, 2022
 """

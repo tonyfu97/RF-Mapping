@@ -9,7 +9,6 @@ import os
 import sys
 
 import numpy as np
-from pyparsing import nums
 import torch
 import torch.nn as nn
 from torchvision import models
@@ -18,8 +17,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
 
 sys.path.append('..')
-from spatial import (clip,
-                     get_conv_output_shapes,
+from spatial import (get_conv_output_shapes,
                      calculate_center,
                      get_rf_sizes,
                      RfGrid,
@@ -41,11 +39,13 @@ thetas = np.arange(0, 180, 22.5)
 laa = 0.5
 fgval = 1.0
 bgval = 0.5
-cumulate_mode = 'threshold'  #['weighted', 'threshold', 'center_only']
+cumulate_mode = 'weighted'  #['weighted', 'threshold', 'center_only']
 threshold = 1
+this_is_a_test_run = False
 
 # Please double-check the directories:
-pdf_dir = c.REPO_DIR + f'/results/rfmp4a/{model_name}/'
+result_dir = c.REPO_DIR + f'/results/rfmp4a/{model_name}/'
+pdf_dir = result_dir
 grid_pdf_path = os.path.join(pdf_dir, f"grids.pdf")
 
 ###############################################################################
@@ -112,6 +112,15 @@ def box_to_center(box):
 
 
 ###############################################################################
+
+# Script guard
+if __name__ == "__main__":
+    print("Look for a prompt.")
+    user_input = input("This code may take time to run. Are you sure? ")
+    if user_input == 'y':
+        pass
+    else: 
+        raise KeyboardInterrupt("Interrupted by user")
 
 def truncated_model(x, model, layer_index):
     """
@@ -198,16 +207,17 @@ def center_only_cumulate(center_index, bar_sum, unit, response, threshold):
 for conv_i, layer_index in enumerate(layer_indices):
     layer_name = f"conv{conv_i + 1}"
     num_units = nums_units[conv_i]
-    # Get spatial center of box.
+    # Get spatial center and the corresponding box in pixel space.
     spatial_index = np.array(conv_output_shapes[conv_i][-2:])
     spatial_index = calculate_center(spatial_index)
     box = converter.convert(spatial_index, layer_index, 0, is_forward=False)
-    
+    xc, yc = box_to_center(box)
+
     # Initialize bar sum.
     bar_sum = np.zeros((num_units, yn, xn))
     num_stimuli = 0
                     
-    for i, rf_blen_ratio in enumerate(rf_blen_ratios):
+    for rf_blen_ratio in tqdm(rf_blen_ratios):
         for aspect_ratio in aspect_ratios:
             for theta in thetas:
                 for fgval, bgval in [(1, -1), (-1, 1)]:
@@ -222,8 +232,10 @@ for conv_i, layer_index in enumerate(layer_indices):
                     grid_coords_np = np.array(grid_coords)
                     
                     # Create bars.
-                    print(f"Conv{conv_i+1}: using {len(grid_coords)} number of grid points...")
-                    for xc, yc in tqdm(grid_coords_np):
+                    for grid_coord_i, (xc, yc) in enumerate(grid_coords_np):
+                        if this_is_a_test_run and grid_coord_i > 10:
+                            break
+                        
                         bar = draw_bar(xn, yn, xc, yc, theta, blen, bwid, laa, fgval, bgval)
                         bar_tensor = preprocess_img_to_tensor(bar)
                         y, _ = truncated_model(bar_tensor, model, layer_index)
@@ -237,16 +249,19 @@ for conv_i, layer_index in enumerate(layer_indices):
                             elif cumulate_mode == 'threshold':
                                 threshold_cumulate(bar, bar_sum, unit, center_responses[unit], threshold)
                             elif cumulate_mode == 'center_only':
-                                center_only_cumulate(spatial_index, bar_sum, unit, center_responses[unit], threshold)
+                                center_only_cumulate((yc, xc), bar_sum, unit, center_responses[unit], threshold)
                             else:
                                 raise ValueError(f"cumulate mode '{cumulate_mode}' is not supported.")
+                            
+    cumulative_result_path = os.path.join(result_dir, f"{layer_name}.{cumulate_mode}.cumulative.npy")
+    np.save(cumulative_result_path, bar_sum)
 
-    cumulative_pdf_path = os.path.join(pdf_dir, f"{layer_name}.{cumulate_mode}.cumulative.pdf")
+    cumulative_pdf_path = os.path.join(result_dir, f"{layer_name}.{cumulate_mode}.cumulative.pdf")
     with PdfPages(cumulative_pdf_path) as pdf:
         for unit in range(num_units):
             plt.imshow(bar_sum[unit, :, :], cmap='gray')
-            plt.title(f"no.{unit}, Bar Length = {rf_blen_ratio_strs[i]} M, aspect_ratio = {aspect_ratio}, theta = {theta}")
-            
+            plt.title(f"no.{unit}")
+
             boundary = 10
             plt.xlim([box[1] - boundary, box[3] + boundary])
             plt.ylim([box[0] - boundary, box[2] + boundary])
@@ -257,6 +272,5 @@ for conv_i, layer_index in enumerate(layer_indices):
             ax.invert_yaxis()
             
             pdf.savefig()
-            plt.show()
             plt.close()
-    print(f"number of stimuli = {num_stimuli} per unit")
+    print(f"number of stimuli = {num_stimuli} per layer")
