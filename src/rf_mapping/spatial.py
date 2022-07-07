@@ -1,4 +1,5 @@
 import math
+import copy
 
 import numpy as np
 import torch
@@ -21,6 +22,34 @@ def clip(x, x_min, x_max):
     x = min(x_max, x)
     x = max(x_min, x)
     return x
+
+
+#######################################.#######################################
+#                                                                             #
+#                               CALCULATE CENTER                              #
+#                                                                             #
+###############################################################################
+def calculate_center(output_size):
+    """
+    Determines what we referred to as the 'spatial center' of a 1D or 2D space.
+    
+    Parameters
+    ----------
+    output_size : int or (int, int)
+        The size of the output maps in (height, width) format.
+    
+    Returns
+    -------
+    The index (int) or indices (int, int) of the spatial center.
+    """
+    if isinstance(output_size, (tuple, list, np.ndarray)):
+        if len(output_size) != 2:
+            raise ValueError("output_size should have a length of 2.")
+        c1 = calculate_center(output_size[0])
+        c2 = calculate_center(output_size[1])
+        return c1, c2
+    else:
+        return (output_size - 1)//2
 
 
 #######################################.#######################################
@@ -361,7 +390,7 @@ def _test_backward_conversion():
 
 
 if __name__ == '__main__':
-    # _test_forward_conversion()
+    # _test_forward_conversion() TODO: finish implementing this test
     _test_backward_conversion()
 
 
@@ -424,3 +453,94 @@ def get_conv_output_shapes(model, image_shape):
     dummy_img = np.zeros((3, image_shape[0], image_shape[1]))
     layer_outputs = inspector.inspect(dummy_img)
     return [layer_output.shape[1:] for layer_output in layer_outputs]
+
+
+#######################################.#######################################
+#                                                                             #
+#                                   RF GRID                                   #
+#                                                                             #
+###############################################################################
+class RfGrid:
+    """
+    A class that divides a given receptive field into equally spaced gris up to
+    some rounding error. Useful for stimulus placement.
+    """
+    def __init__(self, model, image_shape):
+        self.model = copy.deepcopy(model)
+        self.image_shape = image_shape
+        self.converter = SpatialIndexConverter(model, image_shape)
+    
+    def _divide_from_middle(self, start, end, increment):
+        """
+        For example, if given min = 15, max = 24, increment = 4:
+
+          -15---16---17---18---19---20---21---22---23---24-
+
+        Divides it into:
+
+              |                   |                   |
+          -15-|-16---17---18---19-|-20---21---22---23-|-24-
+              |                   |                   |
+        
+        Then rounds the numbers to the nearest intergers:
+
+                |                   |                   |
+          -15---16---17---18---19---20---21---22---23---24-
+                |                   |                   |
+        
+        Returns [16, 20, 24] in this case.
+        """
+        if math.isclose(increment, 0):
+            raise ValueError("The increment is too close to zero.")
+
+        middle = (start + end)/2
+        indices = [middle]
+        
+        # Find indices that are smaller than the middle.
+        while (indices[-1] - increment >= start):
+            indices.append(indices[-1] - increment)
+        indices = indices[::-1]
+
+        # Find indices that are larger than the middle.
+        while (indices[-1] + increment <= end):
+            indices.append(indices[-1] + increment)
+
+        return [round(i) for i in indices]
+
+    def get_grid_coords(self, layer_idx, spatial_index, grid_spacing):
+        """
+        Generates a list of coordinates that equally divide the receptive
+        field of a unit up to some rounding. The grid is centered at the center
+        of the receptive field.
+
+        Parameters
+        ----------
+        layer_idx : int
+            The index of the layer. See 'hook.py' module for details.
+        spatial_index : int or (int, int)
+            The spatial position of the unit of interest. Either in (y, x)
+            format or a flatten index. Not in pixels but should be w.r.t.
+            the output maps of the layer.
+        grid_spacing : float
+            The spacing between the grid lines (pix).
+
+        Returns
+        -------
+        grid_coords : [(int, int), ...]
+            The coordinates of the intersections in [(x0, y0), (x1, y1), ...]
+            format.
+        """
+        # Project the unit backward to the image space.
+        y_min, x_min, y_max, x_max = self.converter.convert(spatial_index,
+                                                            layer_idx,
+                                                            end_layer_index=0,
+                                                            is_forward=False)
+        x_list = self._divide_from_middle(x_min, x_max, grid_spacing)
+        y_list = self._divide_from_middle(y_min, y_max, grid_spacing)
+        
+        grid_coords = []
+        for x in x_list:
+            for y in y_list:
+                grid_coords.append((x, y))
+
+        return grid_coords

@@ -7,12 +7,7 @@ Tony Fu, June 29, 2022
 import os
 import sys
 
-import numpy as np
-from matplotlib.backends.backend_pdf import PdfPages
-import torch.nn as nn
 from torchvision import models
-from tqdm import tqdm
-from pathlib import Path
 
 sys.path.append('..')
 from gaussian_fit import make_pdf

@@ -7,8 +7,6 @@ import os
 import sys
 
 import numpy as np
-from pathlib import Path
-import torch
 from torchvision import models
 from tqdm import tqdm
 import matplotlib.pyplot as plt

@@ -7,7 +7,6 @@ import os
 import sys
 
 import numpy as np
-from pathlib import Path
 from torchvision import models
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
