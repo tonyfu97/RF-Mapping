@@ -17,6 +17,8 @@ from pathlib import Path
 sys.path.append('..')
 from gaussian_fit import make_pdf
 from hook import ConvUnitCounter
+import constants as c
+
 
 # Please specify some details here:
 model = models.alexnet(pretrained=True)
@@ -25,8 +27,8 @@ sum_modes = ['abs', 'sqr']
 this_is_a_test_run = False
 
 # Please double-check the directories:
-backprop_sum_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/backprop_sum/{model_name}')
-result_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/gaussian_fit/{model_name}')
+backprop_sum_dir = c.REPO_DIR + f'/results/ground_truth/backprop_sum/{model_name}'
+result_dir = c.REPO_DIR + f'/results/ground_truth/gaussian_fit/{model_name}'
 
 ###############################################################################
 

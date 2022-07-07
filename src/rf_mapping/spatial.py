@@ -1,15 +1,12 @@
-from asyncio import constants
-import os
 import math
 
 import numpy as np
-from pathlib import Path
 import torch
 import torch.nn as nn
 from torchvision import models
 import matplotlib.pyplot as plt
 
-from hook import SizeInspector
+from hook import SizeInspector, LayerOutputInspector
 from image import clip, preprocess_img_to_tensor, tensor_to_img
 import constants as c
 
@@ -367,3 +364,63 @@ if __name__ == '__main__':
     # _test_forward_conversion()
     _test_backward_conversion()
 
+
+#######################################.#######################################
+#                                                                             #
+#                                 GET_RF_SIZES                                #
+#                                                                             #
+###############################################################################
+def get_rf_sizes(model, image_shape, layer_type=nn.Conv2d):
+    """
+    Find the receptive field (RF) sizes of all layers of the specified type.
+    The sizes here are in pixels with respect to the input image.
+
+    Parameters
+    ----------
+    model : torchvision.models
+        The neural network.
+    image_shape : (int, int)
+        (vertical_dimension, horizontal_dimension) in pixels.
+    layer_type: nn.Module
+        The type of layer to consider.
+
+    Returns
+    -------
+    layer_indices : [int, ...]
+        The indices of the layers of the specified layer type.
+    rf_size : [(int, int), ...]
+        Each tuple contains the height and width of the receptive field that
+        corresponds to the layer of the same index in the <layers> list.
+    """
+    converter = SpatialIndexConverter(model, image_shape)
+    layer_indices = []
+    rf_sizes = []
+    for i, layer in enumerate(converter.layers):
+        if isinstance(layer, layer_type):
+            layer_indices.append(i)
+            # Using the spatial center to avoid boundary effects.
+            _, v_size, h_size = converter.output_sizes[i]
+            coord = converter.convert((v_size//2, h_size//2), i, 0, is_forward=False)
+            rf_size = (coord[2] - coord[0] + 1, coord[3] - coord[1] + 1)
+            rf_sizes.append(rf_size)
+        
+    return layer_indices, rf_sizes
+
+
+if __name__ == '__main__':
+    model = models.alexnet()
+    layer_indices, rf_sizes = get_rf_sizes(model, (227, 227))
+    print(layer_indices)
+    print(rf_sizes)
+
+
+#######################################.#######################################
+#                                                                             #
+#                           GET_CONV_OUTPUT_SHAPES                            #
+#                                                                             #
+###############################################################################
+def get_conv_output_shapes(model, image_shape):
+    inspector = LayerOutputInspector(model, nn.Conv2d)
+    dummy_img = np.zeros((3, image_shape[0], image_shape[1]))
+    layer_outputs = inspector.inspect(dummy_img)
+    return [layer_output.shape[1:] for layer_output in layer_outputs]

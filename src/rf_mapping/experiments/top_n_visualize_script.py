@@ -27,8 +27,8 @@ top_n = 5
 grad_method = GuidedBackprop(model)
 
 # Please double-check the directories:
-img_dir = "/Users/tonyfu/Desktop/Bair Lab/top_and_bottom_images/images"
-index_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/top_n/{model_name}')
+img_dir = c.IMG_DIR
+index_dir = c.REPO_DIR + f'/results/ground_truth/top_n/{model_name}'
 result_dir = index_dir
 
 ###############################################################################

@@ -150,7 +150,7 @@ if __name__ == "__main__":
     inspector = SizeInspector(model, (227, 227))
     inspector.print_summary()
     
-    img_dir = Path(__file__).parent.parent.parent.joinpath('data/imagenet')
+    img_dir = c.REPO_DIR + '/data/imagenet'
     img_idx = 1
     img_path = os.path.join(img_dir, f"{img_idx}.npy")
     img = np.load(img_path)

@@ -9,9 +9,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from pyparsing import line
 import torch
-from pathlib import Path
 import torchvision.transforms as T
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -188,7 +186,7 @@ if __name__ == "__main__":
     num_images = 100
     image_idx = 0
     
-    img_dir = Path(__file__).parent.parent.parent.parent.joinpath('data/imagenet')
+    img_dir = c.REPO_DIR + '/data/imagenet'
     img_names = [f"{i}.npy" for i in range(num_images)]
     imagenet_data = ImgDataset(img_dir, img_names)
     imagenet_dataloader = DataLoader(imagenet_data, batch_size=64, shuffle=False)

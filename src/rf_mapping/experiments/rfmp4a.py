@@ -23,6 +23,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 sys.path.append('..')
 from hook import get_conv_output_shapes, SpatialIndexConverter, get_rf_sizes
 from image import make_box
+import constants as c
 
 
 #######################################.#######################################
@@ -322,7 +323,7 @@ if __name__ == "__main__":
         yc = (y_min + y_max)//2
         return xc, yc
     
-    pdf_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/rf_mapping/')
+    pdf_dir = c.REPO_DIR + f'/results/rf_mapping/'
     pdf_path = os.path.join(pdf_dir, f"{model_name}.pdf")
     with PdfPages(pdf_path) as pdf:
         for i, rf_blen_ratio in enumerate(rf_blen_ratios):

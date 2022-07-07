@@ -18,6 +18,7 @@ from pathlib import Path
 
 sys.path.append('..')
 from files import check_extension
+import constants as c
 
 
 #######################################.#######################################
@@ -324,20 +325,19 @@ if __name__ == '__main__':
     model_name = 'alexnet'
     sum_mode = 'abs'
 
-    backprop_sum_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/backprop_sum/{model_name}/{sum_mode}')
-
-    pdf_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/gaussian_fit/{model_name}/test')
+    backprop_sum_dir = c.REPO_DIR + f'/results/ground_truth/backprop_sum/{model_name}/{sum_mode}'
+    pdf_dir = c.REPO_DIR + f'/results/ground_truth/gaussian_fit/{model_name}/test'
 
     layer_name = "conv5"
-    num_units = 10
+    num_units = 5
     best_file_names = [f"max_{layer_name}.{unit_i}.npy" for unit_i in range(num_units)]
     worst_file_names = [f"min_{layer_name}.{unit_i}.npy" for unit_i in range(num_units)]
     both_file_names = [f"both_{layer_name}.{unit_i}.npy" for unit_i in range(num_units)]
     pdf_name = f"{layer_name}.gaussian.pdf"
     plot_title = f"{model_name} {layer_name} (sum mode = {sum_mode})"
 
-    # make_pdf(backprop_sum_dir, best_file_names, worst_file_names, both_file_names,
-            #  pdf_dir, pdf_name, plot_title)
+    make_pdf(backprop_sum_dir, best_file_names, worst_file_names, both_file_names,
+             pdf_dir, pdf_name, plot_title)
 
 
 #######################################.#######################################
@@ -547,6 +547,6 @@ if __name__ == '__main__':
     rf_size = (51, 51)
     num_units = 192
 
-    backprop_sum_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/gaussian_fit/{model_name}/{sum_mode}')
+    backprop_sum_dir = c.REPO_DIR + f'/results/ground_truth/gaussian_fit/{model_name}/{sum_mode}'
     file_names = [f"{max_or_min}_{layer_name}.{i}.npy" for i in range(num_units)]
     param_loader = ParamLoader(backprop_sum_dir, file_names, rf_size)

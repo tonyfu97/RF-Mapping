@@ -9,9 +9,7 @@ import os
 import sys
 
 import numpy as np
-from pathlib import Path
 from tqdm import tqdm
-import torch
 import torch.nn as nn
 from torchvision import models
 import matplotlib.pyplot as plt
@@ -32,9 +30,9 @@ top_n = 100
 this_is_a_test_run = False
 
 # Please double-check the directories:
-img_dir = "/Users/tonyfu/Desktop/Bair Lab/top_and_bottom_images/images"
-index_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/top_n/{model_name}')
-result_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/backprop_sum/{model_name}')
+img_dir = c.IMG_DIR
+index_dir = c.REPO_DIR + f'/results/ground_truth/top_n/{model_name}'
+result_dir = c.REPO_DIR + f'results/ground_truth/backprop_sum/{model_name}'
 
 ###############################################################################
 

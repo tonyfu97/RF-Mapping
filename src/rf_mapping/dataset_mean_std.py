@@ -4,19 +4,19 @@ Calculates the mean and std of imagenet dataset used.
 Tony Fu, June 25, 2022
 """
 import os
-from tkinter import image_names
+import sys
 
 import numpy as np
-from pathlib import Path
 from tqdm import tqdm
 
+sys.path.append('..')
+import constants as c
 
 # Please specify some details here:
 num_images = 50000
 
 # Please double-check the directories:
-# img_dir = Path(__file__).parent.parent.parent.joinpath('data/imagenet')
-img_dir = "/Users/tonyfu/Desktop/Bair Lab/top_and_bottom_images/images"
+img_dir = c.IMG_DIR
 img_names = [f"{i}.npy" for i in range(num_images)]
 
 ###############################################################################

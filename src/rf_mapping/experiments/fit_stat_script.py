@@ -27,7 +27,7 @@ model_name = "alexnet"
 sum_modes = ['abs', 'sqr']
 
 # Please double-check the directories:
-gaussian_fit_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/gaussian_fit/{model_name}')
+gaussian_fit_dir = c.REPO_DIR + f'/results/ground_truth/gaussian_fit/{model_name}'
 pdf_dir = gaussian_fit_dir
 
 ###############################################################################

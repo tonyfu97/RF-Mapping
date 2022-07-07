@@ -16,6 +16,7 @@ from tqdm import tqdm
 sys.path.append('..')
 from hook import ConvUnitCounter
 from image import preprocess_img_for_plot
+import constants as c
 
 
 # Please specify some details here:
@@ -25,7 +26,7 @@ sum_modes = ['abs', 'sqr']
 this_is_a_test_run = False
 
 # Please double-check the directories:
-backprop_sum_dir = Path(__file__).parent.parent.parent.parent.joinpath(f'results/ground_truth/backprop_sum/{model_name}')
+backprop_sum_dir = c.REPO_DIR + f'/results/ground_truth/backprop_sum/{model_name}'
 pdf_dir = backprop_sum_dir
 
 ###############################################################################
