@@ -14,6 +14,11 @@ from image import preprocess_img_to_tensor, preprocess_img_for_plot
 import constants as c
 
 
+#######################################.#######################################
+#                                                                             #
+#                               GUIDED_BACKPROP                               #
+#                                                                             #
+###############################################################################
 class GuidedBackprop():
     """
     Generates the guided backpropagation gradient maps for a spatial location

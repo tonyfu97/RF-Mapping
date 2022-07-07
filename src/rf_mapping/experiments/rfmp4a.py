@@ -7,7 +7,6 @@ Modified from Dr. Wyeth Bair's d06_mrf.py
 Tony Fu, July 4th, 2022
 """
 import os
-from re import L
 import sys
 import math
 import copy
@@ -15,7 +14,6 @@ import copy
 import numpy as np
 from numba import njit
 from pathlib import Path
-import scipy as sp
 import torch
 import torch.nn as nn
 from torchvision import models
@@ -292,7 +290,7 @@ def calculate_center(output_size):
     """
     if isinstance(output_size, (tuple, list, np.ndarray)):
         if len(output_size) != 2:
-            raise ValueError("output_size has too many dimensions.")
+            raise ValueError("output_size should only have 2 indices.")
         c1 = calculate_center(output_size[0])
         c2 = calculate_center(output_size[1])
         return c1, c2
