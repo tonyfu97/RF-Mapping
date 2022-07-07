@@ -19,6 +19,11 @@ from torch.utils.data import DataLoader
 import constants as c
 
 
+#######################################.#######################################
+#                                                                             #
+#                                    CLIP                                     #
+#                                                                             #
+###############################################################################
 def clip(x, x_min, x_max):
     """Limits x to be x_min <= x <= x_max."""
     x = min(x_max, x)
@@ -26,6 +31,11 @@ def clip(x, x_min, x_max):
     return x
 
 
+#######################################.#######################################
+#                                                                             #
+#                               NORMALIZE_IMG                                 #
+#                                                                             #
+###############################################################################
 def normalize_img(img):
     """Normalizes pixel values to be roughly Norm(0, 1)."""
     norm_img = img - img.mean()
@@ -34,6 +44,11 @@ def normalize_img(img):
     return norm_img
 
 
+#######################################.#######################################
+#                                                                             #
+#                           IMG PREPROCESS FUNCTIONS                          #
+#                                                                             #
+###############################################################################
 def preprocess_img_to_tensor(img, img_size=None):
     """
     Preprocesses an image numpy array into a normalized tensor before
@@ -75,6 +90,25 @@ def preprocess_img_for_plot(img, norm=True):
     return img
 
 
+def tensor_to_img(img_tensor):
+    """
+    Converts img_tensor into a numpy array that can be plotted by plt.imshow().
+    """
+    img = img_tensor.clone().detach()
+
+    if len(img.shape) == 3 and img.shape[1] == 3:
+        # If the image has RGB channels.
+        return np.transpose(torch.squeeze(img),(1,2,0))
+    else:
+        # Plot only the first channel if there are more than three of them.
+        return img[0,0,...].numpy()
+
+
+#######################################.#######################################
+#                                                                             #
+#                                  MAKE_BOX                                   #
+#                                                                             #
+###############################################################################
 def make_box(box_indices, linewidth=1):
     """
     Given box indices in (vx_min, hx_min, vx_max, hx_max) format, returns a
@@ -97,20 +131,11 @@ def make_box(box_indices, linewidth=1):
     return rect
 
 
-def tensor_to_img(img_tensor):
-    """
-    Converts img_tensor into a numpy array that can be plotted by plt.imshow().
-    """
-    img = img_tensor.clone().detach()
-
-    if len(img.shape) == 3 and img.shape[1] == 3:
-        # If the image has RGB channels.
-        return np.transpose(torch.squeeze(img),(1,2,0))
-    else:
-        # Plot only the first channel if there are more than three of them.
-        return img[0,0,...].numpy()
-
-
+#######################################.#######################################
+#                                                                             #
+#                                 IMG DATASET                                 #
+#                                                                             #
+###############################################################################
 class ImgDataset(Dataset):
     """
     A Dataset object of image dataset located in a directory. The generator
@@ -173,6 +198,11 @@ if __name__ == "__main__":
     plt.show()
 
 
+#######################################.#######################################
+#                                                                             #
+#                              ONE_SIDED_ZERO_PAD                             #
+#                                                                             #
+###############################################################################
 def one_sided_zero_pad(patch, desired_size, box):
     """
     Return original patch if it is the right size. Assumes that the patch

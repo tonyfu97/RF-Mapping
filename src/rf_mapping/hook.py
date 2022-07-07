@@ -20,6 +20,11 @@ from image import clip, preprocess_img_to_tensor, tensor_to_img
 import constants as c
 
 
+#######################################.#######################################
+#                                                                             #
+#                             HOOK FUNCTION BASE                              #
+#                                                                             #
+###############################################################################
 class HookFunctionBase:
     """
     A base class that register a hook function to all specified layer types
@@ -60,6 +65,11 @@ class HookFunctionBase:
                 self.register_forward_hook_to_layers(sublayer)
 
 
+#######################################.#######################################
+#                                                                             #
+#                             LAYER OUPUT INSPECTOR                           #
+#                                                                             #
+###############################################################################
 class LayerOutputInspector(HookFunctionBase):
     """
     A class that peeks inside the outputs of all the layers with the
@@ -94,6 +104,11 @@ class LayerOutputInspector(HookFunctionBase):
         return self.layer_outputs
 
 
+#######################################.#######################################
+#                                                                             #
+#                           GET_CONV_OUTPUT_SHAPES                            #
+#                                                                             #
+###############################################################################
 def get_conv_output_shapes(model, image_shape):
     inspector = LayerOutputInspector(model, nn.Conv2d)
     dummy_img = np.zeros((3, image_shape[0], image_shape[1]))
@@ -101,6 +116,11 @@ def get_conv_output_shapes(model, image_shape):
     return [layer_output.shape[1:] for layer_output in layer_outputs]
 
 
+#######################################.#######################################
+#                                                                             #
+#                              CONV UNIT COUNTER                              #
+#                                                                             #
+###############################################################################
 class ConvUnitCounter(HookFunctionBase):
     """
     A class that counts the number of unique kernels of each convolutional
@@ -147,6 +167,11 @@ if __name__ == "__main__":
     print(num_units)
 
 
+#######################################.#######################################
+#                                                                             #
+#                              CONV MAX INSPECTOR                             #
+#                                                                             #
+###############################################################################
 class ConvMaxInspector(HookFunctionBase):
     """
     A class that get the maximum activations and indices of all unique
@@ -214,6 +239,11 @@ if __name__ == '__main__':
     top_bottom_N_image_patches(model, nn.Conv2d, image_dir, image_names)
 
 
+#######################################.#######################################
+#                                                                             #
+#                               SIZE INSPECTOR                                #
+#                                                                             #
+###############################################################################
 class SizeInspector(HookFunctionBase):
     """
     A class that computes the input and output sizes of all layers. This
@@ -271,6 +301,11 @@ if __name__ == '__main__':
     inspector.print_summary()
 
 
+#######################################.#######################################
+#                                                                             #
+#                           SPATIAL INDEX CONVERTER                           #
+#                                                                             #
+###############################################################################
 class SpatialIndexConverter(SizeInspector):
     """
     A class containing the model- and image-shape-specific conversion functions
@@ -610,6 +645,11 @@ if __name__ == '__main__':
     _test_backward_conversion()
 
 
+#######################################.#######################################
+#                                                                             #
+#                                 GET_RF_SIZES                                #
+#                                                                             #
+###############################################################################
 def get_rf_sizes(model, image_shape, layer_type=nn.Conv2d):
     """
     Find the receptive field (RF) sizes of all layers of the specified type.

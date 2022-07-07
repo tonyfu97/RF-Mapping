@@ -8,6 +8,11 @@ import numpy as np
 from time import time
 
 
+#######################################.#######################################
+#                                                                             #
+#                                  IS_FASTER                                  #
+#                                                                             #
+###############################################################################
 def is_faster(func, num_times=10):
     """
     A decorator that prints out the time it takes to run the function without

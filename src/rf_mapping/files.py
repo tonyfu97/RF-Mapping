@@ -6,8 +6,11 @@ Tony Fu, June 29, 2022
 import os
 
 
-# TODO: incooperate the funcitons below to the other programs.
-
+#######################################.#######################################
+#                                                                             #
+#                            DELETE_ALL_NPY_FILES                             #
+#                                                                             #
+###############################################################################
 def delete_all_npy_files(dir):
     """Removes all numpy files in the directory."""
     for f in os.listdir(dir):
@@ -15,6 +18,11 @@ def delete_all_npy_files(dir):
             os.remove(os.path.join(dir, f))
 
 
+#######################################.#######################################
+#                                                                             #
+#                               CHECK_EXTENSION                               #
+#                                                                             #
+###############################################################################
 def check_extension(file_name, extension):
     """
     Checks if file_name has the extension. If not, adds the extension.

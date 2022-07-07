@@ -20,6 +20,11 @@ sys.path.append('..')
 from files import check_extension
 
 
+#######################################.#######################################
+#                                                                             #
+#                                TWOD_GAUSSIAN                                #
+#                                                                             #
+###############################################################################
 def twoD_Gaussian(xycoord, amplitude, mu_x, mu_y, sigma_1, sigma_2,
                   theta, offset):
     """
@@ -93,6 +98,11 @@ if __name__ == '__main__':
     test_twoD_Gaussian()
 
 
+#######################################.#######################################
+#                                                                             #
+#                                GAUSSIAN_FIT                                 #
+#                                                                             #
+###############################################################################
 def gaussian_fit(image, initial_guess=None, plot=True, show=False):
     """
     Fit a 2D gaussian to an input image.
@@ -193,6 +203,11 @@ if __name__ == '__main__':
     test_gaussian_fit()
 
 
+#######################################.#######################################
+#                                                                             #
+#                                   MAKE_PDF                                  #
+#                                                                             #
+###############################################################################
 def make_pdf(data_dir, best_file_names, worst_file_names, both_file_names, 
              pdf_dir, pdf_name, plot_title):
     """
@@ -325,6 +340,11 @@ if __name__ == '__main__':
             #  pdf_dir, pdf_name, plot_title)
 
 
+#######################################.#######################################
+#                                                                             #
+#                          GAUSSIAN FIT PARAM FORMAT                          #
+#                                                                             #
+###############################################################################
 class GaussianFitParamFormat:
     """
     Currently, the results of elliptical Gaussian fit is formatted as an array
@@ -344,6 +364,11 @@ class GaussianFitParamFormat:
     OFFSET_IDX  = 6
 
 
+#######################################.#######################################
+#                                                                             #
+#                                PARAM CLEANER                                #
+#                                                                             #
+###############################################################################
 class ParamCleaner(GaussianFitParamFormat):
     """
     A class that cleans a single parameter vector that contains the results
@@ -456,6 +481,11 @@ class ParamCleaner(GaussianFitParamFormat):
         return cleaned_params
 
 
+#######################################.#######################################
+#                                                                             #
+#                                 PARAM LOADER                                #
+#                                                                             #
+###############################################################################
 class ParamLoader(ParamCleaner):
     """
     Loads the parameters of the inidividual units and sorts them into lists of
