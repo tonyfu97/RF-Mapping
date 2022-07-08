@@ -7,11 +7,13 @@ Tony Fu, July 4th, 2022
 """
 import os
 import sys
+import math
 
 import numpy as np
 import torch
 import torch.nn as nn
 from torchvision import models
+from torchvision.models import AlexNet_Weights
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
@@ -25,10 +27,11 @@ from spatial import (get_conv_output_shapes,
 from image import make_box, preprocess_img_to_tensor
 from hook import ConvUnitCounter
 from stimulus import draw_bar
+from files import delete_all_npy_files
 import constants as c
 
 # Please specify some details here:
-model = models.alexnet()
+model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1).to(c.DEVICE)
 model_name = 'alexnet'
 xn = yn = 227
 spatial_index = (11, 11)
@@ -39,8 +42,7 @@ thetas = np.arange(0, 180, 22.5)
 laa = 0.5
 fgval = 1.0
 bgval = 0.5
-cumulate_mode = 'weighted'  #['weighted', 'threshold', 'center_only']
-threshold = 1
+threshold = 1  # for threshold cumulation maps.
 this_is_a_test_run = False
 
 # Please double-check the directories:
@@ -207,22 +209,30 @@ def center_only_cumulate(center_index, bar_sum, unit, response, threshold):
 for conv_i, layer_index in enumerate(layer_indices):
     layer_name = f"conv{conv_i + 1}"
     num_units = nums_units[conv_i]
+    rf_size = rf_sizes[conv_i][0]
+
     # Get spatial center and the corresponding box in pixel space.
     spatial_index = np.array(conv_output_shapes[conv_i][-2:])
     spatial_index = calculate_center(spatial_index)
     box = converter.convert(spatial_index, layer_index, 0, is_forward=False)
     xc, yc = box_to_center(box)
 
-    # Initialize bar sum.
-    bar_sum = np.zeros((num_units, yn, xn))
+    # Initializations
     num_stimuli = 0
-                    
-    for rf_blen_ratio in tqdm(rf_blen_ratios):
-        for aspect_ratio in aspect_ratios:
-            for theta in thetas:
-                for fgval, bgval in [(1, -1), (-1, 1)]:
+    weighted_bar_sum = np.zeros((num_units, yn, xn))
+    threshold_bar_sum = np.zeros((num_units, yn, xn))
+    center_only_bar_sum = np.zeros((num_units, yn, xn))
+    unit_blen_bwid_theta_val_responses = np.zeros((num_units,
+                                                   len(rf_blen_ratios),
+                                                   len(aspect_ratios),
+                                                   len(thetas),
+                                                   2))
+
+    for blen_i, rf_blen_ratio in enumerate(tqdm(rf_blen_ratios)):
+        for bwid_i, aspect_ratio in enumerate(aspect_ratios):
+            for theta_i, theta in enumerate(thetas):
+                for val_i, (fgval, bgval) in enumerate([(1, -1), (-1, 1)]):
                     # Some bar parameters
-                    rf_size = rf_sizes[conv_i][0]
                     blen = round(rf_blen_ratio * rf_size)
                     bwid = round(aspect_ratio * blen)
                     grid_spacing = blen/2
@@ -230,7 +240,7 @@ for conv_i, layer_index in enumerate(layer_indices):
                     # Get grid coordinates.
                     grid_coords = bar_locations.get_grid_coords(layer_index, spatial_index, grid_spacing)
                     grid_coords_np = np.array(grid_coords)
-                    
+
                     # Create bars.
                     for grid_coord_i, (xc, yc) in enumerate(grid_coords_np):
                         if this_is_a_test_run and grid_coord_i > 10:
@@ -240,37 +250,81 @@ for conv_i, layer_index in enumerate(layer_indices):
                         bar_tensor = preprocess_img_to_tensor(bar)
                         y, _ = truncated_model(bar_tensor, model, layer_index)
                         center_responses = y[0, :, spatial_index[0], spatial_index[1]].cpu().detach().numpy()
-                        center_responses[center_responses < 0] = 0
+                        center_responses[center_responses < 0] = 0  # ReLU
+                        unit_blen_bwid_theta_val_responses[:, blen_i, bwid_i, theta_i, val_i] += center_responses[:]
                         num_stimuli += 1
 
                         for unit in range(num_units):
-                            if cumulate_mode == 'weighted':
-                                weighted_cumulate(bar, bar_sum, unit, center_responses[unit])
-                            elif cumulate_mode == 'threshold':
-                                threshold_cumulate(bar, bar_sum, unit, center_responses[unit], threshold)
-                            elif cumulate_mode == 'center_only':
-                                center_only_cumulate((yc, xc), bar_sum, unit, center_responses[unit], threshold)
-                            else:
-                                raise ValueError(f"cumulate mode '{cumulate_mode}' is not supported.")
-                            
-    cumulative_result_path = os.path.join(result_dir, f"{layer_name}.{cumulate_mode}.cumulative.npy")
-    np.save(cumulative_result_path, bar_sum)
+                            weighted_cumulate(bar, weighted_bar_sum, unit, center_responses[unit])
+                            threshold_cumulate(bar, threshold_bar_sum, unit, center_responses[unit], threshold)
+                            center_only_cumulate((yc, xc), center_only_bar_sum, unit, center_responses[unit], threshold)
 
-    cumulative_pdf_path = os.path.join(result_dir, f"{layer_name}.{cumulate_mode}.cumulative.pdf")
-    with PdfPages(cumulative_pdf_path) as pdf:
-        for unit in range(num_units):
-            plt.imshow(bar_sum[unit, :, :], cmap='gray')
-            plt.title(f"no.{unit}")
-
-            boundary = 10
-            plt.xlim([box[1] - boundary, box[3] + boundary])
-            plt.ylim([box[0] - boundary, box[2] + boundary])
-            
-            rect = make_box(box, linewidth=2)
-            ax = plt.gca()
-            ax.add_patch(rect)
-            ax.invert_yaxis()
-            
-            pdf.savefig()
-            plt.close()
+    delete_all_npy_files(result_dir)
     print(f"number of stimuli = {num_stimuli} per layer")
+    weighted_map_path = os.path.join(result_dir, f"{layer_name}.weighted.cumulative_map.npy")
+    threshold_map_path = os.path.join(result_dir, f"{layer_name}.threshold.cumulative_map.npy")
+    center_only_map_path = os.path.join(result_dir, f"{layer_name}.center_only.cumulative_map.npy")
+    np.save(weighted_map_path, weighted_bar_sum)
+    np.save(threshold_map_path, threshold_bar_sum)
+    np.save(center_only_map_path, center_only_bar_sum)
+
+    cumulative_tuning_path = os.path.join(result_dir, f"{layer_name}.cumulative_tuning.npy")
+    np.save(cumulative_tuning_path, unit_blen_bwid_theta_val_responses)
+
+    for cumulate_mode, bar_sum in zip(['weighted', 'threshold', 'center_only'],
+                                      [weighted_bar_sum, threshold_bar_sum, center_only_bar_sum]):
+        cumulative_pdf_path = os.path.join(result_dir, f"{layer_name}.{cumulate_mode}.cumulative.pdf")
+        with PdfPages(cumulative_pdf_path) as pdf:
+            for unit in range(num_units):
+                plt.figure(figsize=(25, 5))
+                plt.suptitle(f"RF mapping with bars (no.{unit}, {num_stimuli} stimuli)", fontsize=20)
+                
+                plt.subplot(1, 5, 1)
+                plt.imshow(bar_sum[unit, :, :], cmap='gray')
+                plt.title("Cumulated bar maps")
+                boundary = 10
+                plt.xlim([box[1] - boundary, box[3] + boundary])
+                plt.ylim([box[0] - boundary, box[2] + boundary])
+                rect = make_box(box, linewidth=2)
+                ax = plt.gca()
+                ax.add_patch(rect)
+                ax.invert_yaxis()
+                
+                plt.subplot(1, 5, 2)
+                blen_tuning = np.mean(unit_blen_bwid_theta_val_responses[unit,...], axis=(1,2,3))
+                blen_std = np.mean(unit_blen_bwid_theta_val_responses[unit,...], axis=(1,2,3))/math.sqrt(num_units)
+                plt.errorbar(rf_blen_ratios, blen_tuning, yerr=blen_std)
+                plt.title("Bar length tuning")
+                plt.xlabel("blen/RF ratio")
+                plt.ylabel("avg response")
+                plt.grid()
+                
+                plt.subplot(1, 5, 3)
+                bwid_tuning = np.mean(unit_blen_bwid_theta_val_responses[unit,...], axis=(0,2,3))
+                bwid_std = np.mean(unit_blen_bwid_theta_val_responses[unit,...], axis=(0,2,3))/math.sqrt(num_units)
+                plt.errorbar(aspect_ratios, bwid_tuning, yerr=bwid_std)
+                plt.title("Bar width tuning")
+                plt.xlabel("aspect ratio")
+                plt.ylabel("avg response")
+                plt.grid()
+
+                plt.subplot(1, 5, 4)
+                theta_tuning = np.mean(unit_blen_bwid_theta_val_responses[unit,...], axis=(0,1,3))
+                theta_std = np.mean(unit_blen_bwid_theta_val_responses[unit,...], axis=(0,1,3))/math.sqrt(num_units)
+                plt.errorbar(thetas, theta_tuning, yerr=theta_std)
+                plt.title("Theta tuning")
+                plt.xlabel("theta")
+                plt.ylabel("avg response")
+                plt.grid()
+                
+                plt.subplot(1, 5, 5)
+                val_tuning = np.mean(unit_blen_bwid_theta_val_responses[unit,...], axis=(0,1,2))
+                val_std = np.mean(unit_blen_bwid_theta_val_responses[unit,...], axis=(0,1,2))/math.sqrt(num_units)
+                plt.bar(['white on black', 'black on white'], val_tuning, yerr=val_std, width=0.4)
+                plt.title("Contrast tuning")
+                plt.xlabel("theta")
+                plt.ylabel("avg response")
+                plt.grid()
+
+                pdf.savefig()
+                plt.close()
