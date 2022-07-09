@@ -17,6 +17,12 @@ from gaussian_fit import gaussian_fit
 import constants as c
 
 
+weighted_map_path = os.path.join(result_dir, f"{layer_name}.weighted.cumulative_map.npy")
+threshold_map_path = os.path.join(result_dir, f"{layer_name}.threshold.cumulative_map.npy")
+center_only_map_path = os.path.join(result_dir, f"{layer_name}.center_only.cumulative_map.npy")
+np.save(weighted_map_path, weighted_bar_sum)
+np.save(threshold_map_path, threshold_bar_sum)
+np.save(center_only_map_path, center_only_bar_sum)
 
 def make_pdf(data_dir, best_file_names, worst_file_names, both_file_names, 
              pdf_dir, pdf_name, plot_title):

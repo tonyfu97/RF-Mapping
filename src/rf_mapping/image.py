@@ -59,6 +59,13 @@ def preprocess_img_to_tensor(img, img_size=None):
         mean=[-0.01618503, -0.01468056, -0.01345447],
         std=[0.09958131, 0.0980152,  0.10090139],),
     ])
+    if len(img.shape) == 2:
+        img_temp = np.zeros((3, img.shape[0], img.shape[1]))
+        img_temp[0] = img
+        img_temp[1] = img
+        img_temp[2] = img
+        img = img_temp
+    
     if img.shape.index(3) == 0:
         img = np.transpose(img, (1, 2, 0))
     img_tensor = transform(img).type('torch.FloatTensor')

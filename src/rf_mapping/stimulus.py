@@ -1,9 +1,7 @@
 """
-Functions for receptive field mapping paradigm 4a.
+Code for generating stimuli.
 
-Note: all code assumes that the y-axis points downward.
-
-Tony Fu, July 4th, 2022
+Tony Fu, July 6th, 2022
 """
 import sys
 import math

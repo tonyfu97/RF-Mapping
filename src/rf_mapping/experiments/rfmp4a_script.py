@@ -13,7 +13,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torchvision import models
-from torchvision.models import AlexNet_Weights
+from torchvision.models import AlexNet_Weights, VGG16_Weights
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
@@ -33,8 +33,9 @@ import constants as c
 # Please specify some details here:
 model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1).to(c.DEVICE)
 model_name = 'alexnet'
+# model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
+# model_name = 'vgg16'
 xn = yn = 227
-spatial_index = (11, 11)
 rf_blen_ratios = [3/4, 3/8, 3/16, 3/32]
 rf_blen_ratio_strs = ['3/4', '3/8', '3/16', '3/32']
 aspect_ratios = [1/2, 1/5, 1/10]
@@ -43,10 +44,13 @@ laa = 0.5
 fgval = 1.0
 bgval = 0.5
 threshold = 1  # for threshold cumulation maps.
-this_is_a_test_run = False
+this_is_a_test_run = True
 
 # Please double-check the directories:
-result_dir = c.REPO_DIR + f'/results/rfmp4a/{model_name}/'
+if this_is_a_test_run:
+    result_dir = c.REPO_DIR + f'/results/rfmp4a/test/'
+else:
+    result_dir = c.REPO_DIR + f'/results/rfmp4a/{model_name}/'
 pdf_dir = result_dir
 grid_pdf_path = os.path.join(pdf_dir, f"grids.pdf")
 
@@ -203,13 +207,19 @@ def center_only_cumulate(center_index, bar_sum, unit, response, threshold):
     """
     if response > threshold:
         bar_sum[unit, center_index[0], center_index[1]] += response
+        
+def print_progress(num_stimuli):
+    sys.stdout.write('\r')
+    sys.stdout.write(f"num_stimuli = {num_stimuli}")
+    sys.stdout.flush()
 
-
+delete_all_npy_files(result_dir)
 # rf_blen_ratio, aspect_ratio, theta, fgval, bgval
 for conv_i, layer_index in enumerate(layer_indices):
     layer_name = f"conv{conv_i + 1}"
     num_units = nums_units[conv_i]
     rf_size = rf_sizes[conv_i][0]
+    print(f"\nAnalyzing {layer_name}...")
 
     # Get spatial center and the corresponding box in pixel space.
     spatial_index = np.array(conv_output_shapes[conv_i][-2:])
@@ -228,7 +238,7 @@ for conv_i, layer_index in enumerate(layer_indices):
                                                    len(thetas),
                                                    2))
 
-    for blen_i, rf_blen_ratio in enumerate(tqdm(rf_blen_ratios)):
+    for blen_i, rf_blen_ratio in enumerate(rf_blen_ratios):
         for bwid_i, aspect_ratio in enumerate(aspect_ratios):
             for theta_i, theta in enumerate(thetas):
                 for val_i, (fgval, bgval) in enumerate([(1, -1), (-1, 1)]):
@@ -253,14 +263,13 @@ for conv_i, layer_index in enumerate(layer_indices):
                         center_responses[center_responses < 0] = 0  # ReLU
                         unit_blen_bwid_theta_val_responses[:, blen_i, bwid_i, theta_i, val_i] += center_responses[:]
                         num_stimuli += 1
+                        print_progress(num_stimuli)
 
                         for unit in range(num_units):
                             weighted_cumulate(bar, weighted_bar_sum, unit, center_responses[unit])
                             threshold_cumulate(bar, threshold_bar_sum, unit, center_responses[unit], threshold)
                             center_only_cumulate((yc, xc), center_only_bar_sum, unit, center_responses[unit], threshold)
 
-    delete_all_npy_files(result_dir)
-    print(f"number of stimuli = {num_stimuli} per layer")
     weighted_map_path = os.path.join(result_dir, f"{layer_name}.weighted.cumulative_map.npy")
     threshold_map_path = os.path.join(result_dir, f"{layer_name}.threshold.cumulative_map.npy")
     center_only_map_path = os.path.join(result_dir, f"{layer_name}.center_only.cumulative_map.npy")
@@ -322,7 +331,6 @@ for conv_i, layer_index in enumerate(layer_indices):
                 val_std = np.mean(unit_blen_bwid_theta_val_responses[unit,...], axis=(0,1,2))/math.sqrt(num_units)
                 plt.bar(['white on black', 'black on white'], val_tuning, yerr=val_std, width=0.4)
                 plt.title("Contrast tuning")
-                plt.xlabel("theta")
                 plt.ylabel("avg response")
                 plt.grid()
 

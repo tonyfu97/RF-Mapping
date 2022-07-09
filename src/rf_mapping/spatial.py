@@ -1,5 +1,14 @@
+"""
+Code for getting information about spatial dimensions and manipulating spatial
+indices.
+
+Note: all code assumes that the y-axis points downward.
+
+Tony Fu, July 6th, 2022
+"""
 import math
 import copy
+import warnings
 
 import numpy as np
 import torch
@@ -31,7 +40,7 @@ def clip(x, x_min, x_max):
 ###############################################################################
 def calculate_center(output_size):
     """
-    Determines what we referred to as the 'spatial center' of a 1D or 2D space.
+    center = (output_size - 1)//2.
     
     Parameters
     ----------
@@ -491,7 +500,8 @@ class RfGrid:
         Returns [16, 20, 24] in this case.
         """
         if math.isclose(increment, 0):
-            raise ValueError("The increment is too close to zero.")
+            warnings.warn("The increment is too close to zero. Returns -1")
+            return [-1]
 
         middle = (start + end)/2
         indices = [middle]
