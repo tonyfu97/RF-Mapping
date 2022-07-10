@@ -376,31 +376,3 @@ class BarRfMapperP4a(BarRfMapper):
                 if show: plt.show()
                 pdf.savefig()
                 plt.close()
-
-
-"""
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-%matplotlib ipympl
-
-model = models.alexnet(pretrained=True)
-bm = BarRfMapperP4a(model, 1, (227, 227))
-bm.set_debug(True)
-a = bm.animate(2)
-
-fig, ax = plt.subplots()
-
-def init_func():
-    img = np.zeros((227, 227))
-    plt.imshow(img, cmap='gray')
-
-def animate_func(frame):
-    plt.imshow(frame[0], cmap='gray')
-    plt.title(f"frame {frame[2]}, response = {frame[1]:.2f}")
-
-ani = animation.FuncAnimation(
-    fig, animate_func, init_func=init_func, frames=a, interval=300, save_count=0, cache_frame_data=False, repeat=False)
-
-plt.show()
-"""

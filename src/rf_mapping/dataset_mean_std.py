@@ -48,5 +48,6 @@ avg_std /= num_images
 print(f"avg_mean = {avg_mean}")
 print(f"avg_std = {avg_std}")
 
+# Results:
 # avg_mean = [-0.01618503 -0.01468056 -0.01345447]
 # avg_std = [0.09958131 0.0980152  0.10090139]
