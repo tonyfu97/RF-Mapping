@@ -41,17 +41,17 @@ class RfMapper:
         Parameters
         ----------
         model : torchvision.Module
-            The neural network.
+            The pretrained neural network.
         conv_i : int
             The index of the convolutional layer starting from zero. That is,
             Conv1 should be 0. 
         image_shape : (int, int)
             The dimension of the image in (yn, xn) format (pix).
         """
-        self.model = copy.deepcopy(copy)
+        self.model = copy.deepcopy(model)
         self.conv_i = conv_i
         self.yn, self.xn = image_shape
-        print(f"The RF mapper is for Conv{conv_i + 1} (not Conv{conv_i})"
+        print(f"The RF mapper is for Conv{conv_i + 1} (not Conv{conv_i}) "
               f"with input shape (yn = {self.yn}, xn = {self.xn}).")
 
         # Get basic info about the conv layer.
@@ -68,7 +68,7 @@ class RfMapper:
         
         # Locate RF in the pixel space.
         self.converter = SpatialIndexConverter(model, (self.yn, self.xn))
-        self.box = self.converter.convert(self.output_center_yx,
+        self.box = self.converter.convert((self.output_yc, self.output_xc),
                                           self.layer_idx, 0, is_forward=False)
         self.box_yc, self.box_xc = self._get_box_center(self.box)
 
@@ -84,7 +84,7 @@ class RfMapper:
                                                     (self.yn, self.xn))
         return np.array(conv_output_shapes[self.conv_i][-2:])
     
-    def _get_box_center(box):
+    def _get_box_center(self, box):
         """Finds the center coordinates of the box in (y, x) format."""
         y_min, x_min, y_max, x_max = box
         xc = (x_min + x_max)//2
@@ -155,6 +155,11 @@ class BarRfMapper(RfMapper):
         self.grid_calculator = RfGrid(model, (self.yn, self.xn))
         self.cumulate_threshold = None
 
+        # Array initializations
+        self.weighted_bar_sum = np.zeros((self.num_units, self.yn, self.xn))
+        self.threshold_bar_sum = np.zeros((self.num_units, self.yn, self.xn))
+        self.center_only_bar_sum = np.zeros((self.num_units, self.yn, self.xn))
+
     def _weighted_cumulate(self, new_bar, bar_sum, unit, response):
         """
         Adds the new_bar, weighted by the unit's response to that bar, to the
@@ -201,12 +206,19 @@ class BarRfMapper(RfMapper):
         """
         if response > self.cumulate_threshold:
             bar_sum[unit, self.box_yc, self.box_xc] += response
+    
+    def _update_bar_sums(self, new_bar, responses):
+        """Updates all three cumulate maps at once for all units."""
+        for unit in range(self.num_units):
+            self._weighted_cumulate(new_bar, self.weighted_bar_sum, unit, responses[unit])
+            self._threshold_cumulate(new_bar, self.threshold_bar_sum, unit, responses[unit])
+            self._center_only_cumulate(self.center_only_bar_sum, unit, responses[unit])
             
     def _get_center_responses(self, input):
         """Gets the responses of the spatial centers of all units."""
         input_tensor = preprocess_img_to_tensor(input)
         y, _ = self._truncated_model(input_tensor, self.model, self.layer_idx)
-        return y[0, :, self.output_yc[0], self.output_xc[1]].cpu().detach().numpy()
+        return y[0, :, self.output_yc, self.output_xc].cpu().detach().numpy()
 
     def map(self):
         raise NotImplementedError("The map method is not implemented.")
@@ -234,9 +246,6 @@ class BarRfMapperP4a(BarRfMapper):
         self.DEBUG = False
 
         # Array initializations
-        self.weighted_bar_sum = np.zeros((self.num_units, self.yn, self.xn))
-        self.threshold_bar_sum = np.zeros((self.num_units, self.yn, self.xn))
-        self.center_only_bar_sum = np.zeros((self.num_units, self.yn, self.xn))
         self.all_responses = np.zeros((self.num_units,
                                        len(self.rf_blen_ratios),
                                        len(self.aspect_ratios),
@@ -252,13 +261,7 @@ class BarRfMapperP4a(BarRfMapper):
         """
         self.DEBUG = debug
 
-    def _update_bar_sums(self, new_bar, responses):
-        for unit in range(self.num_units):
-            self._weighted_cumulate(new_bar, self.weighted_bar_sum, unit, responses[unit])
-            self._threshold_cumulate(new_bar, self.threshold_bar_sum, unit, responses[unit])
-            self._center_only_cumulate(self.center_only_bar_sum, unit, responses[unit])
-
-    def map(self):
+    def _map(self, animation=False, unit=None, cumulate_mode=None, bar_sum=None):
         num_stimuli = 0
         for blen_i, rf_blen_ratio in enumerate(self.rf_blen_ratios):
             for bwid_i, aspect_ratio in enumerate(self.aspect_ratios):
@@ -270,7 +273,7 @@ class BarRfMapperP4a(BarRfMapper):
                         grid_spacing = blen/2
                         
                         # Get grid coordinates.
-                        grid_coords = self.grid_calculator(self.layer_idx, (self.output_yc, self.output_xc), grid_spacing)
+                        grid_coords = self.grid_calculator.get_grid_coords(self.layer_idx, (self.output_yc, self.output_xc), grid_spacing)
                         grid_coords_np = np.array(grid_coords)
 
                         # Create bars.
@@ -284,10 +287,31 @@ class BarRfMapperP4a(BarRfMapper):
                             self.all_responses[:, blen_i, bwid_i, theta_i, val_i] += center_responses.copy()
 
                             num_stimuli += 1
-                            self._print_progress(num_stimuli)
-                            self._update_bar_sums(self, new_bar, self.responses)
+
+                            if not animation:
+                                self._print_progress(num_stimuli)
+                                self._update_bar_sums(self, new_bar, center_responses)
+                            
+                            else:
+                                if cumulate_mode == 'weighted':
+                                    self._weighted_cumulate(new_bar, bar_sum, unit, center_responses[unit])
+                                elif cumulate_mode == 'threshold':
+                                    self._threshold_cumulate(new_bar, bar_sum, unit, center_responses[unit])
+                                elif cumulate_mode == 'center_only':
+                                    self._center_only_cumulate(bar_sum, unit, center_responses[unit])
+                                else:
+                                    raise ValueError(f"cumulate_mode: {cumulate_mode} is not supported.")
+                                yield bar_sum[unit], center_responses[unit], num_stimuli
+
+
+    def map(self):
+        self._map(animation=False)
         return self.all_responses
-    
+
+    def animate(self, unit, cumulate_mode='weighted'):
+        bar_sum = np.zeros((self.num_units, self.yn, self.xn))
+        return self._map(animation=True, unit=unit, cumulate_mode=cumulate_mode, bar_sum=bar_sum)
+
     def plot_one_unit(self, cumulate_mode, unit):
         if cumulate_mode == 'weighted':
             bar_sum = self.weighted_bar_sum
@@ -354,4 +378,29 @@ class BarRfMapperP4a(BarRfMapper):
                 plt.close()
 
 
+"""
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+%matplotlib ipympl
 
+model = models.alexnet(pretrained=True)
+bm = BarRfMapperP4a(model, 1, (227, 227))
+bm.set_debug(True)
+a = bm.animate(2)
+
+fig, ax = plt.subplots()
+
+def init_func():
+    img = np.zeros((227, 227))
+    plt.imshow(img, cmap='gray')
+
+def animate_func(frame):
+    plt.imshow(frame[0], cmap='gray')
+    plt.title(f"frame {frame[2]}, response = {frame[1]:.2f}")
+
+ani = animation.FuncAnimation(
+    fig, animate_func, init_func=init_func, frames=a, interval=300, save_count=0, cache_frame_data=False, repeat=False)
+
+plt.show()
+"""
