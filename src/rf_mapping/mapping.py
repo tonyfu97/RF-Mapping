@@ -301,7 +301,7 @@ class BarRfMapperP4a(BarRfMapper):
                                     self._center_only_cumulate(bar_sum, unit, center_responses[unit])
                                 else:
                                     raise ValueError(f"cumulate_mode: {cumulate_mode} is not supported.")
-                                yield bar_sum[unit], center_responses[unit], num_stimuli
+                                yield bar_sum[unit], center_responses[unit], num_stimuli, new_bar
 
 
     def map(self):
