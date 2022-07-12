@@ -57,8 +57,8 @@ def rotate(dx, dy, theta_deg):
 @njit  # sped up by 182x
 def draw_bar(xn, yn, x0, y0, theta, blen, bwid, laa, fgval, bgval):
     """
-    Creates a bar stimulus.
-    Modified from Dr. Wyeth Bair's d06_mrf.py
+    Creates a bar stimulus. Code originally from by Dr. Wyeth Bair's
+    d06_util_bargen.py, modified for readability.
 
     Parameters
     ----------

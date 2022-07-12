@@ -36,7 +36,7 @@ class RfMapper:
     def __init__(self, model, conv_i, image_shape):
         """
         The base class of receptive fields mapping of a single convolutional
-        layer.
+        layer. Initializes the information needed about the conv layer.
         
         Parameters
         ----------
@@ -227,6 +227,8 @@ class BarRfMapper(RfMapper):
 #######################################.#######################################
 #                                                                             #
 #                            RF MAPPING PARADIGM 4a                           #
+#      Get the top N most activating bars, take the absolute value, and       #
+#         add them up or apply pixel-wise OR to the cumulative map.           #
 #                                                                             #
 ###############################################################################
 class BarRfMapperP4a(BarRfMapper):
@@ -239,7 +241,186 @@ class BarRfMapperP4a(BarRfMapper):
         self.aspect_ratios = [1/2, 1/5, 1/10]
         self.thetas = np.arange(0, 180, 22.5)
         self.fgval_bgval_pairs = [(1, -1), (-1, 1)]
-        self.laa = 0.5  # anti-alias thickness for bar stimuli
+        self.laa = 0.5  # anti-alias distance
+
+        # Mapping parameters
+        self.cumulate_threshold = 1
+        self.DEBUG = False
+        self.percent_max_min_to_cumulate = 0.1
+
+        # Initializations
+        self.num_stimuli = 0
+        self.all_responses = np.zeros((self.num_units,
+                                       len(self.rf_blen_ratios),
+                                       len(self.aspect_ratios),
+                                       len(self.thetas),
+                                       len(self.fgval_bgval_pairs)))
+        
+        # See self._init_max_min_response_indices() for details.
+        self.max_response_indices = []
+        self.min_response_indices = []
+
+    def set_debug(self, debug):
+        """
+        If debug is set to True, the number of bar locations is reduced
+        significantly in order to allow the map() method to run at much faster
+        rate. This is mainly to access if the bar mapper works, and the results
+        data should not be used.
+        """
+        self.DEBUG = debug
+
+    def _map(self, animation=False, unit=None, cumulate_mode=None, bar_sum=None):
+        self.num_stimuli = 0
+        for blen_i, rf_blen_ratio in enumerate(self.rf_blen_ratios):
+            for bwid_i, aspect_ratio in enumerate(self.aspect_ratios):
+                for theta_i, theta in enumerate(self.thetas):
+                    for val_i, (fgval, bgval) in enumerate(self.fgval_bgval_pairs):
+                        # Some bar parameters
+                        blen = round(rf_blen_ratio * self.rf_size)
+                        bwid = round(aspect_ratio * blen)
+                        grid_spacing = blen/2
+                        
+                        # Get grid coordinates.
+                        grid_coords = self.grid_calculator.get_grid_coords(self.layer_idx, (self.output_yc, self.output_xc), grid_spacing)
+                        grid_coords_np = np.array(grid_coords)
+
+                        # Create bars.
+                        for grid_coord_i, (xc, yc) in enumerate(grid_coords_np):
+                            if self.DEBUG and grid_coord_i > 10:
+                                break
+
+                            new_bar = draw_bar(self.xn, self.yn, xc, yc, theta, blen, bwid, self.laa, fgval, bgval)
+                            center_responses = self._get_center_responses(new_bar)
+                            center_responses[center_responses < 0] = 0  # ReLU
+                            self.all_responses[:, blen_i, bwid_i, theta_i, val_i] += center_responses.copy()
+
+                            self.num_stimuli += 1
+    
+    def _init_max_min_response_indices(self):
+        """
+        After mapping, call this function. Instead of storing each set of bar
+        parameters, here it uses a single index of to represent each bar's
+        flatten index in the self.all_response[unit,...] array. 
+
+        The lists are organized as 2 lists. Each element of each list is
+        an array of indices that corresponds to the top/bottom bar of 1 unit.
+        For example, if unit 0 prefers bar 3751 the most, followed by bar 4491,
+        then max_response_indices = [[3751, 4491, ...], [...]].
+        """
+        # Clear existing elements in the lists.
+        self.max_response_indices = []
+        self.min_response_indices = []
+        
+        # Update indicies.
+        for unit_i in range(self.num_units):
+            unit_responses = self.all_responses[unit_i, ...].copy()
+            max_threshold = self.percent_max_min_to_cumulate * unit_responses.max()
+            min_threshold = self.percent_max_min_to_cumulate * unit_responses.min()
+
+            num_max_units = len(unit_responses[unit_responses >= max_threshold])
+            num_min_units = len(unit_responses[unit_responses <= min_threshold])
+
+            sorted_bar_index = unit_responses.argsort(axis=None)  # Ascending
+            self.max_response_indices.append(sorted_bar_index[-num_max_units:][::-1])
+            self.min_response_indices.append(sorted_bar_index[:num_min_units])
+
+    def map(self):
+        self._map(animation=False)
+        self._init_max_min_response_indices()
+        
+        # TODO: copy existing bar cumulate methods to paradigm z. Then, create
+        #       new one that apply aboslute values.
+        return self.all_responses
+
+    def animate(self, unit, cumulate_mode='weighted'):
+        bar_sum = np.zeros((self.num_units, self.yn, self.xn))
+        return self._map(animation=True, unit=unit, cumulate_mode=cumulate_mode, bar_sum=bar_sum)
+
+    def plot_one_unit(self, cumulate_mode, unit):
+        if cumulate_mode == 'weighted':
+            bar_sum = self.weighted_bar_sum
+        elif cumulate_mode == 'threshold':
+            bar_sum = self.threshold_bar_sum
+        elif cumulate_mode == 'center_only':
+            bar_sum = self.center_only_bar_sum
+
+        plt.figure(figsize=(25, 5))
+        plt.suptitle(f"RF mapping with bars no.{unit}", fontsize=20)
+        
+        plt.subplot(1, 5, 1)
+        plt.imshow(bar_sum[unit, :, :], cmap='gray')
+        plt.title("Cumulated bar maps")
+        boundary = 10
+        plt.xlim([self.box[1] - boundary, self.box[3] + boundary])
+        plt.ylim([self.box[0] - boundary, self.box[2] + boundary])
+        rect = make_box(self.box, linewidth=2)
+        ax = plt.gca()
+        ax.add_patch(rect)
+        ax.invert_yaxis()
+        
+        plt.subplot(1, 5, 2)
+        blen_tuning = np.mean(self.all_responses[unit,...], axis=(1,2,3))
+        blen_std = np.mean(self.all_responses[unit,...], axis=(1,2,3))/math.sqrt(self.num_units)
+        plt.errorbar(self.rf_blen_ratios, blen_tuning, yerr=blen_std)
+        plt.title("Bar length tuning")
+        plt.xlabel("blen/RF ratio")
+        plt.ylabel("avg response")
+        plt.grid()
+        
+        plt.subplot(1, 5, 3)
+        bwid_tuning = np.mean(self.all_responses[unit,...], axis=(0,2,3))
+        bwid_std = np.mean(self.all_responses[unit,...], axis=(0,2,3))/math.sqrt(self.num_units)
+        plt.errorbar(self.aspect_ratios, bwid_tuning, yerr=bwid_std)
+        plt.title("Bar width tuning")
+        plt.xlabel("aspect ratio")
+        plt.ylabel("avg response")
+        plt.grid()
+
+        plt.subplot(1, 5, 4)
+        theta_tuning = np.mean(self.all_responses[unit,...], axis=(0,1,3))
+        theta_std = np.mean(self.all_responses[unit,...], axis=(0,1,3))/math.sqrt(self.num_units)
+        plt.errorbar(self.thetas, theta_tuning, yerr=theta_std)
+        plt.title("Theta tuning")
+        plt.xlabel("theta")
+        plt.ylabel("avg response")
+        plt.grid()
+        
+        plt.subplot(1, 5, 5)
+        val_tuning = np.mean(self.all_responses[unit,...], axis=(0,1,2))
+        val_std = np.mean(self.all_responses[unit,...], axis=(0,1,2))/math.sqrt(self.num_units)
+        plt.bar(['white on black', 'black on white'], val_tuning, yerr=val_std, width=0.4)
+        plt.title("Contrast tuning")
+        plt.ylabel("avg response")
+        plt.grid()
+    
+    def make_pdf(self, pdf_path, cumulate_mode, show=False):
+        with PdfPages(pdf_path) as pdf:
+            for unit in range(self.num_units):
+                self.plot_one_unit(cumulate_mode, unit)
+                if show: plt.show()
+                pdf.savefig()
+                plt.close()
+
+
+#######################################.#######################################
+#                                                                             #
+#                            RF MAPPING PARADIGM z                            #
+#      Summing all black and white bars, weighted by rectified responses.     #
+#                 Incorrect implementation of paradigm 4a.                    #
+#                 Can use it for Conv1 for cool animation.                    #
+#                                                                             #
+###############################################################################
+class BarRfMapperPz(BarRfMapper):
+    def __init__(self, model, conv_i, image_shape):
+        super().__init__(model, conv_i, image_shape)
+
+        # Bar parameters
+        self.rf_blen_ratios = [3/4, 3/8, 3/16, 3/32]
+        self.rf_blen_ratio_strs = ['3/4', '3/8', '3/16', '3/32']
+        self.aspect_ratios = [1/2, 1/5, 1/10]
+        self.thetas = np.arange(0, 180, 22.5)
+        self.fgval_bgval_pairs = [(1, -1), (-1, 1)]
+        self.laa = 0.5  # anti-alias distance
 
         # Mapping parameters
         self.cumulate_threshold = 1
@@ -250,7 +431,7 @@ class BarRfMapperP4a(BarRfMapper):
                                        len(self.rf_blen_ratios),
                                        len(self.aspect_ratios),
                                        len(self.thetas),
-                                       2))
+                                       len(self.fgval_bgval_pairs)))
 
     def set_debug(self, debug):
         """

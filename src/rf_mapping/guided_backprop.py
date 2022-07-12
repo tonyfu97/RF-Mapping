@@ -18,7 +18,7 @@ import constants as c
 #                               GUIDED_BACKPROP                               #
 #                                                                             #
 ###############################################################################
-class GuidedBackprop():
+class GuidedBackprop:
     """
     Generates the guided backpropagation gradient maps for a spatial location
     of a particular unit of a particular layer.
