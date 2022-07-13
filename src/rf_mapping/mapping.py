@@ -3,6 +3,7 @@ Receptive field mapping paradigms.
 
 Tony Fu, July 8, 2022
 """
+import os
 import sys
 import copy
 import math
@@ -176,7 +177,7 @@ class BarRfMapper(RfMapper):
 #                                                                             #
 ###############################################################################
 class BarRfMapperP4a(BarRfMapper):
-    def __init__(self, model, conv_i, image_shape):
+    def __init__(self, model, conv_i, image_shape, percent_max_min_to_cumulate=0.1):
         super().__init__(model, conv_i, image_shape)
 
         # Bar parameters
@@ -190,7 +191,7 @@ class BarRfMapperP4a(BarRfMapper):
         # Mapping parameters
         self.cumulate_threshold = 1
         self.DEBUG = False
-        self.percent_max_min_to_cumulate = 0.1
+        self.percent_max_min_to_cumulate = percent_max_min_to_cumulate
 
         # Initializations
         self.grid_coord_dict = self._get_grid_coords()
@@ -409,7 +410,7 @@ class BarRfMapperP4a(BarRfMapper):
                     xc, yc, blen, bwid, theta, fgval, bgval = self._index_to_params(min_bar_index, blen_i)
                     new_bar = draw_bar(self.xn, self.yn, xc, yc, theta, blen, bwid, self.laa, 1, 0)
                     # Note the new_bar used for making maps are always white on gray (zeros) to prevent canceling
-                    response = responses[unit_i].flatten()[max_bar_index]
+                    response = responses[unit_i].flatten()[min_bar_index]
                     self.min_weighted_bar_sum[unit_i] += new_bar * response
 
                 # Binarize the weighted bar sums and store it in the "or" bar sums.
@@ -424,9 +425,18 @@ class BarRfMapperP4a(BarRfMapper):
         return self.max_weighted_bar_sum, self.min_weighted_bar_sum,\
                self.max_or_bar_sum, self.min_or_bar_sum
 
-    def animate(self, unit, cumulate_mode='weighted'):
-        bar_sum = np.zeros((self.num_units, self.yn, self.xn))
-        return self._map(animation=True, unit=unit, cumulate_mode=cumulate_mode, bar_sum=bar_sum)
+    def save_maps(self, map_dir):
+        max_weighted_path = os.path.join(map_dir, f"conv{self.conv_i+1}_max_weighted_maps.npy")
+        np.save(max_weighted_path, self.max_weighted_bar_sum)
+
+        min_weighted_path = os.path.join(map_dir, f"conv{self.conv_i+1}_min_weighted_maps.npy")
+        np.save(min_weighted_path, self.min_weighted_bar_sum)
+
+        max_or_path = os.path.join(map_dir, f"conv{self.conv_i+1}_max_or_maps.npy")
+        np.save(max_or_path, self.max_or_bar_sum)
+        
+        min_or_path = os.path.join(map_dir, f"conv{self.conv_i+1}_min_or_maps.npy")
+        np.save(min_or_path, self.min_or_bar_sum)
 
     def plot_one_unit(self, cumulate_mode, unit, is_max=True):
         if is_max and cumulate_mode == 'weighted':
@@ -451,12 +461,12 @@ class BarRfMapperP4a(BarRfMapper):
         ax.add_patch(rect)
         ax.invert_yaxis()
 
-    def make_pdf(self, pdf_path, cumulate_mode, show=False):
+    def make_pdf(self, pdf_path, cumulate_mode, is_max=True, show=False):
         with PdfPages(pdf_path) as pdf:
             for unit_i in range(self.num_units):
                 if self.DEBUG and unit_i > 10:
                     break
-                self.plot_one_unit(cumulate_mode, unit_i)
+                self.plot_one_unit(cumulate_mode, unit_i, is_max=is_max)
                 if show: plt.show()
                 pdf.savefig()
                 plt.close()

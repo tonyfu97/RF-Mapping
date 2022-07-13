@@ -48,9 +48,9 @@ this_is_a_test_run = True
 
 # Please double-check the directories:
 if this_is_a_test_run:
-    result_dir = c.REPO_DIR + f'/results/rfmp4z/test/'
+    result_dir = c.REPO_DIR + f'/results/rfmpz/test/'
 else:
-    result_dir = c.REPO_DIR + f'/results/rfmp4z/{model_name}/'
+    result_dir = c.REPO_DIR + f'/results/rfmpz/{model_name}/'
 pdf_dir = result_dir
 grid_pdf_path = os.path.join(pdf_dir, f"grids.pdf")
 
