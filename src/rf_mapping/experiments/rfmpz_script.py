@@ -1,5 +1,5 @@
 """
-Receptive field mapping paradigm 4a.
+Receptive field mapping paradigm z.
 
 Note: all code assumes that the y-axis points downward.
 
@@ -48,9 +48,9 @@ this_is_a_test_run = True
 
 # Please double-check the directories:
 if this_is_a_test_run:
-    result_dir = c.REPO_DIR + f'/results/rfmp4a/test/'
+    result_dir = c.REPO_DIR + f'/results/rfmp4z/test/'
 else:
-    result_dir = c.REPO_DIR + f'/results/rfmp4a/{model_name}/'
+    result_dir = c.REPO_DIR + f'/results/rfmp4z/{model_name}/'
 pdf_dir = result_dir
 grid_pdf_path = os.path.join(pdf_dir, f"grids.pdf")
 
