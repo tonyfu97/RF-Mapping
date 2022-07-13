@@ -42,6 +42,13 @@ for sum_mode in sum_modes:
     for conv_i in range(num_layers):
         layer_name = f"conv{conv_i + 1}"
         num_units = nums_units[conv_i]
+        
+        # Load maps.
+        max_sum_path = os.path.join(backprop_sum_dir_with_modes, f"max_conv{conv_i+1}.npy")
+        min_sum_path = os.path.join(backprop_sum_dir_with_modes, f"min_conv{conv_i+1}.npy")
+        max_sum = np.load(max_sum_path)
+        min_sum = np.load(min_sum_path)
+        both_sum = (max_sum + min_sum)/2
 
         print(f"Making pdf for {model_name} conv{conv_i + 1} sum mode: {sum_mode}")
         pdf_path = os.path.join(pdf_dir_with_sum_modes, f"{layer_name}.pdf")
@@ -52,25 +59,19 @@ for sum_mode in sum_modes:
                 if this_is_a_test_run and unit_i >= 5:
                     break
 
-                max_sum_path = os.path.join(backprop_sum_dir_with_modes, f"max_conv{conv_i+1}.{unit_i}.npy")
-                min_sum_path = os.path.join(backprop_sum_dir_with_modes, f"min_conv{conv_i+1}.{unit_i}.npy")
-                both_sum_path = os.path.join(backprop_sum_dir_with_modes, f"both_conv{conv_i+1}.{unit_i}.npy")
-
-                max_sum = np.load(max_sum_path)
-                min_sum = np.load(min_sum_path)
-                both_sum = np.load(both_sum_path)
-
                 plt.figure(figsize=(15,5))
-                plt.suptitle(f"conv{conv_i+1} unit no.{unit_i} (sum mode = {sum_mode})", fontsize=24)
+                plt.suptitle(f"Gradient average of image patches ({layer_name} no.{unit_i}, "
+                             f"sum mode: {sum_mode})", fontsize=20)
+
                 plt.subplot(1, 3, 1)
-                plt.imshow(preprocess_img_for_plot(max_sum), cmap='gray')
-                plt.title("max", fontsize=20)
+                plt.imshow(preprocess_img_for_plot(max_sum[unit_i]), cmap='gray')
+                plt.title("max", fontsize=16)
                 plt.subplot(1, 3, 2)
-                plt.imshow(preprocess_img_for_plot(min_sum), cmap='gray')
-                plt.title("min", fontsize=20)
+                plt.imshow(preprocess_img_for_plot(min_sum[unit_i]), cmap='gray')
+                plt.title("min", fontsize=16)
                 plt.subplot(1, 3, 3)
-                plt.imshow(preprocess_img_for_plot(both_sum), cmap='gray')
-                plt.title("max + min", fontsize=20)
+                plt.imshow(preprocess_img_for_plot(both_sum[unit_i]), cmap='gray')
+                plt.title("max + min", fontsize=16)
 
                 pdf.savefig()
                 plt.close

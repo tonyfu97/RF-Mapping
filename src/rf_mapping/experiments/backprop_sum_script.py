@@ -112,15 +112,16 @@ for conv_i, rf_size in enumerate(rf_sizes):
     max_min_indices = np.load(index_path).astype(int)
     num_units, num_images, _ = max_min_indices.shape
     print(f"Summing gradient results for {layer_name}...")
-        
+
+    # Initializing arrays:
+    max_sum = np.zeros((len(sum_modes), num_units, rf_size[0], rf_size[1]))
+    min_sum = np.zeros((len(sum_modes), num_units, rf_size[0], rf_size[1]))
+
     for unit_i in tqdm(range(num_units)):
         # Do only the first 5 unit during testing phase
         if this_is_a_test_run and unit_i >= 5:
             break
-        
-        max_sum = np.zeros((len(sum_modes), rf_size[0], rf_size[1]))
-        min_sum = np.zeros((len(sum_modes), rf_size[0], rf_size[1]))
-        
+
         for img_i in range(top_n):
             try:
                 # Fatch indices
@@ -128,46 +129,47 @@ for conv_i, rf_size in enumerate(rf_sizes):
             except:
                 print(f"top_n of {top_n} exceeds the number of images in the ranking data.")
                 break
-            
+
             # Top N images:
             max_img_path = os.path.join(img_dir, f"{max_img_idx}.npy")
             max_img = np.load(max_img_path)
             max_grad_patch_padded = get_grad_patch(max_img, layer_idx, unit_i, max_idx, rf_size)
             for i, sum_mode in enumerate(sum_modes):
-                max_sum[i,...] = add_patch_to_sum(max_grad_patch_padded, max_sum[i,...], sum_mode)
-            
+                max_sum[i, unit_i, ...] = add_patch_to_sum(max_grad_patch_padded, max_sum[i,...], sum_mode)
+
             # Bottom N images:
             min_img_path = os.path.join(img_dir, f"{min_img_idx}.npy")
             min_img = np.load(min_img_path)
             min_grad_patch_padded = get_grad_patch(min_img, layer_idx, unit_i, min_idx, rf_size)
             for i, sum_mode in enumerate(sum_modes):
-                min_sum[i,...] = add_patch_to_sum(min_grad_patch_padded, min_sum[i,...], sum_mode)
+                min_sum[i, unit_i, ...] = add_patch_to_sum(min_grad_patch_padded, min_sum[i,...], sum_mode)
 
-        # Normalize
-        # TODO: fix this so that there is no infinity
-        max_sum_norm = max_sum/num_units
-        min_sum_norm = min_sum/num_units
-        both_sum_norm = (max_sum_norm + min_sum_norm)/2
+        if this_is_a_test_run:
+            plt.figure(figsize=(15,5))
+            sum_mode_idx = 0
+            plt.suptitle(f"Gradient average of image patches ({layer_name} no.{unit_i}, "
+                        f"sum mode: {sum_modes[sum_mode_idx]})", fontsize=20)
 
-        plt.figure(figsize=(15,5))
-        sum_mode_idx = 0
-        plt.suptitle(f"conv{conv_i+1} unit no.{unit_i} (sum mode: {sum_mode})", fontsize=24)
-        plt.subplot(1, 3, 1)
-        plt.imshow(preprocess_img_for_plot(max_sum_norm[sum_mode_idx,...]), cmap='gray')
-        plt.title("max", fontsize=20)
-        plt.subplot(1, 3, 2)
-        plt.imshow(preprocess_img_for_plot(min_sum_norm[sum_mode_idx,...]), cmap='gray')
-        plt.title("min", fontsize=20)
-        plt.subplot(1, 3, 3)
-        plt.imshow(preprocess_img_for_plot(both_sum_norm[sum_mode_idx,...]), cmap='gray')
-        plt.title("max + min", fontsize=20)
-        plt.show()
+            plt.subplot(1, 3, 1)
+            plt.imshow(preprocess_img_for_plot(max_sum[sum_mode_idx, unit_i, ...]), cmap='gray')
+            plt.title("max", fontsize=16)
+            plt.subplot(1, 3, 2)
+            plt.imshow(preprocess_img_for_plot(min_sum[sum_mode_idx, unit_i, ...]), cmap='gray')
+            plt.title("min", fontsize=16)
+            plt.subplot(1, 3, 3)
+            both_sum = max_sum[sum_mode_idx, unit_i, ...] + both_sum[sum_mode_idx, unit_i, ...]
+            plt.imshow(preprocess_img_for_plot(both_sum), cmap='gray')
+            plt.title("max + min", fontsize=16)
+            plt.show()
 
-        # Save results.
-        for i, sum_mode in enumerate(sum_modes):
-            max_result_path = os.path.join(result_dir, sum_mode, f"max_conv{conv_i+1}.{unit_i}.npy")
-            min_result_path = os.path.join(result_dir, sum_mode, f"min_conv{conv_i+1}.{unit_i}.npy")
-            both_result_path = os.path.join(result_dir, sum_mode, f"both_conv{conv_i+1}.{unit_i}.npy")
-            np.save(max_result_path, max_sum_norm[i,...])
-            np.save(min_result_path, min_sum_norm[i,...])
-            np.save(both_result_path, both_sum_norm[i,...])
+    # Normalize
+    max_sum_norm = max_sum/num_units
+    min_sum_norm = min_sum/num_units
+    both_sum_norm = (max_sum_norm + min_sum_norm)/2
+
+    # Save results.
+    for i, sum_mode in enumerate(sum_modes):
+        max_result_path = os.path.join(result_dir, sum_mode, f"max_conv{conv_i+1}.npy")
+        min_result_path = os.path.join(result_dir, sum_mode, f"min_conv{conv_i+1}.npy")
+        np.save(max_result_path, max_sum_norm[i,...])
+        np.save(min_result_path, min_sum_norm[i,...])

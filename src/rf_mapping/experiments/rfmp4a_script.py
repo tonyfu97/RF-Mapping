@@ -63,8 +63,5 @@ for conv_i in range(num_layers):
     mapper.save_maps(result_dir)
     
     for cumulate_mode in cumulate_modes:
-        for max_or_min in ['max', 'min']:
-            is_max = (max_or_min == 'max')
-            mapper.make_pdf(result_dir + f'conv{conv_i+1}_{max_or_min}_{cumulate_mode}_maps.pdf',
-                            cumulate_mode,
-                            is_max=is_max)
+        mapper.make_pdf(result_dir + f'conv{conv_i+1}_{cumulate_mode}_maps.pdf',
+                            cumulate_mode)

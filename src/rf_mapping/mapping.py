@@ -190,8 +190,11 @@ class BarRfMapperP4a(BarRfMapper):
 
         # Mapping parameters
         self.cumulate_threshold = 1
-        self.DEBUG = False
         self.percent_max_min_to_cumulate = percent_max_min_to_cumulate
+        
+        # Debugging parameters
+        self.DEBUG = False
+        self.DEBUG_NUM_UNITS = 10
 
         # Initializations
         self.grid_coord_dict = self._get_grid_coords()
@@ -300,7 +303,7 @@ class BarRfMapperP4a(BarRfMapper):
                             else:
                                 raise Exception("too many rf_blen_ratios.")
                             num_stimuli += 1
-                            self._print_progress(num_stimuli, pre_text="Mapping ", post_text=" stimuli...")
+                            self._print_progress(num_stimuli, pre_text="Presenting ", post_text=" stimuli...")
 
     def _sort_responses(self):
         """
@@ -334,13 +337,12 @@ class BarRfMapperP4a(BarRfMapper):
                                             self.blen3_responses]):
             self.max_response_indices[blen_i] = {}
             self.min_response_indices[blen_i] = {}
-            self._print_progress(blen_i, pre_text="Sorting ", post_text=" blen...")
-
             for unit_i in range(self.num_units):
-                if self.DEBUG and unit_i > 5:
+                if self.DEBUG and unit_i > self.DEBUG_NUM_UNITS:
                     break
                 unit_responses = responses[unit_i, ...].copy()
 
+                # Get the max and min of the unit (of all bar lengths).
                 unit_max_response = max(self.blen0_responses[unit_i].max(),
                                         self.blen1_responses[unit_i].max(),
                                         self.blen2_responses[unit_i].max(),
@@ -350,28 +352,38 @@ class BarRfMapperP4a(BarRfMapper):
                                         self.blen2_responses[unit_i].min(),
                                         self.blen3_responses[unit_i].min())
 
-                max_threshold = (1-self.percent_max_min_to_cumulate) * (unit_max_response - unit_min_response) + unit_min_response
-                min_threshold = self.percent_max_min_to_cumulate * (unit_max_response - unit_min_response) + unit_min_response
-
+                # Max threshold: include every bar that results in an response
+                # larger than this.
+                max_threshold = (1 - self.percent_max_min_to_cumulate) * (unit_max_response - unit_min_response) + unit_min_response
                 num_max_units = len(unit_responses[unit_responses >= max_threshold])
+
+                # Min threshold: include every bar that results in an response
+                # less than this.
+                min_threshold = self.percent_max_min_to_cumulate * (unit_max_response - unit_min_response) + unit_min_response
                 num_min_units = len(unit_responses[unit_responses <= min_threshold])
 
                 if self.DEBUG:
-                    print(f"unit {unit_i}, max_threshold: {max_threshold}, num_max_units: {num_min_units}")
+                    print(f"blen_i: {blen_i}, unit {unit_i}, "
+                          f"num_max_units: {num_min_units}, "
+                          f"num_min_units: {num_min_units}")
 
                 sorted_bar_index = unit_responses.argsort(axis=None)  # Ascending
                 self.max_response_indices[blen_i][unit_i] = sorted_bar_index[::-1][:num_max_units]
                 self.min_response_indices[blen_i][unit_i] = sorted_bar_index[:num_min_units]
 
     def _index_to_params(self, index, blen_i):
+        """
+        Given an index of the array in self.blenX_responses[unit_i], returns
+        the corresponding bar parameters.
+        """
         if blen_i == 0:
-            _, bwid_i, theta_i, val_i, grid_coord_i = np.unravel_index(index, self.blen0_responses.shape)
+            bwid_i, theta_i, val_i, grid_coord_i = np.unravel_index(index, self.blen0_responses[0].shape)
         elif blen_i == 1:
-            _, bwid_i, theta_i, val_i, grid_coord_i = np.unravel_index(index, self.blen1_responses.shape)
+            bwid_i, theta_i, val_i, grid_coord_i = np.unravel_index(index, self.blen1_responses[0].shape)
         elif blen_i == 2:
-            _, bwid_i, theta_i, val_i, grid_coord_i = np.unravel_index(index, self.blen2_responses.shape)
+            bwid_i, theta_i, val_i, grid_coord_i = np.unravel_index(index, self.blen2_responses[0].shape)
         elif blen_i == 3:
-            _, bwid_i, theta_i, val_i, grid_coord_i = np.unravel_index(index, self.blen3_responses.shape)
+            bwid_i, theta_i, val_i, grid_coord_i = np.unravel_index(index, self.blen3_responses[0].shape)
         else:
             raise Exception("too many rf_blen_ratios.")
         xc, yc = self.grid_coord_dict[blen_i][grid_coord_i]
@@ -389,7 +401,7 @@ class BarRfMapperP4a(BarRfMapper):
         self.min_or_bar_sum = np.zeros((self.num_units, self.yn, self.xn))
 
         for unit_i in range(self.num_units):
-            if self.DEBUG and unit_i > 5:
+            if self.DEBUG and unit_i > self.DEBUG_NUM_UNITS:
                 break
             self._print_progress(unit_i, pre_text="Making maps for unit no.", post_text="...")
             for blen_i, responses in enumerate([self.blen0_responses,
@@ -404,20 +416,28 @@ class BarRfMapperP4a(BarRfMapper):
                     new_bar = draw_bar(self.xn, self.yn, xc, yc, theta, blen, bwid, self.laa, 1, 0)
                     # Note the new_bar used for making maps are always white on gray (zeros) to prevent canceling
                     response = responses[unit_i].flatten()[max_bar_index]
-                    self.max_weighted_bar_sum[unit_i] += new_bar * response
+                    self.max_weighted_bar_sum[unit_i] += new_bar * abs(response)
 
                 for min_bar_index in min_bar_indices:
                     xc, yc, blen, bwid, theta, fgval, bgval = self._index_to_params(min_bar_index, blen_i)
                     new_bar = draw_bar(self.xn, self.yn, xc, yc, theta, blen, bwid, self.laa, 1, 0)
-                    # Note the new_bar used for making maps are always white on gray (zeros) to prevent canceling
+                    # Note that the new_bar used for making maps are always white on gray (zeros) to prevent canceling
                     response = responses[unit_i].flatten()[min_bar_index]
-                    self.min_weighted_bar_sum[unit_i] += new_bar * response
+                    self.min_weighted_bar_sum[unit_i] += new_bar * abs(response)
 
                 # Binarize the weighted bar sums and store it in the "or" bar sums.
                 self.max_or_bar_sum[unit_i][self.max_weighted_bar_sum[unit_i] > 0] = 1
                 self.min_or_bar_sum[unit_i][self.min_weighted_bar_sum[unit_i] > 0] = 1
 
     def map(self):
+        """
+        
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
         self._present_and_record()
         self._sort_responses()
         self._make_maps()
@@ -426,6 +446,7 @@ class BarRfMapperP4a(BarRfMapper):
                self.max_or_bar_sum, self.min_or_bar_sum
 
     def save_maps(self, map_dir):
+        """Save the maps as npy files to the map_dir."""
         max_weighted_path = os.path.join(map_dir, f"conv{self.conv_i+1}_max_weighted_maps.npy")
         np.save(max_weighted_path, self.max_weighted_bar_sum)
 
@@ -438,21 +459,20 @@ class BarRfMapperP4a(BarRfMapper):
         min_or_path = os.path.join(map_dir, f"conv{self.conv_i+1}_min_or_maps.npy")
         np.save(min_or_path, self.min_or_bar_sum)
 
-    def plot_one_unit(self, cumulate_mode, unit, is_max=True):
-        if is_max and cumulate_mode == 'weighted':
-            bar_sum = self.max_weighted_bar_sum
-        elif is_max and cumulate_mode == 'or':
-            bar_sum = self.max_or_bar_sum
-        elif (not is_max) and cumulate_mode == 'weighted':
-            bar_sum = self.min_weighted_bar_sum
-        elif (not is_max) and cumulate_mode == 'or':
-            bar_sum = self.min_or_bar_sum
+    def plot_one_unit(self, cumulate_mode, unit):
+        if cumulate_mode == 'weighted':
+            max_bar_sum = self.max_weighted_bar_sum
+            min_bar_sum = self.min_weighted_bar_sum
+        elif cumulate_mode == 'or':
+            max_bar_sum = self.max_or_bar_sum
+            min_bar_sum = self.min_or_bar_sum
 
-        plt.figure(figsize=(5, 5))
-        plt.suptitle(f"RF mapping with bars no.{unit}", fontsize=20)
+        plt.figure(figsize=(15, 5))
+        plt.suptitle(f"Cumulative map with bars (conv{self.conv_i+1}, no.{unit}, cumulate mode = {cumulate_mode})", fontsize=20)
         
-        plt.imshow(bar_sum[unit], cmap='gray')
-        plt.title(f"Bar map (is_max = {is_max}, {cumulate_mode})")
+        plt.subplot(1, 3, 1)
+        plt.imshow(max_bar_sum[unit], cmap='gray')
+        plt.title(f"max", fontsize=16)
         boundary = 10
         plt.xlim([self.box[1] - boundary, self.box[3] + boundary])
         plt.ylim([self.box[0] - boundary, self.box[2] + boundary])
@@ -461,12 +481,37 @@ class BarRfMapperP4a(BarRfMapper):
         ax.add_patch(rect)
         ax.invert_yaxis()
 
-    def make_pdf(self, pdf_path, cumulate_mode, is_max=True, show=False):
+        plt.subplot(1, 3, 2)
+        plt.imshow(min_bar_sum[unit], cmap='gray')
+        plt.title(f"min", fontsize=16)
+        boundary = 10
+        plt.xlim([self.box[1] - boundary, self.box[3] + boundary])
+        plt.ylim([self.box[0] - boundary, self.box[2] + boundary])
+        rect = make_box(self.box, linewidth=2)
+        ax = plt.gca()
+        ax.add_patch(rect)
+        ax.invert_yaxis()
+
+        plt.subplot(1, 3, 3)
+        both_map = (max_bar_sum[unit] + min_bar_sum[unit])/2
+        if cumulate_mode == 'or':
+            both_map[both_map > 0] = 1
+        plt.imshow(both_map, cmap='gray')
+        plt.title(f"max + min", fontsize=16)
+        boundary = 10
+        plt.xlim([self.box[1] - boundary, self.box[3] + boundary])
+        plt.ylim([self.box[0] - boundary, self.box[2] + boundary])
+        rect = make_box(self.box, linewidth=2)
+        ax = plt.gca()
+        ax.add_patch(rect)
+        ax.invert_yaxis()
+
+    def make_pdf(self, pdf_path, cumulate_mode, show=False):
         with PdfPages(pdf_path) as pdf:
             for unit_i in range(self.num_units):
-                if self.DEBUG and unit_i > 10:
+                if self.DEBUG and unit_i > self.DEBUG_NUM_UNITS:
                     break
-                self.plot_one_unit(cumulate_mode, unit_i, is_max=is_max)
+                self.plot_one_unit(cumulate_mode, unit_i)
                 if show: plt.show()
                 pdf.savefig()
                 plt.close()
