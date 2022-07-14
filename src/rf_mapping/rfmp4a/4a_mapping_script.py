@@ -31,9 +31,9 @@ this_is_a_test_run = False
 
 # Please double-check the directories:
 if this_is_a_test_run:
-    result_dir = c.REPO_DIR + f'/results/rfmp4a/test/'
+    result_dir = c.REPO_DIR + f'/results/rfmp4a/mapping/test/'
 else:
-    result_dir = c.REPO_DIR + f'/results/rfmp4a/{model_name}/'
+    result_dir = c.REPO_DIR + f'/results/rfmp4a/mapping/{model_name}/'
 pdf_dir = result_dir
 grid_pdf_path = os.path.join(pdf_dir, f"grids.pdf")
 
@@ -63,5 +63,5 @@ for conv_i in range(num_layers):
     mapper.save_maps(result_dir)
 
     for cumulate_mode in cumulate_modes:
-        mapper.make_pdf(result_dir + f'conv{conv_i+1}_{cumulate_mode}_maps.pdf',
-                            cumulate_mode)
+        result_dir_with_mode = os.path.join(result_dir, cumulate_mode, f'conv{conv_i+1}_maps.pdf')
+        mapper.make_pdf(result_dir_with_mode, cumulate_mode)

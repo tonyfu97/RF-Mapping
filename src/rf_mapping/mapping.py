@@ -453,16 +453,16 @@ class BarRfMapperP4a(BarRfMapper):
 
     def save_maps(self, map_dir):
         """Save the maps as npy files to the map_dir."""
-        max_weighted_path = os.path.join(map_dir, f"conv{self.conv_i+1}_max_weighted_maps.npy")
+        max_weighted_path = os.path.join(map_dir, 'weighted', f"conv{self.conv_i+1}_max_maps.npy")
         np.save(max_weighted_path, self.max_weighted_bar_sum)
 
-        min_weighted_path = os.path.join(map_dir, f"conv{self.conv_i+1}_min_weighted_maps.npy")
+        min_weighted_path = os.path.join(map_dir, 'weighted', f"conv{self.conv_i+1}_min_maps.npy")
         np.save(min_weighted_path, self.min_weighted_bar_sum)
 
-        max_or_path = os.path.join(map_dir, f"conv{self.conv_i+1}_max_or_maps.npy")
+        max_or_path = os.path.join(map_dir, 'or', f"conv{self.conv_i+1}_max_maps.npy")
         np.save(max_or_path, self.max_or_bar_sum)
         
-        min_or_path = os.path.join(map_dir, f"conv{self.conv_i+1}_min_or_maps.npy")
+        min_or_path = os.path.join(map_dir, 'or', f"conv{self.conv_i+1}_min_maps.npy")
         np.save(min_or_path, self.min_or_bar_sum)
 
     def plot_one_unit(self, cumulate_mode, unit):

@@ -1,5 +1,5 @@
 """
-Testing if numpy speeds up a function or not.
+Testing if numba jit speeds up a function or not.
 
 Tony Fu, July 1, 2022
 """
