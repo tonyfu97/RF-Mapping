@@ -12,6 +12,7 @@ import numpy as np
 from tqdm import tqdm
 import torch.nn as nn
 from torchvision import models
+from torchvision.models import AlexNet_Weights
 import matplotlib.pyplot as plt
 
 sys.path.append('..')
@@ -22,7 +23,7 @@ from files import delete_all_npy_files
 import constants as c
 
 # Please specify some details here:
-model = models.alexnet(pretrained = True).to(c.DEVICE)
+model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1).to(c.DEVICE)
 model_name = "alexnet"
 sum_modes = ['abs', 'sqr']
 grad_method = GuidedBackprop(model)
@@ -32,7 +33,7 @@ this_is_a_test_run = False
 # Please double-check the directories:
 img_dir = c.IMG_DIR
 index_dir = c.REPO_DIR + f'/results/ground_truth/top_n/{model_name}'
-result_dir = c.REPO_DIR + f'results/ground_truth/backprop_sum/{model_name}'
+result_dir = c.REPO_DIR + f'/results/ground_truth/backprop_sum/{model_name}'
 
 ###############################################################################
 
@@ -135,14 +136,14 @@ for conv_i, rf_size in enumerate(rf_sizes):
             max_img = np.load(max_img_path)
             max_grad_patch_padded = get_grad_patch(max_img, layer_idx, unit_i, max_idx, rf_size)
             for i, sum_mode in enumerate(sum_modes):
-                max_sum[i, unit_i, ...] = add_patch_to_sum(max_grad_patch_padded, max_sum[i,...], sum_mode)
+                max_sum[i, unit_i, ...] = add_patch_to_sum(max_grad_patch_padded, max_sum[i, unit_i, ...], sum_mode)
 
             # Bottom N images:
             min_img_path = os.path.join(img_dir, f"{min_img_idx}.npy")
             min_img = np.load(min_img_path)
             min_grad_patch_padded = get_grad_patch(min_img, layer_idx, unit_i, min_idx, rf_size)
             for i, sum_mode in enumerate(sum_modes):
-                min_sum[i, unit_i, ...] = add_patch_to_sum(min_grad_patch_padded, min_sum[i,...], sum_mode)
+                min_sum[i, unit_i, ...] = add_patch_to_sum(min_grad_patch_padded, min_sum[i, unit_i, ...], sum_mode)
 
         if this_is_a_test_run:
             plt.figure(figsize=(15,5))
@@ -157,7 +158,7 @@ for conv_i, rf_size in enumerate(rf_sizes):
             plt.imshow(preprocess_img_for_plot(min_sum[sum_mode_idx, unit_i, ...]), cmap='gray')
             plt.title("min", fontsize=16)
             plt.subplot(1, 3, 3)
-            both_sum = max_sum[sum_mode_idx, unit_i, ...] + both_sum[sum_mode_idx, unit_i, ...]
+            both_sum = max_sum[sum_mode_idx, unit_i, ...] + min_sum[sum_mode_idx, unit_i, ...]
             plt.imshow(preprocess_img_for_plot(both_sum), cmap='gray')
             plt.title("max + min", fontsize=16)
             plt.show()
