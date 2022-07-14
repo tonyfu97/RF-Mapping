@@ -431,12 +431,18 @@ class BarRfMapperP4a(BarRfMapper):
 
     def map(self):
         """
+        Apply receptive field mapping paradigm 4a.
         
-
         Returns
         -------
-        _type_
-            _description_
+        max_weighted_bar_sum : numpy.array
+            The weighted sum of the top bars in dimension [unit, yn, xn].
+        min_weighted_bar_sum : numpy.array
+            The weighted sum of the bottom bars in dimension [unit, yn, xn].
+        max_or_bar_sum : numpy.array
+            The pixel-wise OR sum of the top bars in dimension [unit, yn, xn].
+        min_or_bar_sum : numpy.array
+            The pixel-wise OR sum of the bottom bars in dimension [unit, yn, xn].
         """
         self._present_and_record()
         self._sort_responses()
@@ -460,6 +466,10 @@ class BarRfMapperP4a(BarRfMapper):
         np.save(min_or_path, self.min_or_bar_sum)
 
     def plot_one_unit(self, cumulate_mode, unit):
+        """
+        Plots the max, min, and both (max + min) cumulative bar maps of one
+        unit.
+        """
         if cumulate_mode == 'weighted':
             max_bar_sum = self.max_weighted_bar_sum
             min_bar_sum = self.min_weighted_bar_sum
@@ -507,6 +517,18 @@ class BarRfMapperP4a(BarRfMapper):
         ax.invert_yaxis()
 
     def make_pdf(self, pdf_path, cumulate_mode, show=False):
+        """
+        Makes a pdf, with each page printing the cumulative bar maps of a unit.
+        
+        Parameters
+        ----------
+        pdf_path : str
+            The file path (must ends with .pdf) of the pdf file.
+        cumulate_mode : str
+            Either 'weighted' or 'or'.
+        show : bool
+            If True, show the plots as they are printed to the pdf.
+        """
         with PdfPages(pdf_path) as pdf:
             for unit_i in range(self.num_units):
                 if self.DEBUG and unit_i > self.DEBUG_NUM_UNITS:

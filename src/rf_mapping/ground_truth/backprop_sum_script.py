@@ -28,7 +28,7 @@ model_name = "alexnet"
 sum_modes = ['abs', 'sqr']
 grad_method = GuidedBackprop(model)
 top_n = 100
-this_is_a_test_run = False
+this_is_a_test_run = True
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR
@@ -170,7 +170,7 @@ for conv_i, rf_size in enumerate(rf_sizes):
 
     # Save results.
     for i, sum_mode in enumerate(sum_modes):
-        max_result_path = os.path.join(result_dir, sum_mode, f"max_conv{conv_i+1}.npy")
-        min_result_path = os.path.join(result_dir, sum_mode, f"min_conv{conv_i+1}.npy")
+        max_result_path = os.path.join(result_dir, sum_mode, f"conv{conv_i+1}_max.npy")
+        min_result_path = os.path.join(result_dir, sum_mode, f"conv{conv_i+1}_min.npy")
         np.save(max_result_path, max_sum_norm[i,...])
         np.save(min_result_path, min_sum_norm[i,...])

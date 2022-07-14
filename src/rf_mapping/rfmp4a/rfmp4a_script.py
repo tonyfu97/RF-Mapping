@@ -61,7 +61,7 @@ for conv_i in range(num_layers):
 
     mapper.map()
     mapper.save_maps(result_dir)
-    
+
     for cumulate_mode in cumulate_modes:
         mapper.make_pdf(result_dir + f'conv{conv_i+1}_{cumulate_mode}_maps.pdf',
                             cumulate_mode)

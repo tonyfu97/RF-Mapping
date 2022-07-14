@@ -55,7 +55,6 @@ for sum_mode in sum_modes:
                 param_loader = ParamLoader(gaussian_fit_dir_with_mode, file_names, rf_size)
                 model_param_loaders.append(param_loader)
 
-
             rf_sizes_1d = [rf_size[0] for rf_size in rf_sizes]
             plt.figure(figsize=(20,5))
             plt.suptitle(f"{model_name}: elliptical axial length vs. maximum RF size ({max_or_min}, sum mode = {sum_mode})", fontsize=20)
@@ -105,6 +104,3 @@ for sum_mode in sum_modes:
 
             pdf.savefig()
             plt.close()
-
-
-
