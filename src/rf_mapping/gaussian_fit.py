@@ -400,8 +400,9 @@ class ParamCleaner(GaussianFitParamFormat):
                 return True
         return False
     
-    def _mu_is_outside_rf(self, mu_x, mu_y, rf_size):
-        return not(0 < mu_y < rf_size[0] and 0 < mu_x < rf_size[1])
+    def _mu_is_outside_rf(self, mu_x, mu_y, box):
+        y_min, x_min, y_max, x_max = box
+        return not(x_min <= mu_x <= x_max and y_min <= mu_y <= y_max)
 
     def _wrap_angle_180(self, angle):
         while angle >= 180:
@@ -439,7 +440,7 @@ class ParamCleaner(GaussianFitParamFormat):
             return self._wrap_angle_180(theta)
         return self._wrap_angle_180(theta - 90)
         
-    def clean(self, params, sems, rf_size):
+    def clean(self, params, sems, box):
         """
         Cleans the parameters of a single unit.
 
@@ -450,8 +451,8 @@ class ParamCleaner(GaussianFitParamFormat):
             GaussianFitParamFormat.
         sems : numpy array [7, ]
             The standard errors of the means (SEMs) of the parameters.
-        rf_size : (int, int)
-            The size of receptive field in (y, x) direction.
+        box : (int, int, int, int)
+            The box of the RF in (vx_min, hx_min, vx_max, hx_max) format.
 
         Returns
         -------
@@ -468,7 +469,7 @@ class ParamCleaner(GaussianFitParamFormat):
             return None
         if self._mu_is_outside_rf(params[self.MU_X_IDX],
                                   params[self.MU_Y_IDX],
-                                  rf_size):
+                                  box):
             return None
 
         cleaned_params = params.copy()

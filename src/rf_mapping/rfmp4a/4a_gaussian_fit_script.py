@@ -1,5 +1,5 @@
 """
-Script to generate gaussian fit pdf and statistics for the visualization
+Script to generate Gaussian fit pdf and fit parameters for the visualization
 results.
 
 Tony Fu, July 13, 2022
@@ -169,7 +169,7 @@ for cumulate_mode in cumulate_modes:
                 ax.invert_yaxis()
 
                 pdf.savefig()
-                plt.show()
+                # plt.show()
                 plt.close()
 
         # Save fit parameters and SEMs:
