@@ -20,6 +20,7 @@ sys.path.append('..')
 from hook import ConvUnitCounter
 from spatial import get_rf_sizes
 from gaussian_fit import ParamLoader
+from mapping import RfMapper
 import constants as c
 
 
@@ -27,6 +28,7 @@ import constants as c
 model = models.alexnet().to(c.DEVICE)
 model_name = "alexnet"
 sum_modes = ['abs', 'sqr']
+image_shape = (227, 227)
 
 # Please double-check the directories:
 gaussian_fit_dir = c.REPO_DIR + f'/results/ground_truth/gaussian_fit/{model_name}'
@@ -37,7 +39,7 @@ pdf_dir = gaussian_fit_dir
 # Get info of conv layers.
 conv_counter = ConvUnitCounter(model)
 _, nums_units = conv_counter.count()
-_, rf_sizes = get_rf_sizes(model, (227, 227), nn.Conv2d)
+_, rf_sizes = get_rf_sizes(model, image_shape, nn.Conv2d)
 
 
 for sum_mode in sum_modes:
@@ -52,7 +54,9 @@ for sum_mode in sum_modes:
                 layer_name = f"conv{conv_i + 1}"
                 num_units = nums_units[conv_i]
                 file_names = [f"{max_or_min}_{layer_name}.{i}.npy" for i in range(num_units)]
-                param_loader = ParamLoader(gaussian_fit_dir_with_mode, file_names, rf_size)
+                mapper = RfMapper(model, conv_i, image_shape)
+                param_loader = ParamLoader(gaussian_fit_dir_with_mode,
+                                           file_names, mapper.box)
                 model_param_loaders.append(param_loader)
 
             rf_sizes_1d = [rf_size[0] for rf_size in rf_sizes]
@@ -91,7 +95,6 @@ for sum_mode in sum_modes:
 
             pdf.savefig()
             plt.close()
-
 
             plt.figure(figsize=(20,5))
             plt.suptitle(f"{model_name}: orientations of receptive fields ({max_or_min}, sum mode = {sum_mode})", fontsize=20)

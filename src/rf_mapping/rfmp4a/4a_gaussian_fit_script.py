@@ -29,7 +29,7 @@ import constants as c
 # Please specify some details here:
 model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)
 model_name = 'alexnet'
-cumulate_modes = ['weighted', 'or']
+cumulate_modes = ['or']
 image_shape = (227, 227)
 this_is_a_test_run = False
 
@@ -94,7 +94,7 @@ for cumulate_mode in cumulate_modes:
 
                 plt.subplot(1, 3, 1)
                 params, sems = gaussian_fit(max_map, plot=True, show=False)
-                cleaned_params = param_cleaner.clean(params, sems, rf_sizes[conv_i])
+                cleaned_params = param_cleaner.clean(params, sems, bm.box)
                 max_params_sems[unit_i, :, 0] = cleaned_params
                 max_params_sems[unit_i, :, 1] = sems
                 if cleaned_params is None:  
@@ -118,7 +118,7 @@ for cumulate_mode in cumulate_modes:
 
                 plt.subplot(1, 3, 2)
                 params, sems = gaussian_fit(min_map, plot=True, show=False)
-                cleaned_params = param_cleaner.clean(params, sems, rf_sizes[conv_i])
+                cleaned_params = param_cleaner.clean(params, sems, bm.box)
                 min_params_sems[unit_i, :, 0] = cleaned_params
                 min_params_sems[unit_i, :, 1] = sems
                 if cleaned_params is None:  
@@ -146,7 +146,7 @@ for cumulate_mode in cumulate_modes:
                 if cumulate_mode == 'or':
                     both_map[both_map > 0] = 1
                 params, sems = gaussian_fit(both_map, plot=True, show=False)
-                cleaned_params = param_cleaner.clean(params, sems, rf_sizes[conv_i])
+                cleaned_params = param_cleaner.clean(params, sems, bm.box)
                 both_params_sems[unit_i, :, 0] = cleaned_params
                 both_params_sems[unit_i, :, 1] = sems
                 if cleaned_params is None:  
@@ -169,7 +169,7 @@ for cumulate_mode in cumulate_modes:
                 ax.invert_yaxis()
 
                 pdf.savefig()
-                # plt.show()
+                if this_is_a_test_run: plt.show()
                 plt.close()
 
         # Save fit parameters and SEMs:
