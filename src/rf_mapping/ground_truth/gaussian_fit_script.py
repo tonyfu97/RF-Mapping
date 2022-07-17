@@ -56,7 +56,6 @@ _, rf_sizes = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
 # Helper objects:
 param_cleaner = ParamCleaner()
 
-
 for sum_mode in sum_modes:
     backprop_sum_dir_with_mode = os.path.join(backprop_sum_dir, sum_mode)
     result_dir_with_mode = os.path.join(result_dir, sum_mode)
@@ -77,6 +76,10 @@ for sum_mode in sum_modes:
         max_params_sems = np.zeros((num_units, num_params, 2))
         min_params_sems = np.zeros((num_units, num_params, 2))
         both_params_sems = np.zeros((num_units, num_params, 2))
+        
+        # For param_cleaner to check if Gaussian is inside in RF or not.
+        rf_size = rf_sizes[conv_i]
+        box = (0, 0, rf_size[0], rf_size[1])
 
         pdf_path = os.path.join(result_dir_with_mode, f"{layer_name}.pdf")
         with PdfPages(pdf_path) as pdf:
@@ -92,9 +95,11 @@ for sum_mode in sum_modes:
 
                 plt.subplot(1, 3, 1)
                 params, sems = gaussian_fit(max_map, plot=True, show=False)
-                cleaned_params = param_cleaner.clean(params, sems, rf_sizes[conv_i])
+                cleaned_params = param_cleaner.clean(params, sems, box)
                 max_params_sems[unit_i, :, 0] = cleaned_params
                 max_params_sems[unit_i, :, 1] = sems
+                if cleaned_params is None:  
+                    cleaned_params = params
                 plt.title(f"max\n"
                           f"A={cleaned_params[ParamFormat.A_IDX]:.2f}(err={sems[ParamFormat.A_IDX]:.2f}), "
                           f"mu_x={cleaned_params[ParamFormat.MU_X_IDX]:.2f}(err={sems[ParamFormat.MU_X_IDX]:.2f}), "
@@ -107,9 +112,11 @@ for sum_mode in sum_modes:
 
                 plt.subplot(1, 3, 2)
                 params, sems = gaussian_fit(min_map, plot=True, show=False)
-                cleaned_params = param_cleaner.clean(params, sems, rf_sizes[conv_i])
+                cleaned_params = param_cleaner.clean(params, sems, box)
                 min_params_sems[unit_i, :, 0] = cleaned_params
                 min_params_sems[unit_i, :, 1] = sems
+                if cleaned_params is None:  
+                    cleaned_params = params
                 plt.title(f"min\n"
                           f"A={cleaned_params[ParamFormat.A_IDX]:.2f}(err={sems[ParamFormat.A_IDX]:.2f}), "
                           f"mu_x={cleaned_params[ParamFormat.MU_X_IDX]:.2f}(err={sems[ParamFormat.MU_X_IDX]:.2f}), "
@@ -123,9 +130,11 @@ for sum_mode in sum_modes:
                 plt.subplot(1, 3, 3)
                 both_map = (max_map + min_map)/2
                 params, sems = gaussian_fit(both_map, plot=True, show=False)
-                cleaned_params = param_cleaner.clean(params, sems, rf_sizes[conv_i])
+                cleaned_params = param_cleaner.clean(params, sems, box)
                 both_params_sems[unit_i, :, 0] = cleaned_params
                 both_params_sems[unit_i, :, 1] = sems
+                if cleaned_params is None:  
+                    cleaned_params = params
                 plt.title(f"max + min\n"
                           f"A={cleaned_params[ParamFormat.A_IDX]:.2f}(err={sems[ParamFormat.A_IDX]:.2f}), "
                           f"mu_x={cleaned_params[ParamFormat.MU_X_IDX]:.2f}(err={sems[ParamFormat.MU_X_IDX]:.2f}), "

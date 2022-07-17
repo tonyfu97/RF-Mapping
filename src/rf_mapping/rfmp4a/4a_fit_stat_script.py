@@ -15,7 +15,6 @@ from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
 
 sys.path.append('..')
-from gaussian_fit import ParamCleaner
 from gaussian_fit import GaussianFitParamFormat as ParamFormat
 from hook import ConvUnitCounter
 from spatial import get_rf_sizes
@@ -42,9 +41,6 @@ layer_indices, nums_units = unit_counter.count()
 _, rf_sizes = get_rf_sizes(model, image_shape, layer_type=nn.Conv2d)
 num_layers = len(rf_sizes)
 
-# Helper objects:
-param_cleaner = ParamCleaner()
-
 for cumulate_mode in cumulate_modes:
     for max_or_min in ['max', 'min', 'both']:
         fit_stat_dir_with_mode = os.path.join(fit_stat_dir, cumulate_mode)
@@ -57,23 +53,29 @@ for cumulate_mode in cumulate_modes:
             for conv_i, rf_size in enumerate(tqdm(rf_sizes)):     
                 layer_name = f"conv{conv_i+1}"
                 fit_stat_path = os.path.join(fit_stat_dir_with_mode, f"{layer_name}_{max_or_min}.npy")
-                fit_params_sems = np.load(fit_stat_path)
+                fit_params_sems = np.load(fit_stat_path)  # already cleaned
                 all_params_sems.append(fit_params_sems)
 
             # Plot the parameters distributions:
             rf_sizes_1d = [rf_size[0] for rf_size in rf_sizes]
             plt.figure(figsize=(20,5))
             plt.suptitle(f"{model_name}: elliptical axial length vs. maximum RF size ({max_or_min}, cumulate mode = {cumulate_mode})", fontsize=20)
+            
+            sigma_1s = []
+            sigma_2s = []
+            for fit_params_sems in all_params_sems:
+                data_1 = fit_params_sems[:, ParamFormat.SIGMA_1_IDX, 0]
+                data_2 = fit_params_sems[:, ParamFormat.SIGMA_2_IDX, 0]
+                sigma_1s.append(data_1[np.isfinite(data_1)])
+                sigma_2s.append(data_2[np.isfinite(data_2)])
 
             plt.subplot(1, 2, 1)
-            sigma_1s = [fit_params_sems[:, ParamFormat.SIGMA_1_IDX, 0] for fit_params_sems in all_params_sems]
             plt.boxplot(sigma_1s, positions=rf_sizes_1d, widths=np.full(len(rf_sizes),10))
             plt.xticks(rf_sizes_1d, [f"{rf_size}\n(conv{i+1})" for i, rf_size in enumerate(rf_sizes_1d)])
             plt.xlabel("RF size")
             plt.ylabel("sigma_1")
 
             plt.subplot(1, 2, 2)
-            sigma_2s = [fit_params_sems[:, ParamFormat.SIGMA_2_IDX, 0] for fit_params_sems in all_params_sems]
             plt.boxplot(sigma_2s, positions=rf_sizes_1d, widths=np.full(len(rf_sizes),10))
             plt.xticks(rf_sizes_1d, [f"{rf_size}\n(conv{i+1})" for i, rf_size in enumerate(rf_sizes_1d)])
             plt.xlabel("RF size")
@@ -103,7 +105,7 @@ for cumulate_mode in cumulate_modes:
             plt.suptitle(f"{model_name}: orientations of receptive fields ({max_or_min}, cumulate mode = {cumulate_mode})", fontsize=20)
             for layer_i, layer_params_sems in enumerate(all_params_sems):
                 plt.subplot(1, num_layers, layer_i + 1)
-                orientations = layer_params_sems[ParamFormat.THETA_IDX]
+                orientations = layer_params_sems[:, ParamFormat.THETA_IDX, 0]
                 plt.hist(orientations)
                 plt.xlabel("orientation (degrees)")
                 plt.ylabel("counts")

@@ -28,7 +28,6 @@ cumulate_modes = ['weighted', 'or']
 xn = yn = 227
 percent_max_min_to_cumulate = 0.1
 this_is_a_test_run = False
-
 # Please double-check the directories:
 if this_is_a_test_run:
     result_dir = c.REPO_DIR + f'/results/rfmp4a/mapping/test/'
@@ -52,7 +51,10 @@ if __name__ == "__main__":
 layer_indices, rf_sizes = get_rf_sizes(model, (yn, xn))
 num_layers = len(layer_indices)
 
-delete_all_npy_files(result_dir)
+for cumulate_mode in cumulate_modes:
+    result_dir_with_mode = os.path.join(result_dir, cumulate_mode)
+    delete_all_npy_files(result_dir_with_mode)
+
 for conv_i in range(num_layers):
     mapper = BarRfMapperP4a(model, conv_i, (yn, xn), percent_max_min_to_cumulate)
 

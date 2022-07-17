@@ -21,7 +21,7 @@ from spatial import (get_conv_output_shapes,
                      get_rf_sizes,
                      RfGrid,
                      SpatialIndexConverter,)
-from image import make_box
+from image import make_box, preprocess_img_to_tensor
 from hook import ConvUnitCounter
 from bar import stimfr_bar, stimset_dict_rfmp_4a
 import constants as c
@@ -37,7 +37,7 @@ class RfMapper:
         """
         The base class of receptive fields mapping of a single convolutional
         layer. Initializes the information needed about the conv layer.
-
+        
         Parameters
         ----------
         model : torchvision.Module
@@ -49,7 +49,6 @@ class RfMapper:
             The dimension of the image in (yn, xn) format (pix).
         """
         self.model = copy.deepcopy(model)
-        self.model.eval()
         self.conv_i = conv_i
         self.yn, self.xn = image_shape
         print(f"The RF mapper is for Conv{conv_i + 1} (not Conv{conv_i}) "
@@ -62,15 +61,15 @@ class RfMapper:
         self.num_units = self._get_num_units()
         self.layer_idx = layer_indices[conv_i]  # See hook.py module for 
                                                 # indexing convention.
-
+        
         # Locate spatial center of the layer's output.
         self.output_shape = self._get_output_shape()
         self.output_yc, self.output_xc = calculate_center(self.output_shape)
-
+        
         # Locate RF in the pixel space.
         self.converter = SpatialIndexConverter(model, (self.yn, self.xn))
         self.box = self.converter.convert((self.output_yc, self.output_xc),
-                                           self.layer_idx, 0, is_forward=False)
+                                          self.layer_idx, 0, is_forward=False)
         self.box_yc, self.box_xc = self._get_box_center(self.box)
 
     def _get_num_units(self):
@@ -78,13 +77,13 @@ class RfMapper:
         unit_counter = ConvUnitCounter(self.model)
         _, nums_units = unit_counter.count()
         return nums_units[self.conv_i]
-
+    
     def _get_output_shape(self):
         """Finds the shape of output layer in (yn, xn) format."""
         conv_output_shapes = get_conv_output_shapes(self.model,
                                                     (self.yn, self.xn))
         return np.array(conv_output_shapes[self.conv_i][-2:])
-
+    
     def _get_box_center(self, box):
         """Finds the center coordinates of the box in (y, x) format."""
         y_min, x_min, y_max, x_max = box
@@ -156,27 +155,15 @@ class BarRfMapper(RfMapper):
             The dimension of the image in (yn, xn) format (pix).
         """
         super().__init__(model, conv_i, image_shape)
+        self.grid_calculator = RfGrid(model, (self.yn, self.xn))
         self.cumulate_threshold = None
-    
-    def _bar_full_image(self, bar, bgval):
-        bar_full = np.full((self.yn, self.xn), bgval)
-        y_min, x_min, y_max, x_max = self.box
-        bar_full[y_min:y_max+1, x_min:x_max+1] = bar
-        return bar_full
 
-    def _bar_to_tensor(self, bar):
-        bar_3_chan = np.empty((bar.shape[0], 3, bar.shape[1], bar.shape[2]))
-        bar_3_chan[:, 0, :, :] = bar
-        bar_3_chan[:, 1, :, :] = bar
-        bar_3_chan[:, 2, :, :] = bar
-        return torch.tensor(bar_3_chan).type('torch.FloatTensor')
-    
     def _get_center_responses(self, input):
-        """Gets the responses of the spatial centers of all bars and units."""
-        input_tensor = self._bar_to_tensor(input)
+        """Gets the responses of the spatial centers of all units."""
+        input_tensor = preprocess_img_to_tensor(input)
         y, _ = self._truncated_model(input_tensor, self.model, self.layer_idx)
-        return y[:, :, self.output_yc, self.output_xc].cpu().detach().numpy()
-
+        return y[0, :, self.output_yc, self.output_xc].cpu().detach().numpy()
+            
     def map(self):
         raise NotImplementedError("The map method is not implemented.")
     
@@ -193,23 +180,33 @@ class BarRfMapperP4a(BarRfMapper):
         super().__init__(model, conv_i, image_shape)
 
         # Bar parameters
-        self.stim_dicts = stimset_dict_rfmp_4a(self.rf_size, self.rf_size)
-        self.num_stim = len(self.stim_dicts)
+        self.rf_blen_ratios = [3/4, 3/8, 3/16, 3/32]
+        self.rf_blen_ratio_strs = ['3/4', '3/8', '3/16', '3/32']
+        self.aspect_ratios = [1/2, 1/5, 1/10]
+        self.thetas = np.arange(0, 180, 22.5)
+        self.fgval_bgval_pairs = [(1, -1), (-1, 1)]
+        self.laa = 0.5  # anti-alias distance
 
         # Mapping parameters
+        self.cumulate_threshold = 1
         self.percent_max_min_to_cumulate = percent_max_min_to_cumulate
-        self.batch_size = 100
         
         # Debugging parameters
         self.DEBUG = False
         self.DEBUG_NUM_UNITS = 10
 
+        # Initializations
+        self.grid_coord_dict = self._get_grid_coords()
+
         # Use self._present_and_record() to initialize the followings:
-        self.center_responses = None  # [stim, unit]
+        self.blen0_responses = None  # for 3/4
+        self.blen1_responses = None  # for 3/8
+        self.blen2_responses = None  # for 3/16
+        self.blen3_responses = None  # for 3/32
 
         # Use self._sort_responses() to initialize the followings:
-        self.max_bar_indices = None  # [unit, bar_indices]
-        self.min_bar_indices = None  # [unit, bar_indices]
+        self.max_response_indices = None
+        self.min_response_indices = None
 
         # Use self._make_maps() to initialize the followings:
         self.max_weighted_bar_sum = None
@@ -226,135 +223,210 @@ class BarRfMapperP4a(BarRfMapper):
         """
         self.DEBUG = debug
 
+    def _get_grid_coords(self):
+        """
+        Finds out the center coordinates of the bars and how many spatial
+        positions are there in total (for all bar lengths). Need this
+        function because the number of spatial positions (i.e., grid coords)
+        has to be calculated from the bar lenghts (i.e., rf_blen_ratio).
+        
+        Returns
+        -------
+        grid_coord_dict : {int : [(int, int), ...], ...}
+            key : the index of rf_blen_ratio.
+            value : a list of coordinates of bar centers in (xc, yc) format.
+        """
+        grid_coord_dict = {}
+        for i, rf_blen_ratio in enumerate(self.rf_blen_ratios):
+            blen = round(rf_blen_ratio * self.rf_size)
+            grid_spacing = blen/2
+            grid_coords = self.grid_calculator.get_grid_coords(self.layer_idx,
+                                             (self.output_yc, self.output_xc),
+                                             grid_spacing)
+            grid_coord_dict[i] = grid_coords
+        return grid_coord_dict   
+
     def _present_and_record(self):
         """
         Presents bars and record the center responses of in the proper arrays.
         """
-        self.center_responses = np.zeros((self.num_stim, self.num_units))
+        self.blen0_responses = np.zeros((self.num_units,
+                                        len(self.aspect_ratios),
+                                        len(self.thetas),
+                                        len(self.fgval_bgval_pairs),
+                                        len(self.grid_coord_dict[0])))  # for 3/4
+        self.blen1_responses = np.zeros((self.num_units,
+                                        len(self.aspect_ratios),
+                                        len(self.thetas),
+                                        len(self.fgval_bgval_pairs),
+                                        len(self.grid_coord_dict[1])))  # for 3/8
+        self.blen2_responses = np.zeros((self.num_units,
+                                        len(self.aspect_ratios),
+                                        len(self.thetas),
+                                        len(self.fgval_bgval_pairs),
+                                        len(self.grid_coord_dict[2])))  # for 3/16
+        self.blen3_responses = np.zeros((self.num_units,
+                                        len(self.aspect_ratios),
+                                        len(self.thetas),
+                                        len(self.fgval_bgval_pairs),
+                                        len(self.grid_coord_dict[3])))  # for 3/32
+        num_stimuli = 0
+        for blen_i, rf_blen_ratio in enumerate(self.rf_blen_ratios):
+            for bwid_i, aspect_ratio in enumerate(self.aspect_ratios):
+                for theta_i, theta in enumerate(self.thetas):
+                    for val_i, (fgval, bgval) in enumerate(self.fgval_bgval_pairs):
+                        # Some bar parameters
+                        blen = round(rf_blen_ratio * self.rf_size)
+                        bwid = round(aspect_ratio * blen)
+                        
+                        # Get grid coordinates.
+                        grid_coords = self.grid_coord_dict[blen_i]
+                        grid_coords_np = np.array(grid_coords)
 
-        # for i in range(self.num_stim):
-        #     if self.DEBUG and i > 500:
-        #         break
-        #     params = self.stim_dicts[i]
-
-        #     # Create a bar at this location and record the responses of all center units.
-        #     new_bar = stimfr_bar(params['xn'], params['yn'], params['x0'], params['y0'],
-        #                         params['theta'], params['len'], params['wid'], 
-        #                         params['aa'], params['fgval'], params['bgval'])
-        #     new_bar = self._bar_full_image(new_bar, params['bgval'])
-        #     self.center_responses[i, :] = self._get_center_responses(new_bar)[0]
-        #     self._print_progress(i, pre_text="Presenting ", post_text=" stimuli...")
-
-        bar_i = 0
-        while (bar_i < self.num_stim):
-            if self.DEBUG and bar_i > 500:
-                break
-            real_batch_size = min(self.batch_size, self.num_stim-bar_i)
-            new_bars = np.zeros((real_batch_size, self.yn, self.xn))
-            for i in range(real_batch_size):
-                params = self.stim_dicts[i]
-
-                # Create a bar at this location and record the responses of all center units.
-                new_bar = stimfr_bar(params['xn'], params['yn'], params['x0'], params['y0'],
-                                    params['theta'], params['len'], params['wid'], 
-                                    params['aa'], params['fgval'], params['bgval'])
-                new_bars[i] = self._bar_full_image(new_bar, params['bgval'])
-
-            self.center_responses[bar_i:bar_i+real_batch_size, :] = self._get_center_responses(new_bars)
-            self._print_progress(bar_i, pre_text="Presenting ", post_text=" stimuli...")
-            bar_i += self.batch_size
+                        for grid_coord_i, (xc, yc) in enumerate(grid_coords_np):
+                            if self.DEBUG and grid_coord_i > 50:
+                                break
+                            
+                            # Create a bar at this location and record the responses of all center units.
+                            new_bar = draw_bar(self.xn, self.yn, xc, yc, theta, blen, bwid, self.laa, fgval, bgval)
+                            center_responses = self._get_center_responses(new_bar)
+                            
+                            if blen_i == 0:
+                                self.blen0_responses[:, bwid_i, theta_i, val_i, grid_coord_i] = center_responses
+                            elif blen_i == 1:
+                                self.blen1_responses[:, bwid_i, theta_i, val_i, grid_coord_i] = center_responses
+                            elif blen_i == 2:
+                                self.blen2_responses[:, bwid_i, theta_i, val_i, grid_coord_i] = center_responses
+                            elif blen_i == 3:
+                                self.blen3_responses[:, bwid_i, theta_i, val_i, grid_coord_i] = center_responses
+                            else:
+                                raise Exception("too many rf_blen_ratios.")
+                            num_stimuli += 1
+                            self._print_progress(num_stimuli, pre_text="Presenting ", post_text=" stimuli...")
 
     def _sort_responses(self):
         """
         After mapping, call this function. Instead of storing each set of bar
         parameters, here it uses a single index of to represent each bar's
-        param in the self.dicts. 
+        flatten index in the self.blenX_responses arrays. 
+
+        The lists are organized in 2 dictionaries:
+            - self.max_response_indices : top bar stimuli
+            - self.min_response_indices : bottom bar stimuli
+        
+        For each dictionary that corresponds to the top/bottom bar stimuli:
+            - key : the index of rf_blen_ratio
+            - value : the sub-dictionary for all units
+            
+        For each sub-dictionary that corresponds to a unit:
+            - key : unit's index
+            - value : a numpy array containing the indices corresponds to
+                      bar stimuli that drive the unit the most (for max_
+                      response_indices) or the least (for min_response_
+                      indices).
         """
         # Clear existing elements in the dictionaries.
-        self.max_bar_indices = []
-        self.min_bar_indices = []
+        self.max_response_indices = {}
+        self.min_response_indices = {}
 
-        # Update bar indicies.
-        for unit_i in range(self.num_units):
-            if self.DEBUG and unit_i > self.DEBUG_NUM_UNITS:
-                break
-            unit_responses = self.center_responses[:, unit_i].copy()
+        # Update indicies.
+        for blen_i, responses in enumerate([self.blen0_responses,
+                                            self.blen1_responses,
+                                            self.blen2_responses,
+                                            self.blen3_responses]):
+            self.max_response_indices[blen_i] = {}
+            self.min_response_indices[blen_i] = {}
+            for unit_i in range(self.num_units):
+                if self.DEBUG and unit_i > self.DEBUG_NUM_UNITS:
+                    break
+                unit_responses = responses[unit_i, ...].copy()
 
-            # Get the max and min of the unit (of all bar lengths).
-            unit_max_response = unit_responses.max()
-            unit_min_response = unit_responses.min()
+                # Get the max and min of the unit (of all bar lengths).
+                unit_max_response = max(self.blen0_responses[unit_i].max(),
+                                        self.blen1_responses[unit_i].max(),
+                                        self.blen2_responses[unit_i].max(),
+                                        self.blen3_responses[unit_i].max())
+                unit_min_response = min(self.blen0_responses[unit_i].min(),
+                                        self.blen1_responses[unit_i].min(),
+                                        self.blen2_responses[unit_i].min(),
+                                        self.blen3_responses[unit_i].min())
 
-            # Max threshold: include every bar that results in an response
-            # larger than this.
-            max_threshold = (1 - self.percent_max_min_to_cumulate) * (unit_max_response - unit_min_response) + unit_min_response
-            max_threshold = self.percent_max_min_to_cumulate * unit_max_response
-            max_threshold = max(0, max_threshold)
-            num_max_units = len(unit_responses[unit_responses >= max_threshold])
+                # Max threshold: include every bar that results in an response
+                # larger than this.
+                max_threshold = (1 - self.percent_max_min_to_cumulate) * (unit_max_response - unit_min_response) + unit_min_response
+                num_max_units = len(unit_responses[unit_responses >= max_threshold])
 
-            # Min threshold: include every bar that results in an response
-            # less than this.
-            min_threshold = self.percent_max_min_to_cumulate * (unit_max_response - unit_min_response) + unit_min_response
-            min_threshold = self.percent_max_min_to_cumulate * unit_min_response
-            min_threshold = min(0, min_threshold)
-            num_min_units = len(unit_responses[unit_responses <= min_threshold])
+                # Min threshold: include every bar that results in an response
+                # less than this.
+                min_threshold = self.percent_max_min_to_cumulate * (unit_max_response - unit_min_response) + unit_min_response
+                num_min_units = len(unit_responses[unit_responses <= min_threshold])
 
-            if self.DEBUG:
-                print(f"unit {unit_i}, num_max_units: {num_min_units}, num_min_units: {num_min_units}")
+                if self.DEBUG:
+                    print(f"blen_i: {blen_i}, unit {unit_i}, "
+                          f"num_max_units: {num_min_units}, "
+                          f"num_min_units: {num_min_units}")
 
-            sorted_bar_index = unit_responses.argsort(axis=None)  # Ascending
-            self.max_bar_indices.append(sorted_bar_index[::-1][:num_max_units])
-            self.min_bar_indices.append(sorted_bar_index[:num_min_units])
+                sorted_bar_index = unit_responses.argsort(axis=None)  # Ascending
+                self.max_response_indices[blen_i][unit_i] = sorted_bar_index[::-1][:num_max_units]
+                self.min_response_indices[blen_i][unit_i] = sorted_bar_index[:num_min_units]
 
-    def index_to_params(self, index):
-        """Given a bar index, returns the corresponding bar parameters."""
-        return self.stim_dicts[index]
+    def _index_to_params(self, index, blen_i):
+        """
+        Given an index of the array in self.blenX_responses[unit_i], returns
+        the corresponding bar parameters.
+        """
+        if blen_i == 0:
+            bwid_i, theta_i, val_i, grid_coord_i = np.unravel_index(index, self.blen0_responses[0].shape)
+        elif blen_i == 1:
+            bwid_i, theta_i, val_i, grid_coord_i = np.unravel_index(index, self.blen1_responses[0].shape)
+        elif blen_i == 2:
+            bwid_i, theta_i, val_i, grid_coord_i = np.unravel_index(index, self.blen2_responses[0].shape)
+        elif blen_i == 3:
+            bwid_i, theta_i, val_i, grid_coord_i = np.unravel_index(index, self.blen3_responses[0].shape)
+        else:
+            raise Exception("too many rf_blen_ratios.")
+        xc, yc = self.grid_coord_dict[blen_i][grid_coord_i]
+        blen = round(self.rf_blen_ratios[blen_i] * self.rf_size)
+        bwid = round(self.aspect_ratios[bwid_i] * blen)
+        theta = self.thetas[theta_i]
+        fgval, bgval = self.fgval_bgval_pairs[val_i]
+        return xc, yc, blen, bwid, theta, fgval, bgval
 
     def _make_maps(self):
         """Updates all three cumulate maps at once for all units."""
-        self.max_weighted_bar_sum = np.zeros((self.num_units, self.rf_size, self.rf_size))
-        self.min_weighted_bar_sum = np.zeros((self.num_units, self.rf_size, self.rf_size))
-        self.max_or_bar_sum = np.zeros((self.num_units, self.rf_size, self.rf_size))
-        self.min_or_bar_sum = np.zeros((self.num_units, self.rf_size, self.rf_size))
+        self.max_weighted_bar_sum = np.zeros((self.num_units, self.yn, self.xn))
+        self.min_weighted_bar_sum = np.zeros((self.num_units, self.yn, self.xn))
+        self.max_or_bar_sum = np.zeros((self.num_units, self.yn, self.xn))
+        self.min_or_bar_sum = np.zeros((self.num_units, self.yn, self.xn))
 
         for unit_i in range(self.num_units):
             if self.DEBUG and unit_i > self.DEBUG_NUM_UNITS:
                 break
             self._print_progress(unit_i, pre_text="Making maps for unit no.", post_text="...")
+            for blen_i, responses in enumerate([self.blen0_responses,
+                                                self.blen1_responses,
+                                                self.blen2_responses,
+                                                self.blen3_responses]):
+                max_bar_indices = self.max_response_indices[blen_i][unit_i]
+                min_bar_indices = self.min_response_indices[blen_i][unit_i]
 
-            max_bar_indices = self.max_bar_indices[unit_i]
-            min_bar_indices = self.min_bar_indices[unit_i]
+                for max_bar_index in max_bar_indices:
+                    xc, yc, blen, bwid, theta, fgval, bgval = self._index_to_params(max_bar_index, blen_i)
+                    new_bar = draw_bar(self.xn, self.yn, xc, yc, theta, blen, bwid, self.laa, 1, 0)
+                    # Note the new_bar used for making maps are always white on gray (zeros) to prevent canceling
+                    response = responses[unit_i].flatten()[max_bar_index]
+                    self.max_weighted_bar_sum[unit_i] += new_bar * abs(response)
 
-            for max_bar_index in max_bar_indices:
-                params = self.index_to_params(max_bar_index)
-                new_bar = stimfr_bar(params['xn'], params['yn'], params['x0'], params['y0'],
-                                     params['theta'], params['len'], params['wid'], 
-                                     0, 1, 0)
-                # Note the new_bar used for making maps are always white on
-                # gray (zeros) to prevent canceling.
+                for min_bar_index in min_bar_indices:
+                    xc, yc, blen, bwid, theta, fgval, bgval = self._index_to_params(min_bar_index, blen_i)
+                    new_bar = draw_bar(self.xn, self.yn, xc, yc, theta, blen, bwid, self.laa, 1, 0)
+                    # Note that the new_bar used for making maps are always white on gray (zeros) to prevent canceling
+                    response = responses[unit_i].flatten()[min_bar_index]
+                    self.min_weighted_bar_sum[unit_i] += new_bar * abs(response)
 
-                # weighted sum
-                response = self.center_responses[max_bar_index, unit_i]
-                self.max_weighted_bar_sum[unit_i] += new_bar * abs(response)
-
-                # or sum
-                if not np.any(np.logical_and(self.max_or_bar_sum[unit_i]>0, new_bar>0)):
-                    self.max_or_bar_sum[unit_i] += new_bar
-
-            for min_bar_index in min_bar_indices:
-                params = self.index_to_params(min_bar_index)
-                new_bar = stimfr_bar(params['xn'], params['yn'], params['x0'], params['y0'],
-                                     params['theta'], params['len'], params['wid'], 
-                                     0, 1, 0)
-                # Note that the new_bar used for making maps are always white
-                # on gray (zeros) to prevent canceling.
-                
-                # weighted sum
-                response = self.center_responses[max_bar_index, unit_i]
-                self.min_weighted_bar_sum[unit_i] += new_bar * abs(response)
-
-                # or sum
-                if not np.any(np.logical_and(self.min_or_bar_sum[unit_i]>0, new_bar>0)):
-                    self.min_or_bar_sum[unit_i] += new_bar
+                # Binarize the weighted bar sums and store it in the "or" bar sums.
+                self.max_or_bar_sum[unit_i][self.max_weighted_bar_sum[unit_i] > 0] = 1
+                self.min_or_bar_sum[unit_i][self.min_weighted_bar_sum[unit_i] > 0] = 1
 
     def map(self):
         """
@@ -410,24 +482,24 @@ class BarRfMapperP4a(BarRfMapper):
         plt.subplot(1, 3, 1)
         plt.imshow(max_bar_sum[unit], cmap='gray')
         plt.title(f"max", fontsize=16)
-        # boundary = 10
-        # plt.xlim([self.box[1] - boundary, self.box[3] + boundary])
-        # plt.ylim([self.box[0] - boundary, self.box[2] + boundary])
-        # rect = make_box(self.box, linewidth=2)
-        # ax = plt.gca()
-        # ax.add_patch(rect)
-        # ax.invert_yaxis()
+        boundary = 10
+        plt.xlim([self.box[1] - boundary, self.box[3] + boundary])
+        plt.ylim([self.box[0] - boundary, self.box[2] + boundary])
+        rect = make_box(self.box, linewidth=2)
+        ax = plt.gca()
+        ax.add_patch(rect)
+        ax.invert_yaxis()
 
         plt.subplot(1, 3, 2)
         plt.imshow(min_bar_sum[unit], cmap='gray')
         plt.title(f"min", fontsize=16)
-        # boundary = 10
-        # plt.xlim([self.box[1] - boundary, self.box[3] + boundary])
-        # plt.ylim([self.box[0] - boundary, self.box[2] + boundary])
-        # rect = make_box(self.box, linewidth=2)
-        # ax = plt.gca()
-        # ax.add_patch(rect)
-        # ax.invert_yaxis()
+        boundary = 10
+        plt.xlim([self.box[1] - boundary, self.box[3] + boundary])
+        plt.ylim([self.box[0] - boundary, self.box[2] + boundary])
+        rect = make_box(self.box, linewidth=2)
+        ax = plt.gca()
+        ax.add_patch(rect)
+        ax.invert_yaxis()
 
         plt.subplot(1, 3, 3)
         both_map = (max_bar_sum[unit] + min_bar_sum[unit])/2
@@ -435,13 +507,13 @@ class BarRfMapperP4a(BarRfMapper):
             both_map[both_map > 0] = 1
         plt.imshow(both_map, cmap='gray')
         plt.title(f"max + min", fontsize=16)
-        # boundary = 10
-        # plt.xlim([self.box[1] - boundary, self.box[3] + boundary])
-        # plt.ylim([self.box[0] - boundary, self.box[2] + boundary])
-        # rect = make_box(self.box, linewidth=2)
-        # ax = plt.gca()
-        # ax.add_patch(rect)
-        # ax.invert_yaxis()
+        boundary = 10
+        plt.xlim([self.box[1] - boundary, self.box[3] + boundary])
+        plt.ylim([self.box[0] - boundary, self.box[2] + boundary])
+        rect = make_box(self.box, linewidth=2)
+        ax = plt.gca()
+        ax.add_patch(rect)
+        ax.invert_yaxis()
 
     def make_pdf(self, pdf_path, cumulate_mode, show=False):
         """
