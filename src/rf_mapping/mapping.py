@@ -49,7 +49,6 @@ class RfMapper:
             The dimension of the image in (yn, xn) format (pix).
         """
         self.model = copy.deepcopy(model)
-        self.model.eval()
         self.conv_i = conv_i
         self.yn, self.xn = image_shape
         print(f"The RF mapper is for Conv{conv_i + 1} (not Conv{conv_i}) "
@@ -165,7 +164,7 @@ class BarRfMapper(RfMapper):
         return bar_full
 
     def _bar_to_tensor(self, bar):
-        bar_3_chan = np.empty((bar.shape[0], 3, bar.shape[1], bar.shape[2]))
+        bar_3_chan = np.zeros((bar.shape[0], 3, bar.shape[1], bar.shape[2]))
         bar_3_chan[:, 0, :, :] = bar
         bar_3_chan[:, 1, :, :] = bar
         bar_3_chan[:, 2, :, :] = bar
@@ -247,22 +246,33 @@ class BarRfMapperP4a(BarRfMapper):
 
         bar_i = 0
         while (bar_i < self.num_stim):
-            if self.DEBUG and bar_i > 500:
+            if self.DEBUG and bar_i > 1000:
                 break
             real_batch_size = min(self.batch_size, self.num_stim-bar_i)
             new_bars = np.zeros((real_batch_size, self.yn, self.xn))
             for i in range(real_batch_size):
-                params = self.stim_dicts[i]
+                params = self.stim_dicts[bar_i + i]
 
                 # Create a bar at this location and record the responses of all center units.
                 new_bar = stimfr_bar(params['xn'], params['yn'], params['x0'], params['y0'],
                                     params['theta'], params['len'], params['wid'], 
                                     params['aa'], params['fgval'], params['bgval'])
                 new_bars[i] = self._bar_full_image(new_bar, params['bgval'])
+                
+                if self.DEBUG:
+                    plt.imshow(self._bar_full_image(new_bar, params['bgval']), cmap='gray')
+                    boundary = 10
+                    plt.xlim([self.box[1] - boundary, self.box[3] + boundary])
+                    plt.ylim([self.box[0] - boundary, self.box[2] + boundary])
+                    rect = make_box(self.box, linewidth=2)
+                    ax = plt.gca()
+                    ax.add_patch(rect)
+                    ax.invert_yaxis()
+                    plt.show()
 
             self.center_responses[bar_i:bar_i+real_batch_size, :] = self._get_center_responses(new_bars)
             self._print_progress(bar_i, pre_text="Presenting ", post_text=" stimuli...")
-            bar_i += self.batch_size
+            bar_i += real_batch_size
 
     def _sort_responses(self):
         """
@@ -298,12 +308,14 @@ class BarRfMapperP4a(BarRfMapper):
             min_threshold = min(0, min_threshold)
             num_min_units = len(unit_responses[unit_responses <= min_threshold])
 
-            if self.DEBUG:
-                print(f"unit {unit_i}, num_max_units: {num_min_units}, num_min_units: {num_min_units}")
-
             sorted_bar_index = unit_responses.argsort(axis=None)  # Ascending
             self.max_bar_indices.append(sorted_bar_index[::-1][:num_max_units])
             self.min_bar_indices.append(sorted_bar_index[:num_min_units])
+
+            if self.DEBUG:
+                print(f"unit {unit_i}, unit_responses.shape: {unit_responses.shape}")
+                print(f"unit_max_response: {unit_max_response}, max_threshold: {max_threshold}, num_max_units: {num_max_units}")
+                print(f"unit_min_response: {unit_min_response}, min_threshold: {min_threshold}, num_min_units: {num_min_units}")
 
     def index_to_params(self, index):
         """Given a bar index, returns the corresponding bar parameters."""
@@ -349,7 +361,7 @@ class BarRfMapperP4a(BarRfMapper):
                 # on gray (zeros) to prevent canceling.
                 
                 # weighted sum
-                response = self.center_responses[max_bar_index, unit_i]
+                response = self.center_responses[min_bar_index, unit_i]
                 self.min_weighted_bar_sum[unit_i] += new_bar * abs(response)
 
                 # or sum

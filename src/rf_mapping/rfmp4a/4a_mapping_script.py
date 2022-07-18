@@ -4,6 +4,11 @@ Receptive field mapping paradigm 4a.
 Note: all code assumes that the y-axis points downward.
 
 Tony Fu, July 13th, 2022
+
+TODO:
+(1) Change 'or' to 'non-overlap'
+(2) Reduce bar xn and yn.
+(3) Refactor mapping code.
 """
 import os
 import sys
@@ -57,9 +62,7 @@ for cumulate_mode in cumulate_modes:
 
 for conv_i in range(num_layers):
     mapper = BarRfMapperP4a(model, conv_i, (yn, xn), percent_max_min_to_cumulate)
-
-    if this_is_a_test_run:
-        mapper.set_debug(True)
+    mapper.set_debug(this_is_a_test_run)
 
     mapper.map()
     mapper.save_maps(result_dir)

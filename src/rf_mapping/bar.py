@@ -19,9 +19,7 @@ import matplotlib.pyplot as plt
 ###############################################################################
 @njit
 def clip(val, vmin, vmax):
-    #
-    #  Limits value to be vmin <= val <= vmax
-    #
+    """Limits value to be vmin <= val <= vmax"""
     if vmin > vmax:
         raise Exception("vmin should be smaller than vmax.")
     val = min(val, vmax)
@@ -31,18 +29,18 @@ def clip(val, vmin, vmax):
 
 #######################################.#######################################
 #                                                                             #
-#                                  DRAW_BAR                                   #
+#                                   ROTATE                                    #
 #                                                                             #
 ###############################################################################
 @njit
 def rotate(dx, dy, theta_deg):
-    # 
-    #  Applies the rotation matrix:
-    #    [dx, dy] * [[a, b], [c, d]]  = [dx_r, dy_r]
-    #  
-    #  To undo rotation, apply again with negative theta_deg.
-    #  Modified from Dr. Wyeth Bair's d06_mrf.py
-    #
+    """
+    Applies the rotation matrix:
+        [dx, dy] * [[a, b], [c, d]]  = [dx_r, dy_r]
+    
+    To undo rotation, apply again with negative theta_deg.
+    Modified from Dr. Wyeth Bair's d06_mrf.py
+    """
     thetar = theta_deg * math.pi / 180.0
     rot_a = math.cos(thetar); rot_b = math.sin(thetar)
     rot_c = math.sin(thetar); rot_d = -math.cos(thetar)
@@ -53,22 +51,27 @@ def rotate(dx, dy, theta_deg):
     return dx_r, dy_r
 
 
+#######################################.#######################################
+#                                                                             #
+#                              STIMFR_BAR_COLOR                               #
+#                                                                             #
+###############################################################################
 @njit  # sped up by 182x
 def stimfr_bar(xn, yn, x0, y0, theta, blen, bwid, aa, fgval, bgval):
-    #
-    #  Return a numpy array that has a bar on a background:
-    #
-    #  xn    - (int) horizontal width of returned array
-    #  yn    - (int) vertical height of returned array
-    #  x0    - (float) horizontal offset of center (pix)
-    #  y0    - (float) vertical offset of center (pix)
-    #  theta - (float) orientation (pix)
-    #  blen  - (float) length of bar (pix)
-    #  bwid  - (float) width of bar (pix)
-    #  aa    - (float) length scale for anti-aliasing (pix)
-    #  fgval - (float) bar luminance [0..1]
-    #  bgval - (float) background luminance [0..1]
-    #
+    """
+    Return a numpy array that has a bar on a background:
+
+    xn    - (int) horizontal width of returned array
+    yn    - (int) vertical height of returned array
+    x0    - (float) horizontal offset of center (pix)
+    y0    - (float) vertical offset of center (pix)
+    theta - (float) orientation (pix)
+    blen  - (float) length of bar (pix)
+    bwid  - (float) width of bar (pix)
+    aa    - (float) length scale for anti-aliasing (pix)
+    fgval - (float) bar luminance [0..1]
+    bgval - (float) background luminance [0..1]
+    """
     s = np.full((yn,xn), bgval, dtype='float32')  # Fill w/ BG value
     dval = fgval - bgval  # Luminance difference
   
@@ -167,6 +170,56 @@ if __name__ == "__main__":
         plt.imshow(bar, cmap='gray')
         plt.title(f"{x0:.2f}")
         plt.show()
+        
+
+#######################################.#######################################
+#                                                                             #
+#                               STIMFR_BAR_COLOR                              #
+#                                                                             #
+###############################################################################
+# njit slowed down by 4x
+def stimfr_bar_color(xn,yn,x0,y0,theta,blen,bwid,aa,r1,g1,b1,r0,g0,b0):
+    """
+    Return a numpy array (3, yn, xn) that has a bar on a background:
+
+    xn    - (int) horizontal width of returned array
+    yn    - (int) vertical height of returned array
+    x0    - (float) horizontal offset of center (pix)
+    y0    - (float) vertical offset of center (pix)
+    theta - (float) orientation (pix)
+    blen  - (float) length of bar (pix)
+    bwid  - (float) width of bar (pix)
+    laa   - (float) length scale for anti-aliasing (pix)
+    r1,g1,b1 - bar color
+    r0,g0,b0 - background color
+    """
+    s = np.empty((3, yn,xn), dtype='float32')
+    s[0] = stimfr_bar(xn, yn, x0, y0, theta, blen, bwid, aa, r1, r0)
+    s[1] = stimfr_bar(xn, yn, x0, y0, theta, blen, bwid, aa, g1, g0)
+    s[2] = stimfr_bar(xn, yn, x0, y0, theta, blen, bwid, aa, b1, b0)
+    return s
+
+
+# Test
+if __name__ == '__main__':
+    xn = 200
+    yn = 240
+    colors = {'red':     (1, 0, 0),
+              'green':   (0, 1, 0),
+              'blue':    (0, 0, 1),
+              'yellow':  (1, 1, 0),
+              'magenta': (1, 0, 1),
+              'cyan':    (0, 1, 1),
+              'white':   (1, 1, 1),
+              'black':   (0, 0, 0)}
+    for color_name, (r1, g1, b1) in colors.items():
+        bar = stimfr_bar_color(xn, yn, 10, 0, 45, 80, 30, 2,
+                               r1, g1, b1,
+                               0.5, 0.5, 0.5)
+        plt.imshow(np.transpose(bar, (1,2,0)))
+        plt.title(color_name)
+        plt.show()
+
 
 #######################################.#######################################
 #                                                                             #
@@ -186,16 +239,15 @@ if __name__ == "__main__":
 #                                                                             #
 ###############################################################################
 def stim_dapp_bar_xyo_bw(splist,xn,xlist,orilist,blen,bwid,aa):
-    #
-    #  splist  - stimulus parameter list - APPEND TO THIS LIST
-    #  xn      - horizontal and vertical image size
-    #  xlist   - list of x-coordinates (pix)
-    #  orilist - list of orientation values (degr)
-    #  blen    - Length of bar (pix)
-    #  bwid    - Width of bar (pix)
-    #  aa      - Anti-aliasing space constant (pix)
-    #
-  
+    """
+    splist  - stimulus parameter list - APPEND TO THIS LIST
+    xn      - horizontal and vertical image size
+    xlist   - list of x-coordinates (pix)
+    orilist - list of orientation values (degr)
+    blen    - Length of bar (pix)
+    bwid    - Width of bar (pix)
+    aa      - Anti-aliasing space constant (pix)
+    """
     yn = xn        # Assuming image is square
     ylist = xlist  # Use same coordinates for y grid locations
     
@@ -234,11 +286,10 @@ def stim_dapp_bar_xyo_bw(splist,xn,xlist,orilist,blen,bwid,aa):
 #                                                                             #
 ###############################################################################
 def stimset_gridx_barmap(max_rf,blen):
-    #
-    #  max_rf - maximum RF size (pix)
-    #  blen   - bar length (pix)
-    #
-
+    """
+    max_rf - maximum RF size (pix)
+    blen   - bar length (pix)
+    """
     dx = blen / 2.0                       # Grid spacing is 1/2 of bar length
     xmax = round((max_rf/dx) / 2.0) * dx  # Max offset of grid point from center
     xlist = np.arange(-xmax,xmax+1,dx)
@@ -262,11 +313,10 @@ if __name__ == '__main__':
 #                                                                             #
 ###############################################################################
 def stimset_dict_rfmp_4a(xn,max_rf):
-    #
-    #  xn     - stimulus image size (pix)
-    #  max_rf - maximum RF size (pix)
-    #
-
+    """
+    xn     - stimulus image size (pix)
+    max_rf - maximum RF size (pix)
+    """
     splist = []  # List of dictionary entries, one per stimulus image
 
     #  There are 4 bar lengths
@@ -300,4 +350,6 @@ def stimset_dict_rfmp_4a(xn,max_rf):
 #
 if __name__ == "__main__":
     s = stimset_dict_rfmp_4a(11,11)
+
+
 

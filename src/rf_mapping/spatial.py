@@ -398,9 +398,9 @@ def _test_backward_conversion():
             break
 
 
-if __name__ == '__main__':
-    # _test_forward_conversion() TODO: finish implementing this test
-    _test_backward_conversion()
+# if __name__ == '__main__':
+#     # _test_forward_conversion() TODO: finish implementing this test
+#     _test_backward_conversion()
 
 
 #######################################.#######################################
@@ -418,7 +418,8 @@ def get_rf_sizes(model, image_shape, layer_type=nn.Conv2d):
     model : torchvision.models
         The neural network.
     image_shape : (int, int)
-        (vertical_dimension, horizontal_dimension) in pixels.
+        (vertical_dimension, horizontal_dimension) in pixels. This should not
+        really matter if image_shape is larger than rf_size.
     layer_type: nn.Module
         The type of layer to consider.
 
@@ -467,6 +468,7 @@ def get_conv_output_shapes(model, image_shape):
 #######################################.#######################################
 #                                                                             #
 #                                   RF GRID                                   #
+#          NOT USED ANYMORE. Use bar.stimset_gridx_barma() instead.           #
 #                                                                             #
 ###############################################################################
 class RfGrid:
@@ -554,3 +556,103 @@ class RfGrid:
                 grid_coords.append((x, y))
 
         return grid_coords
+
+
+#######################################.#######################################
+#                                                                             #
+#                               TRUNCATED_MODEL                               #
+#                                                                             #
+###############################################################################
+def truncated_model(x, model, layer_index):
+    """
+    Returns the output of the specified layer without forward passing to
+    the subsequent layers.
+
+    Parameters
+    ----------
+    x : torch.tensor
+        The input. Should have dimension (1, 3, 2xx, 2xx).
+    model : torchvision.model.Module
+        The neural network (or the layer if in a recursive case).
+    layer_index : int
+        The index of the layer, the output of which will be returned. The
+        indexing excludes container layers.
+
+    Returns
+    -------
+    y : torch.tensor
+        The output of layer with the layer_index.
+    layer_index : int
+        Used for recursive cases. Should be ignored.
+    """
+    # If the layer is not a container, forward pass.
+    if (len(list(model.children())) == 0):
+        return model(x), layer_index - 1
+    else:  # Recurse otherwise.
+        for sublayer in model.children():
+            x, layer_index = truncated_model(x, sublayer, layer_index)
+            if layer_index < 0:  # Stop at the specified layer.
+                return x, layer_index
+
+
+#######################################.#######################################
+#                                                                             #
+#                               XN_TO_CENTER_RF                               #
+#                                                                             #
+###############################################################################
+def xn_to_center_rf(model, padding=5):
+    """
+    Return the input image size xn = yn just big enough to center the RF of
+    the center units (of all Conv2d layer) in the pixel space. Need this
+    function because we don't want to use the full image size (227, 227). It
+    also leave at least 5 pixels of paddings around the maximum RF.
+
+    Parameters
+    ----------
+    model : torchvision.models
+        The neural network.
+    padding : int
+        The size of xn will be at least = rf_size + 2*padding.
+
+    Returns
+    -------
+    xn_list : [int, ...]
+        A list of xn (which is also yn since we assume RF to be square). 
+    """
+    # Get conv1 layer object.
+    conv1 = model
+    while (len(list(conv1.children())) != 0):
+        conv1 = list(conv1.children())[0]
+        
+    # Get conv layer info.
+    layer_indices, rf_sizes = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
+    xn_list = []
+
+    # Iterate through conv layers.
+    for layer_index, rf_size in zip(layer_indices, rf_sizes):
+        xn = rf_size[0] + 2*padding
+        output_size = -1
+
+        # Increment xn until output size is odd.
+        # Increment xn until the edge unit can cover all the padded image.
+        # Increment xn until the distance of RF to both sides is equal.
+        while (output_size%2 != 0) or\
+            ((xn + 2*conv1.padding[0] - conv1.dilation[0]*(conv1.kernel_size[0] - 1) -1)%conv1.stride[0] != 0) or\
+            ((xn - rf_size[0])%2 != 0):
+            dummy_input = torch.zeros((1, 3, xn, xn))
+            y, _ = truncated_model(dummy_input, model, layer_index)
+            output_size = y.shape[2]
+            xn += 1
+
+        xn_list.append(xn)
+
+    return xn_list
+
+
+# Test
+if __name__ == '__main__':
+    model = models.alexnet()
+    xn_list = xn_to_center_rf(model)
+    _, rf_sizes = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
+    print(rf_sizes)
+    print(xn_list)

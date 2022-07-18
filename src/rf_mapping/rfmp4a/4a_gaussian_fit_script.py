@@ -31,7 +31,7 @@ model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)
 model_name = 'alexnet'
 cumulate_modes = ['or']
 image_shape = (227, 227)
-this_is_a_test_run = False
+this_is_a_test_run = True
 
 # Please double-check the directories:
 mapping_dir = c.REPO_DIR + f'/results/rfmp4a/mapping/{model_name}'
