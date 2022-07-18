@@ -600,59 +600,61 @@ def truncated_model(x, model, layer_index):
 #                               XN_TO_CENTER_RF                               #
 #                                                                             #
 ###############################################################################
-def xn_to_center_rf(model, padding=5):
+def xn_to_center_rf(model):
     """
     Return the input image size xn = yn just big enough to center the RF of
     the center units (of all Conv2d layer) in the pixel space. Need this
-    function because we don't want to use the full image size (227, 227). It
-    also leave at least 5 pixels of paddings around the maximum RF.
+    function because we don't want to use the full image size (227, 227).
 
     Parameters
     ----------
     model : torchvision.models
         The neural network.
-    padding : int
-        The size of xn will be at least = rf_size + 2*padding.
 
     Returns
     -------
     xn_list : [int, ...]
         A list of xn (which is also yn since we assume RF to be square). 
     """
-    # Get conv1 layer object.
-    conv1 = model
-    while (len(list(conv1.children())) != 0):
-        conv1 = list(conv1.children())[0]
-        
-    # Get conv layer info.
+    model.eval()
     layer_indices, rf_sizes = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
     xn_list = []
-
-    # Iterate through conv layers.
+    
     for layer_index, rf_size in zip(layer_indices, rf_sizes):
-        xn = rf_size[0] + 2*padding
-        output_size = -1
+        # Set before and after to different values first
+        center_response_before = -2
+        center_response_after = -1
+        rf_size = rf_size[0]
+        xn = int(rf_size * 1.1)  # add a 10% padding.
 
-        # Increment xn until output size is odd.
-        # Increment xn until the edge unit can cover all the padded image.
-        # Increment xn until the distance of RF to both sides is equal.
-        while (output_size%2 != 0) or\
-            ((xn + 2*conv1.padding[0] - conv1.dilation[0]*(conv1.kernel_size[0] - 1) -1)%conv1.stride[0] != 0) or\
-            ((xn - rf_size[0])%2 != 0):
-            dummy_input = torch.zeros((1, 3, xn, xn))
-            y, _ = truncated_model(dummy_input, model, layer_index)
-            output_size = y.shape[2]
+        # If response before and after perturbation are identical, the unit
+        # RF is centered.
+        while(center_response_before != center_response_after):
             xn += 1
+            dummy_input = torch.rand((1, 3, xn, xn))
+            y, _ = truncated_model(dummy_input, model, layer_index)
+            yc, xc = calculate_center(y.shape[-2:])
+            center_response_before = y[0, 0, yc, xc].item()
+            
+            # Skip this loop if the paddings on two sides aren't equal.
+            if ((xn - rf_size)%2 != 0):
+                continue
+
+            padding = (xn - rf_size) // 2
+            
+            # Add perturbation to the surrounding padding.
+            dummy_input[:, :,  :padding,  :padding] = 10000
+            dummy_input[:, :, -padding:, -padding:] = 10000
+            y, _ = truncated_model(dummy_input, model, layer_index)
+            center_response_after = y[0, 0, yc, xc].item()
 
         xn_list.append(xn)
-
     return xn_list
 
 
 # Test
 if __name__ == '__main__':
-    model = models.alexnet()
-    xn_list = xn_to_center_rf(model)
-    _, rf_sizes = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
-    print(rf_sizes)
-    print(xn_list)
+    from torchvision.models import AlexNet_Weights, VGG16_Weights
+    model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)
+    # model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1)
+    print(xn_to_center_rf(model))
