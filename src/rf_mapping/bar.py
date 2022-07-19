@@ -443,9 +443,6 @@ def barmap_run_01b(splist, model, layer_idx, num_units, batch_size=100,
             bar_batch[i, 0] = new_bar
             bar_batch[i, 1] = new_bar
             bar_batch[i, 2] = new_bar
-            # if _debug:
-            #     plt.imshow(np.transpose(bar_batch[i], (1,2,0)), cmap='gray')
-            #     plt.show()
 
         # Present the patch of bars to the truncated model.
         y, _ = truncated_model(torch.tensor(bar_batch).type('torch.FloatTensor'),
@@ -693,7 +690,6 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
         for unit_i in range(num_units):
             if _debug and (unit_i > 10):
                 break
-            
             print_progress(f"Making maps for unit {unit_i}...")
             max_map, min_map = mrfmap_make_non_overlap_map(splist, center_responses, unit_i,
                                     response_thr=0.1, stim_thr=0.2, _debug=_debug)
@@ -709,12 +705,3 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
         # Make pdf for the layer.
         pdf_path = os.path.join(result_dir, f"{layer_name}_maps.pdf")
         make_map_pdf(max_maps, min_maps, pdf_path, show=_debug)
-
-
-# Test
-if __name__ == '__main__':
-    model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)
-    model_name = 'alexnet'
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', 
-                              model_name, 'non_overlap')
-    rfmp4a_run_01b(model, model_name, result_dir, _debug=False)
