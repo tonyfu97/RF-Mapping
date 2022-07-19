@@ -38,6 +38,7 @@ if this_is_a_test_run:
     result_dir = c.REPO_DIR + f'/results/rfmp4a/mapping/test/'
 else:
     result_dir = c.REPO_DIR + f'/results/rfmp4a/mapping/{model_name}/'
+result_dir = c.REPO_DIR + f'/results/rfmp4a/mapping/test/'
 pdf_dir = result_dir
 grid_pdf_path = os.path.join(pdf_dir, f"grids.pdf")
 
@@ -61,6 +62,7 @@ for cumulate_mode in cumulate_modes:
     delete_all_npy_files(result_dir_with_mode)
 
 for conv_i in range(num_layers):
+    if conv_i == 0: continue
     mapper = BarRfMapperP4a(model, conv_i, (yn, xn), percent_max_min_to_cumulate)
     mapper.set_debug(this_is_a_test_run)
 

@@ -5,11 +5,21 @@ Note: The y-axis points downward.
 
 July 15, 2022
 """
+import sys
 import math
 
 import numpy as np
 from numba import njit
+import torch
+import torch.nn as nn
+from torchvision import models
 import matplotlib.pyplot as plt
+
+from hook import ConvUnitCounter
+from spatial import (xn_to_center_rf,
+                     truncated_model,
+                     calculate_center,
+                     get_rf_sizes,)
 
 
 #######################################.#######################################
@@ -352,4 +362,159 @@ if __name__ == "__main__":
     s = stimset_dict_rfmp_4a(11,11)
 
 
+#######################################.#######################################
+#                                                                             #
+#                               PRINT_PROGRESS                                #
+#                                                                             #
+###############################################################################
+def print_progress(progess, pre_text='progress = ', post_text=''):
+    """
+    Prints progress (whatever quantity) without printing a new line
+    everytime.
+    """
+    sys.stdout.write('\r')
+    sys.stdout.write(f"{pre_text}{progess}{post_text}")
+    sys.stdout.flush()
 
+
+#######################################.#######################################
+#                                                                             #
+#                                BARMAP_RUN_01b                               #
+#                                                                             #
+###############################################################################
+def barmap_run_01b(param_list, model, layer_idx, num_units, batch_size=100,
+                  _debug=False):
+    """
+    param_list - the bar stimulus parameter list.
+    model      - the neural network.
+    layer_idx  - the index of the layer of interest.
+    num_units  - the number of units/channels.
+    batch_size - how many bars to present at once.
+    _debug     - if true, reduce the number of bars and plot them.
+    
+    Presents bars and returns the center responses in array of dimension:
+    [num_stim, num_units].
+    """
+    bar_i = 0
+    num_stim = len(param_list)
+    xn = param_list[0]['xn']
+    yn = param_list[0]['yn']
+    center_responses = np.zeros((num_stim, num_units))
+
+    while (bar_i < num_stim):
+        if _debug and bar_i > 500:
+            break
+        real_batch_size = min(batch_size, num_stim-bar_i)
+        bar_batch = np.zeros((real_batch_size, 3, yn, xn))
+
+        # Create a batch of bars.
+        for i in range(real_batch_size):
+            params = param_list[bar_i + i]
+            new_bar = stimfr_bar(params['xn'], params['yn'], params['x0'], params['y0'],
+                                params['theta'], params['len'], params['wid'], 
+                                params['aa'], params['fgval'], params['bgval'])
+            # Replicate new bar to all color channel.
+            bar_batch[i, 0] = new_bar
+            bar_batch[i, 1] = new_bar
+            bar_batch[i, 2] = new_bar
+            if _debug:
+                plt.imshow(bar_batch[i], params['bgval'], cmap='gray')
+                plt.show()
+
+        # Present the patch of bars to the truncated model.
+        y, _ = truncated_model(torch.tensor(bar_batch).type('torch.FloatTensor'), model, layer_idx)
+        yc = calculate_center(y.shape[-1])
+        center_responses[bar_i:bar_i+real_batch_size, :] = y[:, :, yc, yc]
+        print_progress(bar_i, pre_text="Presenting ", post_text=f"/{num_stim} stimuli...")
+        bar_i += real_batch_size
+
+    return center_responses
+
+
+#######################################.#######################################
+#                                                                             #
+#                            MRFMAP_MAKE_MAP_1b                               #
+#                                                                             #
+###############################################################################
+def mrfmap_make_map_1b(param_list, center_responses, unit_i, response_thr=0.1,
+                       stim_thr=0.2, _debug=False):
+    """
+    param_list - the bar stimulus parameter list.
+    center_responses - the responses of center unit in [stim_i, unit_i] format.
+    unit_i - the unit's index.
+    response_thr - bar w/ a reponse below response_thr * rmax will be excluded.
+    stim_thr - bar pixels w/ a value below stim_thr will be excluded.
+    _debug - if true, print ranking info.
+    
+    Returns the non-overlapping sums of the top and bottom bars of one unit.
+    """
+    xn = param_list[0]['xn']
+    yn = param_list[0]['yn']
+    max_map = np.zeros((yn, xn))
+    min_map = np.zeros((yn, xn))
+
+    isort = np.argsort(center_responses[:, unit_i])
+    r_max = center_responses[:, unit_i].max()
+    r_min = center_responses[:, unit_i].min()
+
+    if _debug:
+        print(f"unit {unit_i}: r_max: {r_max}, max bar idx: {isort[::-1][:5]}")
+
+    for max_bar_i in isort[::-1]:
+        if center_responses[max_bar_i, unit_i] < (response_thr * r_max):
+            break
+        params = param_list[max_bar_i]
+        new_bar = stimfr_bar(params['xn'], params['yn'],
+                             params['x0'], params['y0'],
+                            params['theta'], params['len'], params['wid'],
+                            0.5, 1, 0)
+        new_bar[new_bar > stim_thr] = 0
+        if not np.any(np.logical_and(max_map>0, new_bar>0)):
+            max_map += new_bar
+
+    for min_bar_i in isort[::-1]:
+        if center_responses[min_bar_i, unit_i] > (response_thr * r_min):
+            break
+        params = param_list[min_bar_i]
+        new_bar = stimfr_bar(params['xn'], params['yn'],
+                             params['x0'], params['y0'],
+                            params['theta'], params['len'], params['wid'],
+                            0.5, 1, 0)
+        new_bar[new_bar > stim_thr] = 0
+        if not np.any(np.logical_and(min_map>0, new_bar>0)):
+            min_map += new_bar
+
+    return max_map, min_map
+
+
+#######################################.#######################################
+#                                                                             #
+#                                RFMP4a_RUN_01b                               #
+#                                                                             #
+###############################################################################
+def rfmp4a_run_01b(model):
+    xn_list = xn_to_center_rf(model)
+    unit_counter = ConvUnitCounter(model)
+    layer_indices, nums_units = unit_counter.count()
+    _, max_rfs = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
+
+    for conv_i in range(len(layer_indices)):
+        xn = xn_list[conv_i]
+        layer_idx = layer_indices[conv_i]
+        num_units = nums_units[conv_i]
+        max_rf = max_rfs[conv_i]
+        param_dicts = stimset_dict_rfmp_4a(xn, max_rf)
+
+        for unit_i in num_units():
+            param_list = param_dicts[unit_i]
+            center_responses = barmap_run_01b(param_list, model, layer_idx,
+                                    num_units, batch_size=100, _debug=False)
+            max_map, min_map = mrfmap_make_map_1b(param_list, center_responses, unit_i,
+                                    response_thr=0.1, stim_thr=0.2, _debug=False)
+            
+
+
+            
+            
+        
+        

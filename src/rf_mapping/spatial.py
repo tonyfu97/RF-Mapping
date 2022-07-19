@@ -419,7 +419,8 @@ def get_rf_sizes(model, image_shape, layer_type=nn.Conv2d):
         The neural network.
     image_shape : (int, int)
         (vertical_dimension, horizontal_dimension) in pixels. This should not
-        really matter if image_shape is larger than rf_size.
+        really matter unless the image_shape is smaller than some of the
+        rf_sizes.
     layer_type: nn.Module
         The type of layer to consider.
 

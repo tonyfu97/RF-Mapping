@@ -198,6 +198,7 @@ class BarRfMapperP4a(BarRfMapper):
         # Mapping parameters
         self.percent_max_min_to_cumulate = percent_max_min_to_cumulate
         self.batch_size = 100
+        self.bar_thres = 0.2
         
         # Debugging parameters
         self.DEBUG = False
@@ -269,7 +270,7 @@ class BarRfMapperP4a(BarRfMapper):
                     ax.add_patch(rect)
                     ax.invert_yaxis()
                     plt.show()
-
+    
             self.center_responses[bar_i:bar_i+real_batch_size, :] = self._get_center_responses(new_bars)
             self._print_progress(bar_i, pre_text="Presenting ", post_text=" stimuli...")
             bar_i += real_batch_size
@@ -316,6 +317,9 @@ class BarRfMapperP4a(BarRfMapper):
                 print(f"unit {unit_i}, unit_responses.shape: {unit_responses.shape}")
                 print(f"unit_max_response: {unit_max_response}, max_threshold: {max_threshold}, num_max_units: {num_max_units}")
                 print(f"unit_min_response: {unit_min_response}, min_threshold: {min_threshold}, num_min_units: {num_min_units}")
+            if len(self.max_bar_indices[-1]) !=0:
+                print(f"unit {unit_i}, max_ranking: {self.max_bar_indices[-1][:5]}, "
+                      f"r_max = {unit_responses[self.max_bar_indices[-1][0]]:.4f}")
 
     def index_to_params(self, index):
         """Given a bar index, returns the corresponding bar parameters."""
@@ -349,7 +353,8 @@ class BarRfMapperP4a(BarRfMapper):
                 self.max_weighted_bar_sum[unit_i] += new_bar * abs(response)
 
                 # or sum
-                if not np.any(np.logical_and(self.max_or_bar_sum[unit_i]>0, new_bar>0)):
+                if not np.any(np.logical_and(self.max_or_bar_sum[unit_i]>self.bar_thres, new_bar>0)):
+                    new_bar[new_bar < self.bar_thres] = 0
                     self.max_or_bar_sum[unit_i] += new_bar
 
             for min_bar_index in min_bar_indices:
@@ -365,7 +370,8 @@ class BarRfMapperP4a(BarRfMapper):
                 self.min_weighted_bar_sum[unit_i] += new_bar * abs(response)
 
                 # or sum
-                if not np.any(np.logical_and(self.min_or_bar_sum[unit_i]>0, new_bar>0)):
+                if not np.any(np.logical_and(self.min_or_bar_sum[unit_i]>self.bar_thres, new_bar>0)):
+                    new_bar[new_bar < self.bar_thres] = 0
                     self.min_or_bar_sum[unit_i] += new_bar
 
     def map(self):
