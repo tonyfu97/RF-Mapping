@@ -232,19 +232,6 @@ class BarRfMapperP4a(BarRfMapper):
         """
         self.center_responses = np.zeros((self.num_stim, self.num_units))
 
-        # for i in range(self.num_stim):
-        #     if self.DEBUG and i > 500:
-        #         break
-        #     params = self.stim_dicts[i]
-
-        #     # Create a bar at this location and record the responses of all center units.
-        #     new_bar = stimfr_bar(params['xn'], params['yn'], params['x0'], params['y0'],
-        #                         params['theta'], params['len'], params['wid'], 
-        #                         params['aa'], params['fgval'], params['bgval'])
-        #     new_bar = self._bar_full_image(new_bar, params['bgval'])
-        #     self.center_responses[i, :] = self._get_center_responses(new_bar)[0]
-        #     self._print_progress(i, pre_text="Presenting ", post_text=" stimuli...")
-
         bar_i = 0
         while (bar_i < self.num_stim):
             if self.DEBUG and bar_i > 1000:
@@ -270,7 +257,7 @@ class BarRfMapperP4a(BarRfMapper):
                     ax.add_patch(rect)
                     ax.invert_yaxis()
                     plt.show()
-    
+
             self.center_responses[bar_i:bar_i+real_batch_size, :] = self._get_center_responses(new_bars)
             self._print_progress(bar_i, pre_text="Presenting ", post_text=" stimuli...")
             bar_i += real_batch_size
@@ -428,24 +415,10 @@ class BarRfMapperP4a(BarRfMapper):
         plt.subplot(1, 3, 1)
         plt.imshow(max_bar_sum[unit], cmap='gray')
         plt.title(f"max", fontsize=16)
-        # boundary = 10
-        # plt.xlim([self.box[1] - boundary, self.box[3] + boundary])
-        # plt.ylim([self.box[0] - boundary, self.box[2] + boundary])
-        # rect = make_box(self.box, linewidth=2)
-        # ax = plt.gca()
-        # ax.add_patch(rect)
-        # ax.invert_yaxis()
 
         plt.subplot(1, 3, 2)
         plt.imshow(min_bar_sum[unit], cmap='gray')
         plt.title(f"min", fontsize=16)
-        # boundary = 10
-        # plt.xlim([self.box[1] - boundary, self.box[3] + boundary])
-        # plt.ylim([self.box[0] - boundary, self.box[2] + boundary])
-        # rect = make_box(self.box, linewidth=2)
-        # ax = plt.gca()
-        # ax.add_patch(rect)
-        # ax.invert_yaxis()
 
         plt.subplot(1, 3, 3)
         both_map = (max_bar_sum[unit] + min_bar_sum[unit])/2
@@ -453,13 +426,6 @@ class BarRfMapperP4a(BarRfMapper):
             both_map[both_map > 0] = 1
         plt.imshow(both_map, cmap='gray')
         plt.title(f"max + min", fontsize=16)
-        # boundary = 10
-        # plt.xlim([self.box[1] - boundary, self.box[3] + boundary])
-        # plt.ylim([self.box[0] - boundary, self.box[2] + boundary])
-        # rect = make_box(self.box, linewidth=2)
-        # ax = plt.gca()
-        # ax.add_patch(rect)
-        # ax.invert_yaxis()
 
     def make_pdf(self, pdf_path, cumulate_mode, show=False):
         """

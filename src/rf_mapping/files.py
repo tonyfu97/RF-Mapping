@@ -16,6 +16,18 @@ def delete_all_npy_files(dir):
     for f in os.listdir(dir):
         if f.endswith('.npy'):
             os.remove(os.path.join(dir, f))
+            
+
+#######################################.#######################################
+#                                                                             #
+#                            DELETE_ALL_NPY_FILES                             #
+#                                                                             #
+###############################################################################
+def delete_all_file_of_extension(dir, extension):
+    """Removes all files that ends with 'extension' in the 'dir'."""
+    for f in os.listdir(dir):
+        if f.endswith(extension):
+            os.remove(os.path.join(dir, f))
 
 
 #######################################.#######################################
