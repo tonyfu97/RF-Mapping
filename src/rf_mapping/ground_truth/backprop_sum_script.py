@@ -50,7 +50,10 @@ if __name__ == "__main__":
 
 # Delete previous results from result directories.
 for sum_mode in sum_modes:
-    result_dir_with_sum_mode = os.path.join(result_dir, sum_mode)
+    if this_is_a_test_run:
+        result_dir_with_sum_mode = os.path.join(result_dir, 'test')
+    else:
+        result_dir_with_sum_mode = os.path.join(result_dir, sum_mode)
     delete_all_npy_files(result_dir_with_sum_mode)
 
 # Initiate helper objects.
@@ -170,6 +173,8 @@ for conv_i, rf_size in enumerate(rf_sizes):
 
     # Save results.
     for i, sum_mode in enumerate(sum_modes):
+        if this_is_a_test_run:
+            sum_mode = 'test'
         max_result_path = os.path.join(result_dir, sum_mode, f"conv{conv_i+1}_max.npy")
         min_result_path = os.path.join(result_dir, sum_mode, f"conv{conv_i+1}_min.npy")
         np.save(max_result_path, max_sum_norm[i,...])

@@ -1,7 +1,7 @@
 """
 Code for generating bar stimuli.
 
-Note: The y-axis points downward.
+Note: The y-axis points downward. (Negative sign)
 
 July 15, 2022
 """
@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 from hook import ConvUnitCounter
-from files import delete_all_npy_files, delete_all_file_of_extension
+from files import delete_all_npy_files
 from spatial import (xn_to_center_rf,
                      truncated_model,
                      calculate_center,
@@ -656,8 +656,18 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
     layer_indices, nums_units = unit_counter.count()
     _, max_rfs = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
 
+    # Delete previous files
     delete_all_npy_files(result_dir)
-    delete_all_file_of_extension(result_dir, '.txt')
+    tb1_path = os.path.join(result_dir, f"{model_name}_rfmp4a_tb1.txt")
+    tb20_path = os.path.join(result_dir, f"{model_name}_rfmp4a_tb20.txt")
+    tb100_path = os.path.join(result_dir, f"{model_name}_rfmp4a_tb100.txt")
+    if os.path.exists(tb1_path):
+        os.remove(tb1_path)
+    if os.path.exists(tb20_path):
+        os.remove(tb20_path)
+    if os.path.exists(tb100_path):
+        os.remove(tb100_path)
+    
     for conv_i in range(len(layer_indices)):
         layer_name = f"conv{conv_i + 1}"
         print(f"{layer_name}\n")
@@ -678,9 +688,6 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
                                           _debug=_debug)
         
         # Create txt files that summarize the top and bottom bars.
-        tb1_path = os.path.join(result_dir, f"{model_name}_rfmp4a_tb1.txt")
-        tb20_path = os.path.join(result_dir, f"{model_name}_rfmp4a_tb20.txt")
-        tb100_path = os.path.join(result_dir, f"{model_name}_rfmp4a_tb100.txt")
         summarize_TB1(splist, center_responses, layer_name, tb1_path)
         summarize_TBn(splist, center_responses, layer_name, tb20_path, top_n=20)
         summarize_TBn(splist, center_responses, layer_name, tb100_path, top_n=100)

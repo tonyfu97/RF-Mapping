@@ -461,6 +461,7 @@ class ParamCleaner(GaussianFitParamFormat):
             (1) Take the absolute value of sigma_1 and 2.
             (2) Theta is translated into orientation (the direction of either
                 sigma_1 or sigma_2 depending on which is longer.)
+            (3) Transform the origin from top-left to image center.
         Returns None if :
             (1) Have at least one parameter with a SEM greater than the
                 threshold.

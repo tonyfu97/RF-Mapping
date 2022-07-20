@@ -1,5 +1,7 @@
 # Temporary README file for txt files.
 
+COORDINATES: zero-centered, y-axis points downward.
+
 file_name: alexnet_rfmp4a_tb1.txt
 source: bar.py > summarize_TB1()
 fields:

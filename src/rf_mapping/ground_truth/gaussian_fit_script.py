@@ -4,9 +4,12 @@ results.
 
 Tony Fu, June 29, 2022
 """
+from cmath import exp
 import os
 import sys
 
+from statistics import variance
+import this
 import numpy as np
 import torch.nn as nn
 from torchvision import models
@@ -16,7 +19,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
 
 sys.path.append('..')
-from gaussian_fit import gaussian_fit, ParamCleaner
+from gaussian_fit import gaussian_fit, ParamCleaner, twoD_Gaussian
 from gaussian_fit import GaussianFitParamFormat as ParamFormat
 from hook import ConvUnitCounter
 from spatial import get_rf_sizes
@@ -56,10 +59,103 @@ _, rf_sizes = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
 # Helper objects:
 param_cleaner = ParamCleaner()
 
+# Helper functions for txt files:
+def calc_explained_variance(gt_map, params):
+    # Reconstruct map with fit parameters.
+    x_size = gt_map.shape[1]
+    y_size = gt_map.shape[0]
+    x = np.arange(x_size)
+    y = np.arange(y_size)
+    x, y = np.meshgrid(x, y)
+    fit_map = twoD_Gaussian((x, y),
+                            params[ParamFormat.A_IDX],
+                            params[ParamFormat.MU_X_IDX],
+                            params[ParamFormat.MU_Y_IDX],
+                            params[ParamFormat.SIGMA_1_IDX],
+                            params[ParamFormat.SIGMA_2_IDX],
+                            params[ParamFormat.THETA_IDX],
+                            params[ParamFormat.OFFSET_IDX])
+    # Calcualte variances
+    residual_var = variance(fit_map - gt_map.flatten())
+    gt_var = variance(gt_map.flatten())
+    return 1 - (residual_var/gt_var)
+
+def wrap_angle_180(angle):
+    while angle >= 180:
+        angle -= 180
+    while angle < 0:
+        angle += 180
+    return angle
+
+def theta_to_ori(sigma_1, sigma_2, theta):
+    """
+    Translates theta into orientation. Needs this function because theta
+    tells us the orientation of sigma_1, which may or may not be the semi-
+    major axis, whereas orientation is always about the semi-major axis.
+    Therefore, when sigma_2 > sigma_1, our theta is off by 90 degrees from
+    the actual orientation.
+
+    Parameters
+    ----------
+    sigma_1 & sigma_2 : float
+        The std. dev.'s of the semi-major and -minor axes. The larger of
+        of the two is the semi-major.
+    theta : float
+        The orientation of sigma_1 in degrees.
+
+    Returns
+    -------
+    orientation: float
+        The orientation of the unit's receptive field in degrees.
+    """
+    if sigma_1 > sigma_2:
+        return wrap_angle_180(theta)
+    return wrap_angle_180(theta - 90)
+
+def write_txt(f, layer_name, unit_i, raw_params, explained_variance, map_size):
+    # Unpack params
+    amp = raw_params[ParamFormat.A_IDX]
+    mu_x = raw_params[ParamFormat.MU_X_IDX]
+    mu_y = raw_params[ParamFormat.MU_Y_IDX]
+    sigma_1 = raw_params[ParamFormat.SIGMA_1_IDX]
+    sigma_2 = raw_params[ParamFormat.SIGMA_2_IDX]
+    theta = raw_params[ParamFormat.THETA_IDX]
+    offset = raw_params[ParamFormat.OFFSET_IDX]
+    
+    # Some primitive processings:
+    # (1) move original from top-left to map center.
+    mu_x = mu_x - (map_size/2)
+    mu_y = mu_y - (map_size/2)
+    # (2) take the abs value of sigma values.
+    sigma_1 = abs(sigma_1)
+    sigma_2 = abs(sigma_2)
+    # (3) convert theta to orientation.
+    orientation = theta_to_ori(sigma_1, sigma_2, theta)
+
+    f.write(f"{layer_name:6} {unit_i:3} ")
+    f.write(f"{mu_x:7.2f} {mu_y:7.2f} ")
+    f.write(f"{sigma_1:7.2f} {sigma_2:7.2f} ")
+    f.write(f"{orientation:6.2f} ")
+    f.write(f"{amp:8.3f} {offset:8.3f} ")
+    f.write(f"{explained_variance:7.4f}\n")
+
+
 for sum_mode in sum_modes:
     backprop_sum_dir_with_mode = os.path.join(backprop_sum_dir, sum_mode)
-    result_dir_with_mode = os.path.join(result_dir, sum_mode)
+
+    if this_is_a_test_run:
+        result_dir_with_mode = os.path.join(result_dir, 'test')
+    else:
+        result_dir_with_mode = os.path.join(result_dir, sum_mode)
+    
+    # Delete previous files.
     delete_all_npy_files(result_dir_with_mode)
+    top_file_path = os.path.join(result_dir_with_mode, f"{model_name}_gt_gaussian_top.txt")
+    bot_file_path = os.path.join(result_dir_with_mode, f"{model_name}_gt_gaussian_bot.txt")
+    if os.path.exists(top_file_path):
+        os.remove(top_file_path)
+    if os.path.exists(bot_file_path):
+        os.remove(bot_file_path)
 
     for conv_i in range(len(layer_indices)):
         layer_name = f"conv{conv_i + 1}"
@@ -78,8 +174,8 @@ for sum_mode in sum_modes:
         both_params_sems = np.zeros((num_units, num_params, 2))
         
         # For param_cleaner to check if Gaussian is inside in RF or not.
-        rf_size = rf_sizes[conv_i]
-        box = (0, 0, rf_size[0], rf_size[1])
+        rf_size = rf_sizes[conv_i][0]
+        box = (0, 0, rf_size, rf_size)
 
         pdf_path = os.path.join(result_dir_with_mode, f"{layer_name}.pdf")
         with PdfPages(pdf_path) as pdf:
@@ -95,6 +191,9 @@ for sum_mode in sum_modes:
 
                 plt.subplot(1, 3, 1)
                 params, sems = gaussian_fit(max_map, plot=True, show=False)
+                exp_var = calc_explained_variance(max_map, params)
+                with open(top_file_path, 'a') as f:
+                    write_txt(f, layer_name, unit_i, params, exp_var, rf_size)
                 cleaned_params = param_cleaner.clean(params, sems, box)
                 max_params_sems[unit_i, :, 0] = cleaned_params
                 max_params_sems[unit_i, :, 1] = sems
