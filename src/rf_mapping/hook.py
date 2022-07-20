@@ -58,7 +58,7 @@ class HookFunctionBase:
 
         # Otherwise (i.e.,the layer is a container type layer), recurse.
         else:
-            for i, sublayer in enumerate(layer.children()):
+            for sublayer in layer.children():
                 self.register_forward_hook_to_layers(sublayer)
 
 

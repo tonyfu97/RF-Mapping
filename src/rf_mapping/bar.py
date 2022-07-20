@@ -172,23 +172,23 @@ def stimfr_bar(xn, yn, x0, y0, theta, blen, bwid, aa, fgval, bgval):
     return s
 
 
-# # Test
-# if __name__ == "__main__":
-#     xn = 200
-#     yn = 300
-#     # rotate test
-#     for theta in np.linspace(0, 180, 8):
-#         bar = stimfr_bar(xn, yn, 0, 0, theta, 100, 50, 1, 1, -1)
-#         plt.imshow(bar, cmap='gray')
-#         plt.title(f"{theta:.2f}")
-#         plt.show()
+# Test
+if __name__ == "__main__":
+    xn = 200
+    yn = 300
+    # rotate test
+    for theta in np.linspace(0, 180, 8):
+        bar = stimfr_bar(xn, yn, 0, 0, theta, 100, 50, 1, 1, -1)
+        plt.imshow(bar, cmap='gray')
+        plt.title(f"theta = {theta:.2f}")
+        plt.show()
 
-#     # move from left to right
-#     for x0 in np.linspace(-xn//2, xn//2, 5):
-#         bar = stimfr_bar(xn, yn, x0, 0, 45, 80, 30, 2, 1, 0)
-#         plt.imshow(bar, cmap='gray')
-#         plt.title(f"{x0:.2f}")
-#         plt.show()
+    # move from top to bottom
+    for y0 in np.linspace(-yn//2, yn//2, 5):
+        bar = stimfr_bar(xn, yn, 0, y0, 45, 80, 30, 2, 1, 0)
+        plt.imshow(bar, cmap='gray')
+        plt.title(f"y = {y0:.2f}")
+        plt.show()
         
 
 #######################################.#######################################
@@ -279,7 +279,7 @@ def stim_dapp_bar_xyo_bw(splist,xn,xlist,orilist,blen,bwid,aa):
     fgval =  1.0  # Foreground luminance
     bgval = -1.0  # Background luminance
     
-    nstim = len(xlist) * len(ylist) * len(orilist) * 2
+    # nstim = len(xlist) * len(ylist) * len(orilist) * 2
     # print("  Creating ", nstim, " stimulus dictionary entries.")
     
     for i in xlist:
@@ -378,11 +378,11 @@ def stimset_dict_rfmp_4a(xn,max_rf):
 
 
 
-#
+
 #  HERE IS AN EXAMPLE OF HOW TO CALL THE CODE ABOVE:
-#
-# if __name__ == "__main__":
-#     s = stimset_dict_rfmp_4a(11,11)
+
+if __name__ == "__main__":
+    s = stimset_dict_rfmp_4a(11,11)
 
 
 #######################################.#######################################
@@ -392,8 +392,7 @@ def stimset_dict_rfmp_4a(xn,max_rf):
 ###############################################################################
 def print_progress(text):
     """
-    Prints progress (whatever quantity) without printing a new line
-    everytime.
+    Prints progress (whatever text) without printing a new line everytime.
     """
     sys.stdout.write('\r')
     sys.stdout.write(text)
@@ -691,8 +690,8 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
             if _debug and (unit_i > 10):
                 break
             print_progress(f"Making maps for unit {unit_i}...")
-            max_map, min_map = mrfmap_make_non_overlap_map(splist, center_responses, unit_i,
-                                    response_thr=0.1, stim_thr=0.2, _debug=_debug)
+            max_map, min_map = mrfmap_make_non_overlap_map(splist, center_responses,
+                                unit_i, response_thr=0.1, stim_thr=0.2, _debug=_debug)
             max_maps[unit_i] = max_map[padding:padding+max_rf, padding:padding+max_rf]
             min_maps[unit_i] = min_map[padding:padding+max_rf, padding:padding+max_rf]
         

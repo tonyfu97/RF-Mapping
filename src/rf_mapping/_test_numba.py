@@ -13,7 +13,7 @@ from time import time
 #                                  TEST_NJIT                                  #
 #                                                                             #
 ###############################################################################
-def test_njit(func, num_times=10):
+def test_njit(func, num_times=10, parallel=False):
     """
     A decorator that prints out the time it takes to run the function without
     numba njit, during njit compilation, and after njit is compiled.
@@ -30,7 +30,7 @@ def test_njit(func, num_times=10):
         time_before /= num_times
         print(f"        Before jit = {time_before:.8f} sec")
 
-        func_jit = njit(func)  # Apply njit
+        func_jit = njit(func, parallel=parallel)  # Apply njit
         start = time()
         func_jit(*args, **kwargs)
         end = time()

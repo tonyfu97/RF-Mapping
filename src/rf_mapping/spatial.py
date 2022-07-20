@@ -102,7 +102,7 @@ class SpatialIndexConverter(SizeInspector):
         x_max = clip(x_max, 0, max_size)
         return x_min, x_max
 
-    def _backward_transform(self, x_min, x_max, stride, kernel_size, padding,max_size):
+    def _backward_transform(self, x_min, x_max, stride, kernel_size, padding, max_size):
         x_min = (x_min * stride) - padding
         x_min = clip(x_min, 0, max_size)
         x_max = (x_max * stride) + kernel_size - 1 - padding
