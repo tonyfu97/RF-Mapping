@@ -132,12 +132,12 @@ def write_txt(f, layer_name, unit_i, raw_params, explained_variance, map_size):
     # (3) convert theta to orientation.
     orientation = theta_to_ori(sigma_1, sigma_2, theta)
 
-    f.write(f"{layer_name:6} {unit_i:3} ")
-    f.write(f"{mu_x:7.2f} {mu_y:7.2f} ")
-    f.write(f"{sigma_1:7.2f} {sigma_2:7.2f} ")
-    f.write(f"{orientation:6.2f} ")
-    f.write(f"{amp:8.3f} {offset:8.3f} ")
-    f.write(f"{explained_variance:7.4f}\n")
+    f.write(f"{layer_name} {unit_i} ")
+    f.write(f"{mu_x:.2f} {mu_y:.2f} ")
+    f.write(f"{sigma_1:.2f} {sigma_2:.2f} ")
+    f.write(f"{orientation:.2f} ")
+    f.write(f"{amp:.3f} {offset:.3f} ")
+    f.write(f"{explained_variance:.4f}\n")
 
 
 for sum_mode in sum_modes:
@@ -192,8 +192,8 @@ for sum_mode in sum_modes:
                 plt.subplot(1, 3, 1)
                 params, sems = gaussian_fit(max_map, plot=True, show=False)
                 exp_var = calc_explained_variance(max_map, params)
-                with open(top_file_path, 'a') as f:
-                    write_txt(f, layer_name, unit_i, params, exp_var, rf_size)
+                with open(top_file_path, 'a') as top_f:
+                    write_txt(top_f, layer_name, unit_i, params, exp_var, rf_size)
                 cleaned_params = param_cleaner.clean(params, sems, box)
                 max_params_sems[unit_i, :, 0] = cleaned_params
                 max_params_sems[unit_i, :, 1] = sems
@@ -211,6 +211,9 @@ for sum_mode in sum_modes:
 
                 plt.subplot(1, 3, 2)
                 params, sems = gaussian_fit(min_map, plot=True, show=False)
+                exp_var = calc_explained_variance(min_map, params)
+                with open(bot_file_path, 'a') as bot_f:
+                    write_txt(bot_f, layer_name, unit_i, params, exp_var, rf_size)
                 cleaned_params = param_cleaner.clean(params, sems, box)
                 min_params_sems[unit_i, :, 0] = cleaned_params
                 min_params_sems[unit_i, :, 1] = sems

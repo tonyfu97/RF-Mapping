@@ -44,8 +44,8 @@ for sum_mode in sum_modes:
         num_units = nums_units[conv_i]
         
         # Load maps.
-        max_sum_path = os.path.join(backprop_sum_dir_with_modes, f"max_conv{conv_i+1}.npy")
-        min_sum_path = os.path.join(backprop_sum_dir_with_modes, f"min_conv{conv_i+1}.npy")
+        max_sum_path = os.path.join(backprop_sum_dir_with_modes, f"{layer_name}_max.npy")
+        min_sum_path = os.path.join(backprop_sum_dir_with_modes, f"{layer_name}_min.npy")
         max_sum = np.load(max_sum_path)
         min_sum = np.load(min_sum_path)
         both_sum = (max_sum + min_sum)/2

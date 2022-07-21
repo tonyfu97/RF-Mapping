@@ -28,7 +28,7 @@ model_name = "alexnet"
 sum_modes = ['abs', 'sqr']
 grad_method = GuidedBackprop(model)
 top_n = 100
-this_is_a_test_run = True
+this_is_a_test_run = False
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR

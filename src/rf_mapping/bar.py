@@ -552,9 +552,9 @@ def summarize_TB1(splist, center_responses, layer_name, txt_path):
             
             top_bar = splist[top_i]
             bot_bar = splist[bot_i]
-            f.write(f"{layer_name:6} {unit_i:3} ")
-            f.write(f"{top_i:5} {top_bar['x0']:6.2f} {top_bar['y0']:6.2f} {top_r:10.4f}")
-            f.write(f"{bot_i:5} {bot_bar['x0']:6.2f} {bot_bar['y0']:6.2f} {bot_r:10.4f}\n")
+            f.write(f"{layer_name:} {unit_i:} ")
+            f.write(f"{top_i:} {top_bar['x0']:.2f} {top_bar['y0']:.2f} {top_r:.4f} ")
+            f.write(f"{bot_i:} {bot_bar['x0']:.2f} {bot_bar['y0']:.2f} {bot_r:.4f}\n")
 
 
 #######################################.#######################################
@@ -597,9 +597,9 @@ def summarize_TBn(splist, center_responses, layer_name, txt_path, top_n=20):
                 bot_avg_x += splist[bot_i]['x0']/top_n
                 bot_avg_y += splist[bot_i]['y0']/top_n
 
-            f.write(f"{layer_name:6} {unit_i:3} ")
-            f.write(f"{top_avg_x:6.2f} {top_avg_y:6.2f}")
-            f.write(f"{bot_avg_x:6.2f} {bot_avg_y:6.2f}\n")
+            f.write(f"{layer_name} {unit_i} ")
+            f.write(f"{top_avg_x:.2f} {top_avg_y:.2f} ")
+            f.write(f"{bot_avg_x:.2f} {bot_avg_y:.2f}\n")
 
 
 #######################################.#######################################
@@ -669,6 +669,9 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
         os.remove(tb100_path)
     
     for conv_i in range(len(layer_indices)):
+        if model_name == 'vgg16' and conv_i < 4:
+            continue
+        
         layer_name = f"conv{conv_i + 1}"
         print(f"{layer_name}\n")
         # Get layer-specific info

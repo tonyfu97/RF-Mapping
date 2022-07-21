@@ -19,19 +19,19 @@ from bar import rfmp4a_run_01b
 import constants as c
 
 # Please specify some details here:
-model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1).to(c.DEVICE)
-model_name = 'alexnet'
-# model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
-# model_name = 'vgg16'
+# model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1).to(c.DEVICE)
+# model_name = 'alexnet'
+model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
+model_name = 'vgg16'
 this_is_a_test_run = False
 
 # Please double-check the directories:
 if this_is_a_test_run:
     result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', 
-                              model_name, 'non_overlap')
+                              model_name, 'test')
 else:
     result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', 
-                              model_name, 'test')
+                              model_name, 'non_overlap')
 
 ###############################################################################
 
@@ -45,7 +45,6 @@ if __name__ == "__main__":
         raise KeyboardInterrupt("Interrupted by user")
 
 rfmp4a_run_01b(model, model_name, result_dir, _debug=this_is_a_test_run)
-
 
 """
 Tony - Below is the old way of running the rfmp4a. This old way uses the full
