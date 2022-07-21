@@ -10,8 +10,8 @@ fields:
     - mu_x (float)
     - mu_y (float)
     - sigma_1 (float)
-    - sigma_2 (int)
-    - ori (float)
+    - sigma_2 (float)
+    - ori (float): 0 is right, 90 is up, etc.
     - amp (float)
     - offset (float)
     - explained_var (float)

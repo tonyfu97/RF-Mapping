@@ -4,12 +4,9 @@ results.
 
 Tony Fu, June 29, 2022
 """
-from cmath import exp
 import os
 import sys
 
-from statistics import variance
-import this
 import numpy as np
 import torch.nn as nn
 from torchvision import models
@@ -19,7 +16,10 @@ from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
 
 sys.path.append('..')
-from gaussian_fit import gaussian_fit, ParamCleaner, twoD_Gaussian
+from gaussian_fit import (gaussian_fit,
+                          ParamCleaner,
+                          calc_explained_variance,
+                          theta_to_ori)
 from gaussian_fit import GaussianFitParamFormat as ParamFormat
 from hook import ConvUnitCounter
 from spatial import get_rf_sizes
@@ -60,58 +60,6 @@ _, rf_sizes = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
 param_cleaner = ParamCleaner()
 
 # Helper functions for txt files:
-def calc_explained_variance(gt_map, params):
-    # Reconstruct map with fit parameters.
-    x_size = gt_map.shape[1]
-    y_size = gt_map.shape[0]
-    x = np.arange(x_size)
-    y = np.arange(y_size)
-    x, y = np.meshgrid(x, y)
-    fit_map = twoD_Gaussian((x, y),
-                            params[ParamFormat.A_IDX],
-                            params[ParamFormat.MU_X_IDX],
-                            params[ParamFormat.MU_Y_IDX],
-                            params[ParamFormat.SIGMA_1_IDX],
-                            params[ParamFormat.SIGMA_2_IDX],
-                            params[ParamFormat.THETA_IDX],
-                            params[ParamFormat.OFFSET_IDX])
-    # Calcualte variances
-    residual_var = variance(fit_map - gt_map.flatten())
-    gt_var = variance(gt_map.flatten())
-    return 1 - (residual_var/gt_var)
-
-def wrap_angle_180(angle):
-    while angle >= 180:
-        angle -= 180
-    while angle < 0:
-        angle += 180
-    return angle
-
-def theta_to_ori(sigma_1, sigma_2, theta):
-    """
-    Translates theta into orientation. Needs this function because theta
-    tells us the orientation of sigma_1, which may or may not be the semi-
-    major axis, whereas orientation is always about the semi-major axis.
-    Therefore, when sigma_2 > sigma_1, our theta is off by 90 degrees from
-    the actual orientation.
-
-    Parameters
-    ----------
-    sigma_1 & sigma_2 : float
-        The std. dev.'s of the semi-major and -minor axes. The larger of
-        of the two is the semi-major.
-    theta : float
-        The orientation of sigma_1 in degrees.
-
-    Returns
-    -------
-    orientation: float
-        The orientation of the unit's receptive field in degrees.
-    """
-    if sigma_1 > sigma_2:
-        return wrap_angle_180(theta)
-    return wrap_angle_180(theta - 90)
-
 def write_txt(f, layer_name, unit_i, raw_params, explained_variance, map_size):
     # Unpack params
     amp = raw_params[ParamFormat.A_IDX]

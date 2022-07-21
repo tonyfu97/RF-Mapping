@@ -9,6 +9,7 @@ https://stackoverflow.com/questions/21566379/fitting-a-2d-gaussian-function-usin
 import os
 import sys
 
+from statistics import variance
 import numpy as np
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
@@ -362,6 +363,94 @@ class GaussianFitParamFormat:
     SIGMA_2_IDX = 4
     THETA_IDX   = 5
     OFFSET_IDX  = 6
+
+
+#######################################.#######################################
+#                                                                             #
+#                            CALC_EXPLAINED_VARIANCE                          #
+#                                                                             #
+###############################################################################
+def calc_explained_variance(sum_map, params):
+    """
+    Calculates the variance explained by the fit with the formula:
+        exp_var = 1 - var(sum_map - fit_map)/var(sum_map)
+
+    Parameters
+    ----------
+    sum_map : numpy.ndarray
+        The map constructed by summing bars.
+    params : [floats, ...]
+        Paramters of 2D elliptical Gaussian fit. Should comply with
+        GaussianFitParamFormat().
+
+    Returns
+    -------
+    exp_var : float
+        Explained variance.
+    """
+    # Reconstruct map with fit parameters.
+    x_size = sum_map.shape[1]
+    y_size = sum_map.shape[0]
+    x = np.arange(x_size)
+    y = np.arange(y_size)
+    x, y = np.meshgrid(x, y)
+    fit_map = twoD_Gaussian((x, y),
+                            params[GaussianFitParamFormat.A_IDX],
+                            params[GaussianFitParamFormat.MU_X_IDX],
+                            params[GaussianFitParamFormat.MU_Y_IDX],
+                            params[GaussianFitParamFormat.SIGMA_1_IDX],
+                            params[GaussianFitParamFormat.SIGMA_2_IDX],
+                            params[GaussianFitParamFormat.THETA_IDX],
+                            params[GaussianFitParamFormat.OFFSET_IDX])
+    # Calcualte variances
+    residual_var = variance(fit_map - sum_map.flatten())
+    gt_var = variance(sum_map.flatten())
+    return 1 - (residual_var/gt_var)
+
+
+#######################################.#######################################
+#                                                                             #
+#                               WRAP_ANGLE_180                                #
+#                                                                             #
+###############################################################################
+def wrap_angle_180(angle):
+    """Constraints angle to be 0 <= angle < 180."""
+    while angle >= 180:
+        angle -= 180
+    while angle < 0:
+        angle += 180
+    return angle
+
+
+#######################################.#######################################
+#                                                                             #
+#                                THETA_TO_ORI                                 #
+#                                                                             #
+###############################################################################
+def theta_to_ori(sigma_1, sigma_2, theta):
+    """
+    Translates theta into orientation. Needs this function because theta
+    tells us the orientation of sigma_1, which may or may not be the semi-
+    major axis, whereas orientation is always about the semi-major axis.
+    Therefore, when sigma_2 > sigma_1, our theta is off by 90 degrees from
+    the actual orientation.
+
+    Parameters
+    ----------
+    sigma_1 & sigma_2 : float
+        The std. dev.'s of the semi-major and -minor axes. The larger of
+        of the two is the semi-major.
+    theta : float
+        The orientation of sigma_1 in degrees.
+
+    Returns
+    -------
+    orientation: float
+        The orientation of the unit's receptive field in degrees.
+    """
+    if sigma_1 > sigma_2:
+        return wrap_angle_180(theta)
+    return wrap_angle_180(theta - 90)
 
 
 #######################################.#######################################

@@ -19,26 +19,24 @@ from bar import rfmp4a_run_01b
 import constants as c
 
 # Please specify some details here:
-# model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1).to(c.DEVICE)
-# model_name = 'alexnet'
-model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
-model_name = 'vgg16'
+model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1).to(c.DEVICE)
+model_name = 'alexnet'
+# model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
+# model_name = 'vgg16'
 this_is_a_test_run = False
 
 # Please double-check the directories:
 if this_is_a_test_run:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', 
-                              model_name, 'test')
+    result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', 'test')
 else:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', 
-                              model_name, 'non_overlap')
+    result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', model_name)
 
 ###############################################################################
 
 # Script guard
 if __name__ == "__main__":
     print("Look for a prompt.")
-    user_input = input("This code may take time to run. Are you sure? ")
+    user_input = input("This code may take time to run. Are you sure? Enter y")
     if user_input == 'y':
         pass
     else: 
@@ -50,8 +48,7 @@ rfmp4a_run_01b(model, model_name, result_dir, _debug=this_is_a_test_run)
 Tony - Below is the old way of running the rfmp4a. This old way uses the full
        image size 227 * 227. The new way above is much faster because it
        only uses the stimulus size that is just large enough to present the
-       bar stimuli. The new way also only has one cumulate mode named
-       'non-overlap'.
+       bar stimuli.
 
 from mapping import BarRfMapperP4a
 from spatial import get_rf_sizes
