@@ -77,7 +77,7 @@ def write_txt(f, layer_name, unit_i, raw_params, fxvar, map_size, num_bars):
     offset = raw_params[ParamFormat.OFFSET_IDX]
     
     # Some primitive processings:
-    # (1) move original from top-left to map center.
+    # (1) move original from top-left to map center.s
     mu_x = mu_x - (map_size/2)
     mu_y = mu_y - (map_size/2)
     # (2) take the abs value of sigma values.
@@ -96,7 +96,6 @@ def write_txt(f, layer_name, unit_i, raw_params, fxvar, map_size, num_bars):
 
 
 for conv_i in range(len(layer_indices)):
-    # Get layer-specific info
     layer_name = f"conv{conv_i + 1}"
     rf_size = rf_sizes[conv_i][0]
     

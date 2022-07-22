@@ -146,11 +146,14 @@ def gaussian_fit(image, initial_guess=None, plot=True, show=False):
 
     # Initialize intial guess.
     if initial_guess is None:
-        sigma_1_guess = 40
-        sigma_2_guess = 30
+        amp_guess = image.max() - image.min()
+        muy_guess, mux_guess = np.unravel_index(np.argmax(image), image.shape)
+        sigma_1_guess = image.shape[0]/4
+        sigma_2_guess = image.shape[0]/5
         theta_guess = 90
-        offset_guess = 0
-        initial_guess = (image.max(), x_size//2, y_size//2,
+        offset_guess = image.mean()
+        
+        initial_guess = (amp_guess, mux_guess, muy_guess,
                          sigma_1_guess, sigma_2_guess,
                          theta_guess, offset_guess)
 
@@ -159,7 +162,8 @@ def gaussian_fit(image, initial_guess=None, plot=True, show=False):
         param_estimate, params_covar = opt.curve_fit(twoD_Gaussian, (x, y),
                                                     image.flatten(),
                                                     p0=initial_guess,
-                                                    method='trf')
+                                                    method='lm',
+                                                    check_finite=True)
         param_sem = np.sqrt(np.diag(params_covar))
     except:
         param_estimate = np.full(len(initial_guess), -1)
@@ -172,8 +176,8 @@ def gaussian_fit(image, initial_guess=None, plot=True, show=False):
         # fig, ax = plt.subplots(1, 1)
         plt.imshow(image, cmap=plt.cm.jet)
         # plt.colorbar()
-        plt.contour(x, y, image_fitted.reshape(y_size, x_size), 7, colors='w')
-        
+        plt.contour(x, y, image_fitted.reshape(y_size, x_size), 9, colors='w')
+
     if show:
         plt.show()
 

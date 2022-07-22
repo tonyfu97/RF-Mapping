@@ -22,7 +22,6 @@ from gaussian_fit import (gaussian_fit,
 from gaussian_fit import GaussianFitParamFormat as ParamFormat
 from hook import ConvUnitCounter
 from spatial import get_rf_sizes
-from files import delete_all_npy_files
 import constants as c
 
 
@@ -91,9 +90,8 @@ for sum_mode in sum_modes:
         result_dir_with_mode = os.path.join(result_dir, 'test')
     else:
         result_dir_with_mode = os.path.join(result_dir, sum_mode)
-    
+
     # Delete previous files.
-    delete_all_npy_files(result_dir_with_mode)
     top_file_path = os.path.join(result_dir_with_mode, f"{model_name}_gt_gaussian_top.txt")
     bot_file_path = os.path.join(result_dir_with_mode, f"{model_name}_gt_gaussian_bot.txt")
     if os.path.exists(top_file_path):
@@ -112,10 +110,6 @@ for sum_mode in sum_modes:
 
         # Initialize arrays for parameters and standard error (SEM) values:
         num_units = nums_units[conv_i]
-        num_params = ParamFormat.NUM_PARAMS
-        max_params_sems = np.zeros((num_units, num_params, 2))
-        min_params_sems = np.zeros((num_units, num_params, 2))
-        both_params_sems = np.zeros((num_units, num_params, 2))
         
         # For param_cleaner to check if Gaussian is inside in RF or not.
         rf_size = rf_sizes[conv_i][0]
@@ -129,66 +123,39 @@ for sum_mode in sum_modes:
                     break
 
                 # Fit 2D Gaussian, and plot them.
-                plt.figure(figsize=(30, 10))
+                plt.figure(figsize=(20, 10))
                 plt.suptitle(f"Elliptical Gaussian fit ({layer_name} no.{unit_i}, "
                              f"sum mode: {sum_mode})", fontsize=20)
 
-                plt.subplot(1, 3, 1)
+                plt.subplot(1, 2, 1)
                 params, sems = gaussian_fit(max_map, plot=True, show=False)
-                f_exp_var = calc_f_explained_var(max_map, params)
+                fxvar = calc_f_explained_var(max_map, params)
                 with open(top_file_path, 'a') as top_f:
-                    write_txt(top_f, layer_name, unit_i, params, f_exp_var, rf_size)
-                max_params_sems[unit_i, :, 0] = params
-                max_params_sems[unit_i, :, 1] = sems
-                plt.title(f"max\n"
+                    write_txt(top_f, layer_name, unit_i, params, fxvar, rf_size)
+                plt.title(f"max (fxvar = {fxvar:.4f})\n"
                           f"A={params[ParamFormat.A_IDX]:.2f}(err={sems[ParamFormat.A_IDX]:.2f}), "
                           f"mu_x={params[ParamFormat.MU_X_IDX]:.2f}(err={sems[ParamFormat.MU_X_IDX]:.2f}), "
                           f"mu_y={params[ParamFormat.MU_Y_IDX]:.2f}(err={sems[ParamFormat.MU_Y_IDX]:.2f}),\n"
                           f"sigma_1={params[ParamFormat.SIGMA_1_IDX]:.2f}(err={sems[ParamFormat.SIGMA_1_IDX]:.2f}), "
                           f"sigma_2={params[ParamFormat.SIGMA_2_IDX]:.2f}(err={sems[ParamFormat.SIGMA_2_IDX]:.2f}),\n"
                           f"theta={params[ParamFormat.THETA_IDX]:.2f}(err={sems[ParamFormat.THETA_IDX]:.2f}), "
-                          f"offset={params[ParamFormat.OFFSET_IDX]:.2f}(err={sems[ParamFormat.OFFSET_IDX]:.2f}",
+                          f"offset={params[ParamFormat.OFFSET_IDX]:.2f}(err={sems[ParamFormat.OFFSET_IDX]:.2f})",
                           fontsize=14)
 
-                plt.subplot(1, 3, 2)
+                plt.subplot(1, 2, 2)
                 params, sems = gaussian_fit(min_map, plot=True, show=False)
-                f_exp_var = calc_f_explained_var(min_map, params)
+                fxvar = calc_f_explained_var(min_map, params)
                 with open(bot_file_path, 'a') as bot_f:
-                    write_txt(bot_f, layer_name, unit_i, params, f_exp_var, rf_size)
-                min_params_sems[unit_i, :, 0] = params
-                min_params_sems[unit_i, :, 1] = sems
-                plt.title(f"min\n"
+                    write_txt(bot_f, layer_name, unit_i, params, fxvar, rf_size)
+                plt.title(f"min (fxvar = {fxvar:.4f})\n"
                           f"A={params[ParamFormat.A_IDX]:.2f}(err={sems[ParamFormat.A_IDX]:.2f}), "
                           f"mu_x={params[ParamFormat.MU_X_IDX]:.2f}(err={sems[ParamFormat.MU_X_IDX]:.2f}), "
                           f"mu_y={params[ParamFormat.MU_Y_IDX]:.2f}(err={sems[ParamFormat.MU_Y_IDX]:.2f}),\n"
                           f"sigma_1={params[ParamFormat.SIGMA_1_IDX]:.2f}(err={sems[ParamFormat.SIGMA_1_IDX]:.2f}), "
                           f"sigma_2={params[ParamFormat.SIGMA_2_IDX]:.2f}(err={sems[ParamFormat.SIGMA_2_IDX]:.2f}),\n"
                           f"theta={params[ParamFormat.THETA_IDX]:.2f}(err={sems[ParamFormat.THETA_IDX]:.2f}), "
-                          f"offset={params[ParamFormat.OFFSET_IDX]:.2f}(err={sems[ParamFormat.OFFSET_IDX]:.2f}",
-                          fontsize=14)
-
-                plt.subplot(1, 3, 3)
-                both_map = (max_map + min_map)/2
-                params, sems = gaussian_fit(both_map, plot=True, show=False)
-                both_params_sems[unit_i, :, 0] = params
-                both_params_sems[unit_i, :, 1] = sems
-                plt.title(f"max + min\n"
-                          f"A={params[ParamFormat.A_IDX]:.2f}(err={sems[ParamFormat.A_IDX]:.2f}), "
-                          f"mu_x={params[ParamFormat.MU_X_IDX]:.2f}(err={sems[ParamFormat.MU_X_IDX]:.2f}), "
-                          f"mu_y={params[ParamFormat.MU_Y_IDX]:.2f}(err={sems[ParamFormat.MU_Y_IDX]:.2f}),\n"
-                          f"sigma_1={params[ParamFormat.SIGMA_1_IDX]:.2f}(err={sems[ParamFormat.SIGMA_1_IDX]:.2f}), "
-                          f"sigma_2={params[ParamFormat.SIGMA_2_IDX]:.2f}(err={sems[ParamFormat.SIGMA_2_IDX]:.2f}),\n"
-                          f"theta={params[ParamFormat.THETA_IDX]:.2f}(err={sems[ParamFormat.THETA_IDX]:.2f}), "
-                          f"offset={params[ParamFormat.OFFSET_IDX]:.2f}(err={sems[ParamFormat.OFFSET_IDX]:.2f}",
+                          f"offset={params[ParamFormat.OFFSET_IDX]:.2f}(err={sems[ParamFormat.OFFSET_IDX]:.2f})",
                           fontsize=14)
 
                 pdf.savefig()
                 plt.close()
-
-        # Save fit parameters and SEMs:
-        max_result_path = os.path.join(result_dir_with_mode, f"{layer_name}_max.npy")
-        min_result_path = os.path.join(result_dir_with_mode, f"{layer_name}_min.npy")
-        both_result_path = os.path.join(result_dir_with_mode, f"{layer_name}_both.npy")
-        np.save(max_result_path, max_params_sems)
-        np.save(min_result_path, min_params_sems)
-        np.save(both_result_path, both_params_sems)

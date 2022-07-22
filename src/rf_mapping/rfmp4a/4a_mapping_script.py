@@ -22,7 +22,7 @@ import constants as c
 model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1).to(c.DEVICE)
 model_name = 'alexnet'
 # model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
-# model_name = 'vgg16'
+# model_name = 'vgg16'  # Conv12 was not finished last time
 this_is_a_test_run = False
 
 # Please double-check the directories:
