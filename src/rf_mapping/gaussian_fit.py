@@ -367,12 +367,12 @@ class GaussianFitParamFormat:
 
 #######################################.#######################################
 #                                                                             #
-#                            CALC_EXPLAINED_VARIANCE                          #
+#                             CALC_F_EXPLAINED_VAR                            #
 #                                                                             #
 ###############################################################################
-def calc_explained_variance(sum_map, params):
+def calc_f_explained_var(sum_map, params):
     """
-    Calculates the variance explained by the fit with the formula:
+    Calculates the fraction of variance explained by the fit with the formula:
         exp_var = 1 - var(sum_map - fit_map)/var(sum_map)
 
     Parameters
@@ -386,7 +386,7 @@ def calc_explained_variance(sum_map, params):
     Returns
     -------
     exp_var : float
-        Explained variance.
+        The fraction of explained variance.
     """
     # Reconstruct map with fit parameters.
     x_size = sum_map.shape[1]

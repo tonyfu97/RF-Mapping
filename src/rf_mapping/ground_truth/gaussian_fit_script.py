@@ -17,8 +17,7 @@ from tqdm import tqdm
 
 sys.path.append('..')
 from gaussian_fit import (gaussian_fit,
-                          ParamCleaner,
-                          calc_explained_variance,
+                          calc_f_explained_var,
                           theta_to_ori)
 from gaussian_fit import GaussianFitParamFormat as ParamFormat
 from hook import ConvUnitCounter
@@ -55,9 +54,6 @@ if __name__ == "__main__":
 unit_counter = ConvUnitCounter(model)
 layer_indices, nums_units = unit_counter.count()
 _, rf_sizes = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
-
-# Helper objects:
-param_cleaner = ParamCleaner()
 
 # Helper functions for txt files:
 def write_txt(f, layer_name, unit_i, raw_params, explained_variance, map_size):
@@ -139,60 +135,51 @@ for sum_mode in sum_modes:
 
                 plt.subplot(1, 3, 1)
                 params, sems = gaussian_fit(max_map, plot=True, show=False)
-                exp_var = calc_explained_variance(max_map, params)
+                f_exp_var = calc_f_explained_var(max_map, params)
                 with open(top_file_path, 'a') as top_f:
-                    write_txt(top_f, layer_name, unit_i, params, exp_var, rf_size)
-                cleaned_params = param_cleaner.clean(params, sems, box)
-                max_params_sems[unit_i, :, 0] = cleaned_params
+                    write_txt(top_f, layer_name, unit_i, params, f_exp_var, rf_size)
+                max_params_sems[unit_i, :, 0] = params
                 max_params_sems[unit_i, :, 1] = sems
-                if cleaned_params is None:  
-                    cleaned_params = params
                 plt.title(f"max\n"
-                          f"A={cleaned_params[ParamFormat.A_IDX]:.2f}(err={sems[ParamFormat.A_IDX]:.2f}), "
-                          f"mu_x={cleaned_params[ParamFormat.MU_X_IDX]:.2f}(err={sems[ParamFormat.MU_X_IDX]:.2f}), "
-                          f"mu_y={cleaned_params[ParamFormat.MU_Y_IDX]:.2f}(err={sems[ParamFormat.MU_Y_IDX]:.2f}),\n"
-                          f"sigma_1={cleaned_params[ParamFormat.SIGMA_1_IDX]:.2f}(err={sems[ParamFormat.SIGMA_1_IDX]:.2f}), "
-                          f"sigma_2={cleaned_params[ParamFormat.SIGMA_2_IDX]:.2f}(err={sems[ParamFormat.SIGMA_2_IDX]:.2f}),\n"
-                          f"theta={cleaned_params[ParamFormat.THETA_IDX]:.2f}(err={sems[ParamFormat.THETA_IDX]:.2f}), "
-                          f"offset={cleaned_params[ParamFormat.OFFSET_IDX]:.2f}(err={sems[ParamFormat.OFFSET_IDX]:.2f}",
+                          f"A={params[ParamFormat.A_IDX]:.2f}(err={sems[ParamFormat.A_IDX]:.2f}), "
+                          f"mu_x={params[ParamFormat.MU_X_IDX]:.2f}(err={sems[ParamFormat.MU_X_IDX]:.2f}), "
+                          f"mu_y={params[ParamFormat.MU_Y_IDX]:.2f}(err={sems[ParamFormat.MU_Y_IDX]:.2f}),\n"
+                          f"sigma_1={params[ParamFormat.SIGMA_1_IDX]:.2f}(err={sems[ParamFormat.SIGMA_1_IDX]:.2f}), "
+                          f"sigma_2={params[ParamFormat.SIGMA_2_IDX]:.2f}(err={sems[ParamFormat.SIGMA_2_IDX]:.2f}),\n"
+                          f"theta={params[ParamFormat.THETA_IDX]:.2f}(err={sems[ParamFormat.THETA_IDX]:.2f}), "
+                          f"offset={params[ParamFormat.OFFSET_IDX]:.2f}(err={sems[ParamFormat.OFFSET_IDX]:.2f}",
                           fontsize=14)
 
                 plt.subplot(1, 3, 2)
                 params, sems = gaussian_fit(min_map, plot=True, show=False)
-                exp_var = calc_explained_variance(min_map, params)
+                f_exp_var = calc_f_explained_var(min_map, params)
                 with open(bot_file_path, 'a') as bot_f:
-                    write_txt(bot_f, layer_name, unit_i, params, exp_var, rf_size)
-                cleaned_params = param_cleaner.clean(params, sems, box)
-                min_params_sems[unit_i, :, 0] = cleaned_params
+                    write_txt(bot_f, layer_name, unit_i, params, f_exp_var, rf_size)
+                min_params_sems[unit_i, :, 0] = params
                 min_params_sems[unit_i, :, 1] = sems
-                if cleaned_params is None:  
-                    cleaned_params = params
                 plt.title(f"min\n"
-                          f"A={cleaned_params[ParamFormat.A_IDX]:.2f}(err={sems[ParamFormat.A_IDX]:.2f}), "
-                          f"mu_x={cleaned_params[ParamFormat.MU_X_IDX]:.2f}(err={sems[ParamFormat.MU_X_IDX]:.2f}), "
-                          f"mu_y={cleaned_params[ParamFormat.MU_Y_IDX]:.2f}(err={sems[ParamFormat.MU_Y_IDX]:.2f}),\n"
-                          f"sigma_1={cleaned_params[ParamFormat.SIGMA_1_IDX]:.2f}(err={sems[ParamFormat.SIGMA_1_IDX]:.2f}), "
-                          f"sigma_2={cleaned_params[ParamFormat.SIGMA_2_IDX]:.2f}(err={sems[ParamFormat.SIGMA_2_IDX]:.2f}),\n"
-                          f"theta={cleaned_params[ParamFormat.THETA_IDX]:.2f}(err={sems[ParamFormat.THETA_IDX]:.2f}), "
-                          f"offset={cleaned_params[ParamFormat.OFFSET_IDX]:.2f}(err={sems[ParamFormat.OFFSET_IDX]:.2f}",
+                          f"A={params[ParamFormat.A_IDX]:.2f}(err={sems[ParamFormat.A_IDX]:.2f}), "
+                          f"mu_x={params[ParamFormat.MU_X_IDX]:.2f}(err={sems[ParamFormat.MU_X_IDX]:.2f}), "
+                          f"mu_y={params[ParamFormat.MU_Y_IDX]:.2f}(err={sems[ParamFormat.MU_Y_IDX]:.2f}),\n"
+                          f"sigma_1={params[ParamFormat.SIGMA_1_IDX]:.2f}(err={sems[ParamFormat.SIGMA_1_IDX]:.2f}), "
+                          f"sigma_2={params[ParamFormat.SIGMA_2_IDX]:.2f}(err={sems[ParamFormat.SIGMA_2_IDX]:.2f}),\n"
+                          f"theta={params[ParamFormat.THETA_IDX]:.2f}(err={sems[ParamFormat.THETA_IDX]:.2f}), "
+                          f"offset={params[ParamFormat.OFFSET_IDX]:.2f}(err={sems[ParamFormat.OFFSET_IDX]:.2f}",
                           fontsize=14)
 
                 plt.subplot(1, 3, 3)
                 both_map = (max_map + min_map)/2
                 params, sems = gaussian_fit(both_map, plot=True, show=False)
-                cleaned_params = param_cleaner.clean(params, sems, box)
-                both_params_sems[unit_i, :, 0] = cleaned_params
+                both_params_sems[unit_i, :, 0] = params
                 both_params_sems[unit_i, :, 1] = sems
-                if cleaned_params is None:  
-                    cleaned_params = params
                 plt.title(f"max + min\n"
-                          f"A={cleaned_params[ParamFormat.A_IDX]:.2f}(err={sems[ParamFormat.A_IDX]:.2f}), "
-                          f"mu_x={cleaned_params[ParamFormat.MU_X_IDX]:.2f}(err={sems[ParamFormat.MU_X_IDX]:.2f}), "
-                          f"mu_y={cleaned_params[ParamFormat.MU_Y_IDX]:.2f}(err={sems[ParamFormat.MU_Y_IDX]:.2f}),\n"
-                          f"sigma_1={cleaned_params[ParamFormat.SIGMA_1_IDX]:.2f}(err={sems[ParamFormat.SIGMA_1_IDX]:.2f}), "
-                          f"sigma_2={cleaned_params[ParamFormat.SIGMA_2_IDX]:.2f}(err={sems[ParamFormat.SIGMA_2_IDX]:.2f}),\n"
-                          f"theta={cleaned_params[ParamFormat.THETA_IDX]:.2f}(err={sems[ParamFormat.THETA_IDX]:.2f}), "
-                          f"offset={cleaned_params[ParamFormat.OFFSET_IDX]:.2f}(err={sems[ParamFormat.OFFSET_IDX]:.2f}",
+                          f"A={params[ParamFormat.A_IDX]:.2f}(err={sems[ParamFormat.A_IDX]:.2f}), "
+                          f"mu_x={params[ParamFormat.MU_X_IDX]:.2f}(err={sems[ParamFormat.MU_X_IDX]:.2f}), "
+                          f"mu_y={params[ParamFormat.MU_Y_IDX]:.2f}(err={sems[ParamFormat.MU_Y_IDX]:.2f}),\n"
+                          f"sigma_1={params[ParamFormat.SIGMA_1_IDX]:.2f}(err={sems[ParamFormat.SIGMA_1_IDX]:.2f}), "
+                          f"sigma_2={params[ParamFormat.SIGMA_2_IDX]:.2f}(err={sems[ParamFormat.SIGMA_2_IDX]:.2f}),\n"
+                          f"theta={params[ParamFormat.THETA_IDX]:.2f}(err={sems[ParamFormat.THETA_IDX]:.2f}), "
+                          f"offset={params[ParamFormat.OFFSET_IDX]:.2f}(err={sems[ParamFormat.OFFSET_IDX]:.2f}",
                           fontsize=14)
 
                 pdf.savefig()

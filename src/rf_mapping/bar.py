@@ -377,10 +377,7 @@ def stimset_dict_rfmp_4a(xn,max_rf):
     return splist
 
 
-
-
 #  HERE IS AN EXAMPLE OF HOW TO CALL THE CODE ABOVE:
-
 if __name__ == "__main__":
     s = stimset_dict_rfmp_4a(11,11)
 
@@ -428,6 +425,7 @@ def barmap_run_01b(splist, model, layer_idx, num_units, batch_size=100,
     while (bar_i < num_stim):
         if _debug and bar_i > 500:
             break
+        print_progress(f"Presenting {bar_i}/{num_stim} stimuli...")
         real_batch_size = min(batch_size, num_stim-bar_i)
         bar_batch = np.zeros((real_batch_size, 3, yn, xn))
 
@@ -448,7 +446,6 @@ def barmap_run_01b(splist, model, layer_idx, num_units, batch_size=100,
                                model, layer_idx)
         yc, xc = calculate_center(y.shape[-2:])
         center_responses[bar_i:bar_i+real_batch_size, :] = y[:, :, yc, xc].detach().numpy()
-        print_progress(f"Presenting {bar_i}/{num_stim} stimuli...")
         bar_i += real_batch_size
 
     return center_responses
@@ -459,18 +456,18 @@ def barmap_run_01b(splist, model, layer_idx, num_units, batch_size=100,
 #                              WEIGHTED_BARMAP                                #
 #                                                                             #
 ###############################################################################
-def weighted_barmap(new_bar, map, response):
+def weighted_barmap(new_bar, sum_map, response):
     """
     Add the new_bar, weighted by the unit's rectified response to the bar, to
-    the map.
+    the sum_map.
 
     Parameters
     ----------
     new_bar  - bar to be added to the map.
-    map      - cumulative bar map.
+    sum_map  - cumulative bar map.
     response - the unit's response to the new_bar.
     """
-    map += new_bar * response
+    sum_map += new_bar * response
 
 
 #######################################.#######################################
@@ -478,7 +475,7 @@ def weighted_barmap(new_bar, map, response):
 #                              NON_OVERLAP_BARMAP                             #
 #                                                                             #
 ###############################################################################
-def non_overlap_barmap(new_bar, map, stim_thr):
+def non_overlap_barmap(new_bar, sum_map, stim_thr):
     """
     Add the new_bar to the map if the new_bar is not overlapping with any
     existing bars. The new_bar is first binarized with the {stim_thr} threshold
@@ -486,18 +483,23 @@ def non_overlap_barmap(new_bar, map, stim_thr):
 
     Parameters
     ----------
-    new_bar - bar to be added to the map.\n
-    map - cumulative bar map.\n
+    new_bar  - bar to be added to the map.\n
+    sum_map  - cumulative bar map.\n
     stim_thr - bar pixels w/ a value below stim_thr will be excluded.
+
+    Returns
+    -------
+    True if the new_bar has been included in the 
     """
     # Binarize new_bar
     new_bar[new_bar < stim_thr] = 0
     new_bar[new_bar >= stim_thr] = 1
     # Only add the new bar if it is not overlapping with any existing bars.
-    if not np.any(np.logical_and(map>0, new_bar>0)):
-        map += new_bar
-    
-    
+    if not np.any(np.logical_and(sum_map>0, new_bar>0)):
+        sum_map += new_bar
+        return True
+    return False
+
 
 #######################################.#######################################
 #                                                                             #
@@ -533,6 +535,12 @@ def make_barmaps(splist, center_responses, unit_i, response_thr=0.1,
     r_max = center_responses[:, unit_i].max()
     r_min = center_responses[:, unit_i].min()
 
+    # Initialize bar counts
+    num_weighted_max_bars = 0
+    num_weighted_min_bars = 0
+    num_non_overlap_max_bars = 0
+    num_non_overlap_min_bars = 0
+
     if _debug:
         print(f"unit {unit_i}: r_max: {r_max:7.2f}, max bar idx: {isort[::-1][:5]}")
 
@@ -544,8 +552,11 @@ def make_barmaps(splist, center_responses, unit_i, response_thr=0.1,
                              params['theta'], params['len'], params['wid'],
                              0.5, 1, 0)
         if response > abs(response_thr * r_max):
-            non_overlap_barmap(new_bar, non_overlap_max_map, stim_thr)
+            has_included = non_overlap_barmap(new_bar, non_overlap_max_map, stim_thr)
             weighted_barmap(new_bar, weighted_max_map, max(response, 0))
+            # counts the number of bars in each map
+            num_weighted_max_bars += 1
+            if has_included: num_non_overlap_max_bars += 1
         else:
             break
 
@@ -557,12 +568,18 @@ def make_barmaps(splist, center_responses, unit_i, response_thr=0.1,
                             params['theta'], params['len'], params['wid'],
                             0.5, 1, 0) 
         if response < -abs(response_thr * r_min):
-            non_overlap_barmap(new_bar, non_overlap_min_map, stim_thr)
+            has_included = non_overlap_barmap(new_bar, non_overlap_min_map, stim_thr)
             weighted_barmap(new_bar, weighted_min_map, abs(min(response, 0)))
+            # counts the number of bars in each map
+            num_weighted_min_bars += 1
+            if has_included: num_non_overlap_min_bars += 1
         else:
             break
 
-    return weighted_max_map, weighted_min_map, non_overlap_max_map, non_overlap_min_map
+    return weighted_max_map, weighted_min_map,\
+           non_overlap_max_map, non_overlap_min_map,\
+           num_weighted_max_bars, num_weighted_min_bars,\
+           num_non_overlap_max_bars, num_non_overlap_min_bars
 
 
 #######################################.#######################################
@@ -644,6 +661,19 @@ def summarize_TBn(splist, center_responses, layer_name, txt_path, top_n=20):
             f.write(f"{layer_name} {unit_i} ")
             f.write(f"{top_avg_x:.2f} {top_avg_y:.2f} ")
             f.write(f"{bot_avg_x:.2f} {bot_avg_y:.2f}\n")
+            
+
+#######################################.#######################################
+#                                                                             #
+#                              RECORD_BAR_COUNTS                              #
+#                                                                             #
+###############################################################################
+def record_bar_counts(txt_path, layer_name, unit_i, num_max_bars, num_min_bars):
+    """
+    Write the numbers of bars used in the top and bottom maps.
+    """
+    with open(txt_path, 'a') as f:
+        f.write(f"{layer_name} {unit_i} {num_max_bars} {num_min_bars}\n")
 
 
 #######################################.#######################################
@@ -705,37 +735,43 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
     tb1_path = os.path.join(result_dir, f"{model_name}_rfmp4a_tb1.txt")
     tb20_path = os.path.join(result_dir, f"{model_name}_rfmp4a_tb20.txt")
     tb100_path = os.path.join(result_dir, f"{model_name}_rfmp4a_tb100.txt")
+    weighted_counts_path = os.path.join(result_dir, f"{model_name}_rfmp4a_weighted_counts.txt")
+    non_overlap_counts_path = os.path.join(result_dir, f"{model_name}_rfmp4a_non_overlap_counts.txt")
     if os.path.exists(tb1_path):
         os.remove(tb1_path)
     if os.path.exists(tb20_path):
         os.remove(tb20_path)
     if os.path.exists(tb100_path):
         os.remove(tb100_path)
-    
+    if os.path.exists(weighted_counts_path):
+        os.remove(weighted_counts_path)
+    if os.path.exists(non_overlap_counts_path):
+        os.remove(non_overlap_counts_path)
+
     for conv_i in range(len(layer_indices)):
         if model_name == 'vgg16' and conv_i < 4:
             continue
-        
+
         layer_name = f"conv{conv_i + 1}"
-        print(f"{layer_name}\n")
+        print(f"\n{layer_name}\n")
         # Get layer-specific info
         xn = xn_list[conv_i]
         layer_idx = layer_indices[conv_i]
         num_units = nums_units[conv_i]
         max_rf = max_rfs[conv_i][0]
         splist = stimset_dict_rfmp_4a(xn, max_rf)
-        
+
         # Array initializations
         weighted_max_maps = np.zeros((num_units, max_rf, max_rf))
         weighted_min_maps = np.zeros((num_units, max_rf, max_rf))
         non_overlap_max_maps = np.zeros((num_units, max_rf, max_rf))
         non_overlap_min_maps = np.zeros((num_units, max_rf, max_rf))
         padding = (xn - max_rf)//2
-        
+
         center_responses = barmap_run_01b(splist, model, layer_idx,
                                           num_units, batch_size=100,
                                           _debug=_debug)
-        
+
         # Create txt files that summarize the top and bottom bars.
         summarize_TB1(splist, center_responses, layer_name, tb1_path)
         summarize_TBn(splist, center_responses, layer_name, tb20_path, top_n=20)
@@ -746,14 +782,24 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
             if _debug and (unit_i > 10):
                 break
             print_progress(f"Making maps for unit {unit_i}...")
-            weighted_max_map, weighted_min_map, non_overlap_max_map, non_overlap_min_map =\
+            weighted_max_map, weighted_min_map,\
+            non_overlap_max_map, non_overlap_min_map,\
+            num_weighted_max_bars, num_weighted_min_bars,\
+            num_non_overlap_max_bars, num_non_overlap_min_bars=\
                                 make_barmaps(splist, center_responses, unit_i, 
                                              response_thr=0.1, stim_thr=0.2,
                                              _debug=_debug)
+            # Crop and save maps to layer-level array
             weighted_max_maps[unit_i] = weighted_max_map[padding:padding+max_rf, padding:padding+max_rf]
             weighted_min_maps[unit_i] = weighted_min_map[padding:padding+max_rf, padding:padding+max_rf]
             non_overlap_max_maps[unit_i] = non_overlap_max_map[padding:padding+max_rf, padding:padding+max_rf]
             non_overlap_min_maps[unit_i] = non_overlap_min_map[padding:padding+max_rf, padding:padding+max_rf]
+
+            # Record the number of bars used in each map
+            record_bar_counts(weighted_counts_path, layer_name, unit_i,
+                              num_weighted_max_bars, num_weighted_min_bars)
+            record_bar_counts(non_overlap_counts_path, layer_name, unit_i,
+                              num_non_overlap_max_bars, num_non_overlap_min_bars)
 
         # Save the maps of all units.
         weighte_max_maps_path = os.path.join(result_dir, f"{layer_name}_weighted_max_barmaps.npy")
@@ -770,3 +816,69 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
         make_map_pdf(weighted_max_maps, weighted_min_maps, weighted_pdf_path)
         non_overlap_pdf_path = os.path.join(result_dir, f"{layer_name}_non_overlap_barmaps.pdf")
         make_map_pdf(non_overlap_max_maps, non_overlap_min_maps, non_overlap_pdf_path)
+
+
+#######################################.#######################################
+#                                                                             #
+#                                MAPSTAT_COMR_1                               #
+#                                                                             #
+#  For a 2D array 'map', compute the (x,y) center of mass and the radius      #
+#  that contains a fraction 'f' of the area of the map.                       #
+#                                                                             #
+###############################################################################
+def mapstat_comr_1(map,f):
+    #
+    #
+    map = map.copy()
+    map = map - map.min()
+
+    xn = len(map)
+    list0 = np.sum(map,1)  # Sum along axis 1, to ultimately get COM on axis 0
+    list1 = np.sum(map,0)  # Sum along axis 0, to ultimately get COM on axis 1
+    total = np.sum(list0)  # Overall total weight of entire map
+    xvals = np.arange(xn)  # X-values (pix)
+    prod0 = xvals*list0
+    prod1 = xvals*list1
+    if (total > 0.0):
+        com0 = np.sum(prod0)/total
+        com1 = np.sum(prod1)/total
+    else:
+        com0 = com1 = -1
+
+    dist2 = []  # empty list to hold squared distances from COM
+    magn = []   # empty list to hold magnitude
+    for i in range(xn):
+        di2 = (i-com0)*(i-com0)
+        for j in range(xn):
+            dj2 = (j-com1)*(j-com1)
+            if (map[i,j] > 0.0):
+                dist2.append(di2 + dj2)
+                magn.append(map[i,j])
+    
+    isort = np.argsort(dist2)   # Get list of indices that sort list (least 1st)
+    
+    if (com0 == -1):
+        return -1, -1, -1
+    
+    n = len(dist2)
+    
+    # Go down the sorted list, adding up the magnitudes, until the fractional
+    #  criterion is exceeded.  Compute the radius for the final point added.
+    #
+    tot = 0.0
+    k = 0
+    for i in range(n):  # for each non-zero position in the map
+        k = isort[i]      # Get index 'k' of the next point closest to the COM
+        tot += magn[k]
+        if (tot/total >= f):
+            break
+    radius = np.sqrt(dist2[k])
+    return com0, com1, radius
+
+
+# Test
+if __name__ == '__main__':
+    dummy_map = np.zeros((11, 11))
+    dummy_map[2, 4] = 1
+    com0, com1, radius = mapstat_comr_1(dummy_map, 0.9)
+    print(com0, com1, radius)
