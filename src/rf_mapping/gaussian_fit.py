@@ -16,9 +16,9 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
 
-sys.path.append('..')
-from files import check_extension
-import constants as c
+sys.path.append('../..')
+from src.rf_mapping.files import check_extension
+import src.rf_mapping.constants as c
 
 
 #######################################.#######################################

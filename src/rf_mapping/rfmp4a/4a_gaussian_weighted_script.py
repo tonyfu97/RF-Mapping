@@ -15,14 +15,14 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
 
-sys.path.append('..')
-from gaussian_fit import (gaussian_fit,
-                          calc_f_explained_var,
-                          theta_to_ori)
-from gaussian_fit import GaussianFitParamFormat as ParamFormat
-from hook import ConvUnitCounter
-from spatial import get_rf_sizes
-import constants as c
+sys.path.append('../../..')
+from src.rf_mapping.gaussian_fit import (gaussian_fit,
+                                        calc_f_explained_var,
+                                        theta_to_ori)
+from src.rf_mapping.gaussian_fit import GaussianFitParamFormat as ParamFormat
+from src.rf_mapping.hook import ConvUnitCounter
+from src.rf_mapping.spatial import get_rf_sizes
+import src.rf_mapping.constants as c
 
 
 # Please specify some details here:

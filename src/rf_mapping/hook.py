@@ -6,15 +6,14 @@ Tony Fu, Jun 22, 2022
 import sys
 import copy
 
-
 import numpy as np
 import torch
 import torch.nn as nn
 from torchvision import models
 
-sys.path.append('..')
-from image import preprocess_img_to_tensor
-import constants as c
+sys.path.append('../..')
+from src.rf_mapping.image import preprocess_img_to_tensor
+import src.rf_mapping.constants as c
 
 
 #######################################.#######################################

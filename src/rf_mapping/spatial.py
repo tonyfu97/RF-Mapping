@@ -6,6 +6,7 @@ Note: all code assumes that the y-axis points downward.
 
 Tony Fu, July 6th, 2022
 """
+import sys
 import math
 import copy
 import warnings
@@ -16,9 +17,11 @@ import torch.nn as nn
 from torchvision import models
 import matplotlib.pyplot as plt
 
-from hook import SizeInspector, LayerOutputInspector
-from image import clip, preprocess_img_to_tensor, tensor_to_img
-import constants as c
+
+sys.path.append('../..')
+from src.rf_mapping.hook import SizeInspector, LayerOutputInspector
+from src.rf_mapping.image import clip, preprocess_img_to_tensor, tensor_to_img
+import src.rf_mapping.constants as c
 
 
 #######################################.#######################################

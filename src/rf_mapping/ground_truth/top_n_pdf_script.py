@@ -8,20 +8,23 @@ import sys
 
 import numpy as np
 from torchvision import models
+from torchvision.models import AlexNet_Weights, VGG16_Weights
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
-sys.path.append('..')
-from hook import ConvUnitCounter
-from image import preprocess_img_for_plot, make_box
-from spatial import SpatialIndexConverter
-from guided_backprop import GuidedBackprop
-import constants as c
+sys.path.append('../../..')
+from src.rf_mapping.hook import ConvUnitCounter
+from src.rf_mapping.image import preprocess_img_for_plot, make_box
+from src.rf_mapping.spatial import SpatialIndexConverter
+from src.rf_mapping.guided_backprop import GuidedBackprop
+import src.rf_mapping.constants as c
 
 # Please specify some details here:
-model = models.alexnet(pretrained=True).to(c.DEVICE)
-model_name = "alexnet"
+# model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1).to(c.DEVICE)
+# model_name = "alexnet"
+model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
+model_name = "vgg16"
 top_n = 5
 grad_method = GuidedBackprop(model)
 
@@ -72,6 +75,7 @@ def plot_one_grad_map(img_idx, layer_idx, unit_idx, patch_idx, box):
 
 
 for conv_i, layer_idx in enumerate(layer_indices):
+    if conv_i < 4: continue
     layer_name = f"conv{conv_i + 1}"
     index_path = os.path.join(index_dir, f"{layer_name}.npy")
     max_min_indices = np.load(index_path).astype(int)  

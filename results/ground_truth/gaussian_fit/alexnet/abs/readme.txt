@@ -15,3 +15,4 @@ fields:
     - amp (float)
     - offset (float)
     - explained_var (float)
+

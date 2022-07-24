@@ -13,10 +13,9 @@ from torchvision import models
 from torchvision.models import AlexNet_Weights, VGG16_Weights
 import matplotlib.pyplot as plt
 
-sys.path.append('..')
-from bar import rfmp4a_run_01b
-
-import constants as c
+sys.path.append('../../..')
+from src.rf_mapping.bar import rfmp4a_run_01b
+import src.rf_mapping.constants as c
 
 # Please specify some details here:
 model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1).to(c.DEVICE)

@@ -1,4 +1,5 @@
 import os
+import sys
 import copy
 import warnings
 
@@ -8,9 +9,10 @@ import torch.nn as nn
 from torchvision import models
 import torch.nn.functional as F
 
-from hook import SizeInspector
-from image import preprocess_img_to_tensor, preprocess_img_for_plot
-import constants as c
+sys.path.append('../..')
+from src.rf_mapping.hook import SizeInspector
+from src.rf_mapping.image import preprocess_img_to_tensor, preprocess_img_for_plot
+import src.rf_mapping.constants as c
 
 
 #######################################.#######################################

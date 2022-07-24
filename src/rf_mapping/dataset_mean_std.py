@@ -9,8 +9,8 @@ import sys
 import numpy as np
 from tqdm import tqdm
 
-sys.path.append('..')
-import constants as c
+sys.path.append('../..')
+import src.rf_mapping.constants as c
 
 # Please specify some details here:
 num_images = 50000

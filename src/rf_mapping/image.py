@@ -4,6 +4,7 @@ Code to for image processing, etc.
 Tony Fu, Jun 25, 2022
 """
 import os
+import sys
 import math
 
 import numpy as np
@@ -14,7 +15,8 @@ import torchvision.transforms as T
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
-import constants as c
+sys.path.append('../..')
+import src.rf_mapping.constants as c
 
 
 #######################################.#######################################

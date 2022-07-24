@@ -17,11 +17,11 @@ from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.patches as patches
 
 
-sys.path.append('..')
-from hook import ConvUnitCounter
-from spatial import get_rf_sizes
-from bar import mapstat_comr_1
-import constants as c
+sys.path.append('../../..')
+from src.rf_mapping.hook import ConvUnitCounter
+from src.rf_mapping.spatial import get_rf_sizes
+from src.rf_mapping.bar import mapstat_comr_1
+import src.rf_mapping.constants as c
 
 
 # Please specify some details here:

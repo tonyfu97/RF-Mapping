@@ -17,8 +17,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.patches as patches
 
 
-sys.path.append('..')
-import constants as c
+sys.path.append('../../..')
+import src.rf_mapping.constants as c
 
 
 model_name = 'alexnet'

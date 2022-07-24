@@ -12,10 +12,10 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
 
-sys.path.append('..')
-from hook import ConvUnitCounter
-from image import preprocess_img_for_plot
-import constants as c
+sys.path.append('../../..')
+from src.rf_mapping.hook import ConvUnitCounter
+from src.rf_mapping.image import preprocess_img_for_plot
+import src.rf_mapping.constants as c
 
 
 # Please specify some details here:

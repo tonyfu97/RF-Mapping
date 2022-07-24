@@ -16,15 +16,16 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 
-from spatial import (get_conv_output_shapes,
-                     calculate_center,
-                     get_rf_sizes,
-                     RfGrid,
-                     SpatialIndexConverter,)
-from image import make_box
-from hook import ConvUnitCounter
-from bar import stimfr_bar, stimset_dict_rfmp_4a
-import constants as c
+sys.path.append('../..')
+from src.rf_mapping.spatial import (get_conv_output_shapes,
+                                    calculate_center,
+                                    get_rf_sizes,
+                                    RfGrid,
+                                    SpatialIndexConverter,)
+from src.rf_mapping.image import make_box
+from src.rf_mapping.hook import ConvUnitCounter
+from src.rf_mapping.bar import stimfr_bar, stimset_dict_rfmp_4a
+import src.rf_mapping.constants as c
 
 
 #######################################.#######################################

@@ -12,23 +12,25 @@ import numpy as np
 from tqdm import tqdm
 import torch.nn as nn
 from torchvision import models
-from torchvision.models import AlexNet_Weights
+from torchvision.models import AlexNet_Weights, VGG16_Weights
 import matplotlib.pyplot as plt
 
-sys.path.append('..')
-from spatial import get_rf_sizes, SpatialIndexConverter
-from image import one_sided_zero_pad, preprocess_img_for_plot
-from guided_backprop import GuidedBackprop
-from files import delete_all_npy_files
-import constants as c
+sys.path.append('../../..')
+from src.rf_mapping.spatial import get_rf_sizes, SpatialIndexConverter
+from src.rf_mapping.image import one_sided_zero_pad, preprocess_img_for_plot
+from src.rf_mapping.guided_backprop import GuidedBackprop
+from src.rf_mapping.files import delete_all_npy_files
+import src.rf_mapping.constants as c
 
 # Please specify some details here:
-model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1).to(c.DEVICE)
-model_name = "alexnet"
+# model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1).to(c.DEVICE)
+# model_name = "alexnet"
+model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
+model_name = "vgg16"
 sum_modes = ['abs', 'sqr']
 grad_method = GuidedBackprop(model)
 top_n = 100
-this_is_a_test_run = False
+this_is_a_test_run = True
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR
