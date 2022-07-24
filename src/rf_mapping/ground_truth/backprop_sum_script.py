@@ -42,9 +42,7 @@ result_dir = c.REPO_DIR + f'/results/ground_truth/backprop_sum/{model_name}'
 # Script guard
 if __name__ == "__main__":
     print("Look for a prompt.")
-    user_input = input(
-        "This code may take hours to run. Are you sure? "\
-        f"All .npy files in {result_dir} will be deleted. (y/n): ") 
+    user_input = input("This code may take time to run. Are you sure? [y/n] ")
     if user_input == 'y':
         pass
     else: 

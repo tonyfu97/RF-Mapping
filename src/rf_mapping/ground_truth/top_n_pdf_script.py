@@ -26,6 +26,7 @@ import src.rf_mapping.constants as c
 model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
 model_name = "vgg16"
 top_n = 5
+image_size = (227, 227)
 grad_method = GuidedBackprop(model)
 
 # Please double-check the directories:
@@ -38,44 +39,62 @@ result_dir = index_dir
 # Script guard
 if __name__ == "__main__":
     print("Look for a prompt.")
-    user_input = input("This code may take hours to run. Are you sure? ")
+    user_input = input("This code may take hours to run. Are you sure? [y/n] ")
     if user_input == 'y':
         pass
     else: 
         raise KeyboardInterrupt("Interrupted by user")
 
 # Initiate helper objects.
-converter = SpatialIndexConverter(model, (227, 227))
+converter = SpatialIndexConverter(model, image_size)
 conv_counter = ConvUnitCounter(model)
 
 # Get info of conv layers.
 layer_indices, nums_units = conv_counter.count()
 
 
-def plot_one_img(img_idx, box):
+def plot_one_img(im, ax, img_idx, box):
     """Plots the image and draw the red box."""
+    # Remove box
+    try:
+        ax.patches.pop()
+    except:
+        pass
+    # Plot image
     img_path = os.path.join(img_dir, f"{img_idx}.npy")
     img = np.load(img_path)
     img = preprocess_img_for_plot(img)
-    plt.imshow(img)
-    plt.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
-    ax = plt.gca()
+    im.set_data(img)
+    # Remove tick marks and labels
+    ax.set_xticks([])
+    ax.set_xticklabels([])
+    ax.set_yticks([])
+    ax.set_yticklabels([])
     ax.add_patch(make_box(box))
 
 
-def plot_one_grad_map(img_idx, layer_idx, unit_idx, patch_idx, box):
+def plot_one_grad_map(im, ax, img_idx, layer_idx, unit_idx, patch_idx, box):
     """Plots the target unit's gradient map for the image."""
+    # Remove box
+    try:
+        ax.patches.pop()
+    except:
+        pass
+    # Plot gradients
     img_path = os.path.join(img_dir, f"{img_idx}.npy")
     img = np.load(img_path)
     gbp_map = grad_method.generate_gradients(img, layer_idx, unit_idx, patch_idx)
-    plt.imshow(preprocess_img_for_plot(gbp_map))
-    plt.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
-    ax = plt.gca()
+    im.set_data(preprocess_img_for_plot(gbp_map))
+    # Remove tick marks and labels
+    ax.set_xticks([])
+    ax.set_xticklabels([])
+    ax.set_yticks([])
+    ax.set_yticklabels([])
     ax.add_patch(make_box(box))
 
 
 for conv_i, layer_idx in enumerate(layer_indices):
-    if conv_i < 4: continue
+    if conv_i < 10: continue
     layer_name = f"conv{conv_i + 1}"
     index_path = os.path.join(index_dir, f"{layer_name}.npy")
     max_min_indices = np.load(index_path).astype(int)  
@@ -83,43 +102,47 @@ for conv_i, layer_idx in enumerate(layer_indices):
 
     num_units = nums_units[conv_i]
     print(f"Making pdf for {layer_name}...")
-    
+
     pdf_path = os.path.join(result_dir, f"{layer_name}.pdf")
     with PdfPages(pdf_path) as pdf:
+        fig, plt_axes = plt.subplots(4, top_n)
+        fig.set_size_inches(20, 15)
+        fig.suptitle(f"{layer_name} unit no.{unit_i}", fontsize=20)
         
-        for unit_i in tqdm(range(num_units)):
-            # Fatch indices
-            max_n_img_indices = max_min_indices[unit_i, :top_n, 0]
-            max_n_patch_indices = max_min_indices[unit_i, :top_n, 1]
-            min_n_img_indices = max_min_indices[unit_i, :top_n, 2]
-            min_n_patch_indices = max_min_indices[unit_i, :top_n, 3]
+        # Collect axis and imshow handles in a list.
+        ax_handles = []
+        im_handles = []
+        for ax_row in plt_axes:
+            for ax in ax_row:
+                ax_handles.append(ax)
+                im_handles.append(ax.imshow(np.zeros((*image_size, 3))))
 
-            plt.figure(figsize=(20, 15))
-            plt.suptitle(f"{layer_name} unit no.{unit_i}", fontsize=20)
+        for unit_i in tqdm(range(num_units)):
+            # Get top and bottom image indices and patch spatial indices
+            max_n_img_indices   = max_min_indices[unit_i, :top_n, 0]
+            max_n_patch_indices = max_min_indices[unit_i, :top_n, 1]
+            min_n_img_indices   = max_min_indices[unit_i, :top_n, 2]
+            min_n_patch_indices = max_min_indices[unit_i, :top_n, 3]
 
             # Top N images and gradient patches:
             for i, (max_img_idx, max_patch_idx) in enumerate(zip(max_n_img_indices,
-                                                            max_n_patch_indices)):
+                                                              max_n_patch_indices)):
                 box = converter.convert(max_patch_idx, layer_idx, 0, is_forward=False)
-                plt.subplot(4, top_n, i+1)
-                plot_one_img(max_img_idx, box)
-                plt.title(f"top {i+1} image")
-                
-                plt.subplot(4, top_n, i+top_n+1)
-                plot_one_grad_map(max_img_idx, layer_idx, unit_i, max_patch_idx, box)
-                plt.title(f"top {i+1} gradient")
+                plot_one_img(im_handles[i], ax_handles[i], max_img_idx, box)
+                ax_handles[i].set_title(f"top {i+1} image")
+
+                plot_one_grad_map(im_handles[i+top_n], ax_handles[i+top_n], max_img_idx, layer_idx, unit_i, max_patch_idx, box)
+                ax_handles[i+top_n].set_title(f"top {i+1} gradient")
 
             # Bottom N images and gradient patches:
             for i, (min_img_idx, min_patch_idx) in enumerate(zip(min_n_img_indices,
                                                             min_n_patch_indices)):
                 box = converter.convert(min_patch_idx, layer_idx, 0, is_forward=False)
-                plt.subplot(4, top_n, i+2*top_n+1)
-                plot_one_img(min_img_idx, box)
-                plt.title(f"bottom {i+1} image")
-                
-                plt.subplot(4, top_n, i+3*top_n+1)
-                plot_one_grad_map(min_img_idx, layer_idx, unit_i, min_patch_idx, box)
-                plt.title(f"bottom {i+1} gradient")
-            
-            pdf.savefig()
+                plot_one_img(im_handles[i+2*top_n], ax_handles[i+2*top_n], min_img_idx, box)
+                ax_handles[i+2*top_n].set_title(f"bottom {i+1} image")
+
+                plot_one_grad_map(im_handles[i+3*top_n], ax_handles[i+3*top_n], min_img_idx, layer_idx, unit_i, min_patch_idx, box)
+                ax_handles[i+3*top_n].set_title(f"bottom {i+1} gradient")
+
+            pdf.savefig(fig)
             plt.close()

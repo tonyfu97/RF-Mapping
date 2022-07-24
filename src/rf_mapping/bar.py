@@ -18,13 +18,14 @@ from torchvision.models import AlexNet_Weights, VGG16_Weights
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
-from hook import ConvUnitCounter
-from files import delete_all_npy_files
-from spatial import (xn_to_center_rf,
-                     truncated_model,
-                     calculate_center,
-                     get_rf_sizes,)
-import constants as c
+sys.path.append('../..')
+from src.rf_mapping.hook import ConvUnitCounter
+from src.rf_mapping.files import delete_all_npy_files
+from src.rf_mapping.spatial import (xn_to_center_rf,
+                                    truncated_model,
+                                    calculate_center,
+                                    get_rf_sizes,)
+import src.rf_mapping.constants as c
 
 
 #######################################.#######################################

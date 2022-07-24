@@ -17,7 +17,6 @@ import torch.nn as nn
 from torchvision import models
 import matplotlib.pyplot as plt
 
-
 sys.path.append('../..')
 from src.rf_mapping.hook import SizeInspector, LayerOutputInspector
 from src.rf_mapping.image import clip, preprocess_img_to_tensor, tensor_to_img
