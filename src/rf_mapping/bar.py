@@ -691,22 +691,26 @@ def make_map_pdf(max_maps, min_maps, pdf_path):
     maps     - maps with dimensions [unit_i, y, x].\n
     pdf_path - path name of the file, must end with '.pdf'\n
     """
+    _, yn, xn = max_maps.shapes
+
     with PdfPages(pdf_path) as pdf:
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        fig.set_size_inches(10, 5)
+        im1 = ax1.imshow(np.zeros((yn, xn, 3)), cmap='gray')
+        im2 = ax2.imshow(np.zeros((yn, xn, 3)), cmap='gray')
+
         for unit_i, (max_map, min_map) in enumerate(zip(max_maps, min_maps)):
             print_progress(f"Making pdf for unit {unit_i}...")
-            plt.figure(figsize=(10, 5))
-            plt.suptitle(f"no.{unit_i}", fontsize=20)
+            fig.suptitle(f"no.{unit_i}", fontsize=20)
 
-            plt.subplot(1,2,1)
-            plt.imshow(max_map, cmap='gray')
-            plt.title('max')
+            im1.set_data(max_map)
+            im1.set_title('max')
 
-            plt.subplot(1,2,2)
-            plt.imshow(min_map, cmap='gray')
-            plt.title('min')
+            im2.set_data(min_map)
+            im2.set_title('min')
 
-            # if show: plt.show()
-            pdf.savefig()
+            plt.show()
+            pdf.savefig(fig)
             plt.close()
 
 
@@ -731,26 +735,28 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
     layer_indices, nums_units = unit_counter.count()
     _, max_rfs = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
 
-    # Delete previous files
-    delete_all_npy_files(result_dir)
+    # Set paths
     tb1_path = os.path.join(result_dir, f"{model_name}_rfmp4a_tb1.txt")
     tb20_path = os.path.join(result_dir, f"{model_name}_rfmp4a_tb20.txt")
     tb100_path = os.path.join(result_dir, f"{model_name}_rfmp4a_tb100.txt")
     weighted_counts_path = os.path.join(result_dir, f"{model_name}_rfmp4a_weighted_counts.txt")
     non_overlap_counts_path = os.path.join(result_dir, f"{model_name}_rfmp4a_non_overlap_counts.txt")
-    if os.path.exists(tb1_path):
-        os.remove(tb1_path)
-    if os.path.exists(tb20_path):
-        os.remove(tb20_path)
-    if os.path.exists(tb100_path):
-        os.remove(tb100_path)
-    if os.path.exists(weighted_counts_path):
-        os.remove(weighted_counts_path)
-    if os.path.exists(non_overlap_counts_path):
-        os.remove(non_overlap_counts_path)
-
+    
+    # Delete previous files
+    # delete_all_npy_files(result_dir)
+    # if os.path.exists(tb1_path):
+    #     os.remove(tb1_path)
+    # if os.path.exists(tb20_path):
+    #     os.remove(tb20_path)
+    # if os.path.exists(tb100_path):
+    #     os.remove(tb100_path)
+    # if os.path.exists(weighted_counts_path):
+    #     os.remove(weighted_counts_path)
+    # if os.path.exists(non_overlap_counts_path):
+    #     os.remove(non_overlap_counts_path)
+    
     for conv_i in range(len(layer_indices)):
-        if model_name == 'vgg16' and conv_i < 4:
+        if model_name == 'vgg16' and conv_i < 11:
             continue
 
         layer_name = f"conv{conv_i + 1}"
@@ -769,6 +775,7 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
         non_overlap_min_maps = np.zeros((num_units, max_rf, max_rf))
         padding = (xn - max_rf)//2
 
+        # Present all bars to the model
         center_responses = barmap_run_01b(splist, model, layer_idx,
                                           num_units, batch_size=100,
                                           _debug=_debug)
@@ -787,7 +794,7 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
             non_overlap_max_map, non_overlap_min_map,\
             num_weighted_max_bars, num_weighted_min_bars,\
             num_non_overlap_max_bars, num_non_overlap_min_bars=\
-                                make_barmaps(splist, center_responses, unit_i, 
+                                make_barmaps(splist, center_responses, unit_i,
                                              response_thr=0.1, stim_thr=0.2,
                                              _debug=_debug)
             # Crop and save maps to layer-level array

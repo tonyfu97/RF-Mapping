@@ -55,7 +55,7 @@ layer_indices, nums_units = conv_counter.count()
 
 def plot_one_img(im, ax, img_idx, box):
     """Plots the image and draw the red box."""
-    # Remove box
+    # Remove patches
     try:
         ax.patches.pop()
     except:
@@ -75,7 +75,7 @@ def plot_one_img(im, ax, img_idx, box):
 
 def plot_one_grad_map(im, ax, img_idx, layer_idx, unit_idx, patch_idx, box):
     """Plots the target unit's gradient map for the image."""
-    # Remove box
+    # Remove patches
     try:
         ax.patches.pop()
     except:
@@ -107,7 +107,6 @@ for conv_i, layer_idx in enumerate(layer_indices):
     with PdfPages(pdf_path) as pdf:
         fig, plt_axes = plt.subplots(4, top_n)
         fig.set_size_inches(20, 15)
-        fig.suptitle(f"{layer_name} unit no.{unit_i}", fontsize=20)
         
         # Collect axis and imshow handles in a list.
         ax_handles = []
@@ -118,6 +117,7 @@ for conv_i, layer_idx in enumerate(layer_indices):
                 im_handles.append(ax.imshow(np.zeros((*image_size, 3))))
 
         for unit_i in tqdm(range(num_units)):
+            fig.suptitle(f"{layer_name} unit no.{unit_i}", fontsize=20)
             # Get top and bottom image indices and patch spatial indices
             max_n_img_indices   = max_min_indices[unit_i, :top_n, 0]
             max_n_patch_indices = max_min_indices[unit_i, :top_n, 1]
