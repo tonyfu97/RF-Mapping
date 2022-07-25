@@ -115,6 +115,7 @@ for sum_mode in sum_modes:
 
         pdf_path = os.path.join(result_dir_with_mode, f"{layer_name}.pdf")
         with PdfPages(pdf_path) as pdf:
+            
             for unit_i, (max_map, min_map) in enumerate(tqdm(zip(max_maps, min_maps))):
                 # Do only the first 5 unit during testing phase
                 if this_is_a_test_run and unit_i >= 5:

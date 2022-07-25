@@ -2,6 +2,8 @@
 Make a pdf of the sum of the gradient patches.
 
 Tony Fu, June 30, 2022
+
+Converted to matplotlib-efficient version on July 25. NOT TESTED YET.
 """
 import os
 import sys
@@ -53,25 +55,27 @@ for sum_mode in sum_modes:
         print(f"Making pdf for {model_name} conv{conv_i + 1} sum mode: {sum_mode}")
         pdf_path = os.path.join(pdf_dir_with_sum_modes, f"{layer_name}.pdf")
         with PdfPages(pdf_path) as pdf:
+            _, yn, xn = max_sum.shape
+
+            fig, (ax1, ax2) = plt.subplots(1, 2)
+            fig.set_size_inches(15, 5)
+            im1 = ax1.imshow(np.zeros((yn, xn)), cmap='gray', vmin=0, vmax=1)
+            im2 = ax2.imshow(np.zeros((yn, xn)), cmap='gray', vmin=0, vmax=1)
 
             for unit_i in tqdm(range(num_units)):
                 # Do only the first 5 unit during testing phase
                 if this_is_a_test_run and unit_i >= 5:
                     break
 
-                plt.figure(figsize=(15,5))
-                plt.suptitle(f"Gradient average of image patches ({layer_name} no.{unit_i}, "
+                fig.suptitle(f"Gradient average of image patches "
+                             f"({layer_name} no.{unit_i}, "
                              f"sum mode: {sum_mode})", fontsize=20)
 
-                plt.subplot(1, 3, 1)
-                plt.imshow(preprocess_img_for_plot(max_sum[unit_i]), cmap='gray')
-                plt.title("max", fontsize=16)
-                plt.subplot(1, 3, 2)
-                plt.imshow(preprocess_img_for_plot(min_sum[unit_i]), cmap='gray')
-                plt.title("min", fontsize=16)
-                plt.subplot(1, 3, 3)
-                plt.imshow(preprocess_img_for_plot(both_sum[unit_i]), cmap='gray')
-                plt.title("max + min", fontsize=16)
+                im1.set_data(preprocess_img_for_plot(max_sum[unit_i]))
+                ax1.set_title("max", fontsize=16)
 
-                pdf.savefig()
+                im2.set_data(preprocess_img_for_plot(min_sum[unit_i]))
+                ax2.set_title("min", fontsize=16)
+
+                pdf.savefig(fig)
                 plt.close
