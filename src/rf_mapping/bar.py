@@ -425,7 +425,7 @@ def barmap_run_01b(splist, model, layer_idx, num_units, batch_size=100,
     center_responses = np.zeros((num_stim, num_units))
 
     while (bar_i < num_stim):
-        if _debug and bar_i > 500:
+        if _debug and bar_i > 200:
             break
         print_progress(f"Presenting {bar_i}/{num_stim} stimuli...")
         real_batch_size = min(batch_size, num_stim-bar_i)
@@ -692,23 +692,32 @@ def make_map_pdf(max_maps, min_maps, pdf_path):
     maps     - maps with dimensions [unit_i, y, x].\n
     pdf_path - path name of the file, must end with '.pdf'\n
     """
-    _, yn, xn = max_maps.shapes
+    _, yn, xn = max_maps.shape
 
     with PdfPages(pdf_path) as pdf:
         fig, (ax1, ax2) = plt.subplots(1, 2)
         fig.set_size_inches(10, 5)
-        im1 = ax1.imshow(np.zeros((yn, xn, 3)), cmap='gray')
-        im2 = ax2.imshow(np.zeros((yn, xn, 3)), cmap='gray')
-
+        im1 = ax1.imshow(np.zeros((yn, xn, 3)), cmap='gray', vmax=1, vmin=0)
+        im2 = ax2.imshow(np.zeros((yn, xn, 3)), cmap='gray', vmax=1, vmin=0)
         for unit_i, (max_map, min_map) in enumerate(zip(max_maps, min_maps)):
             print_progress(f"Making pdf for unit {unit_i}...")
             fig.suptitle(f"no.{unit_i}", fontsize=20)
 
-            im1.set_data(max_map)
-            im1.set_title('max')
+            vmax = max_map.max()
+            vmin = max_map.min()
+            vrange = vmax - vmin
+            if math.isclose(vrange, 0):
+                vrange = 1
+            im1.set_data((max_map-vmin)/vrange)
+            ax1.set_title('max')
 
-            im2.set_data(min_map)
-            im2.set_title('min')
+            vmax = min_map.max()
+            vmin = min_map.min()
+            vrange = vmax - vmin
+            if math.isclose(vrange, 0):
+                vrange = 1
+            im2.set_data((min_map-vmin)/vrange)
+            ax2.set_title('min')
 
             plt.show()
             pdf.savefig(fig)
@@ -781,7 +790,7 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
                                           num_units, batch_size=100,
                                           _debug=_debug)
 
-        # Create txt files that summarize the top and bottom bars.
+        # Append to txt files that summarize the top and bottom bars.
         summarize_TB1(splist, center_responses, layer_name, tb1_path)
         summarize_TBn(splist, center_responses, layer_name, tb20_path, top_n=20)
         summarize_TBn(splist, center_responses, layer_name, tb100_path, top_n=100)
@@ -804,7 +813,7 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
             non_overlap_max_maps[unit_i] = non_overlap_max_map[padding:padding+max_rf, padding:padding+max_rf]
             non_overlap_min_maps[unit_i] = non_overlap_min_map[padding:padding+max_rf, padding:padding+max_rf]
 
-            # Record the number of bars used in each map
+            # Record the number of bars used in each map (append to txt files).
             record_bar_counts(weighted_counts_path, layer_name, unit_i,
                               num_weighted_max_bars, num_weighted_min_bars)
             record_bar_counts(non_overlap_counts_path, layer_name, unit_i,
@@ -901,14 +910,14 @@ if __name__ == '__main__':
 def make_rfmp4a_grid_pdf(pdf_path, model):
     xn_list = xn_to_center_rf(model)  # Get the xn just big enough.
     img_size = 227
-    _, max_rfs = get_rf_sizes(model, (img_size, img_size), layer_type=nn.Conv2d)
+    layer_indices, max_rfs = get_rf_sizes(model, (img_size, img_size), layer_type=nn.Conv2d)
     num_layers = len(max_rfs)
 
     # Array of bar lengths
-    barlen = np.array([48/64 * max_rf,
-                        24/64 * max_rf,
-                        12/64 * max_rf,
-                        6/64 * max_rf])
+    barlen_ratios = np.array([48/64,
+                              24/64,
+                              12/64,
+                               6/64])
     barlenstr = np.array(['48/64',
                           '24/64',
                           '12/64',
@@ -917,34 +926,40 @@ def make_rfmp4a_grid_pdf(pdf_path, model):
     arat = np.array([1/2, 1/5, 1/10])
 
     with PdfPages(pdf_path) as pdf:
-        for bl_i, bl in enumerate(barlen):
+        for blr_i, bl_ratio in enumerate(barlen_ratios):
             for ar in arat:
-                bw = bl * ar
                 plt.figure(figsize=(4*num_layers, 5))
-                plt.suptitle(f"Bar Length = {barlenstr[bl_i]} M, aspect_ratio = {ar}", fontsize=24)
+                plt.suptitle(f"Bar Length = {barlenstr[blr_i]} M, Aspect Ratio = {ar}", fontsize=24)
 
                 for conv_i, max_rf in enumerate(max_rfs):
                     layer_name = f"conv{conv_i + 1}"
+                    layer_index = layer_indices[conv_i]
                     # Get layer-specific info
                     xn = xn_list[conv_i]
                     max_rf = max_rf[0]
+
+                    # Set bar parameters
+                    bl = bl_ratio * max_rf
+                    bw = bl * ar
                     xlist = stimset_gridx_barmap(max_rf,bl)
 
                     # Plot the bar
-                    bar = stimfr_bar(xn, xn, 0, 0, 30, bl, bw, 0.5, 1, 0.25)
-                    plt.imshow(bar, cmap='gray')
-                    
+                    bar = stimfr_bar(xn, xn, 0, 0, 30, bl, bw, 0.5, 1, 0.5)
+                    plt.subplot(1, num_layers, conv_i+1)
+                    plt.imshow(bar, cmap='gray', vmin=0, vmax=1)
+                    plt.title(f"{layer_name}\n(idx={layer_index}, maxRF={max_rf}, xn={xn})")
+
                     # Plot the bar centers (i.e., the "grids").
                     for y0 in xlist:
                         for x0 in xlist:
-                            plt.plot(y0, x0, 'k.')
+                            plt.plot(y0+xn/2, x0+xn/2, 'k.')
 
                     # Highlight maximum RF
                     padding = (xn - max_rf)//2
-                    rect = make_box((padding, padding, padding+max_rf-1, padding+max_rf-1), linewidth=1)
+                    rect = make_box((padding-1, padding-1, padding+max_rf-1, padding+max_rf-1), linewidth=1)
                     ax = plt.gca()
                     ax.add_patch(rect)
-                    ax.invert_yaxis()
+                    # ax.invert_yaxis()
         
                 pdf.savefig()
                 plt.show()
@@ -953,6 +968,7 @@ def make_rfmp4a_grid_pdf(pdf_path, model):
 
 # Generate a RFMP4a grid pdf for AlexNet
 if __name__ == "__main__":
-    model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)
+    model = models.alexnet()
+    # model = models.vgg16()
     pdf_path = os.path.join(c.REPO_DIR,'results','rfmp4a','mapping','test','alexnet_test_grid.pdf')
     make_rfmp4a_grid_pdf(pdf_path, model)

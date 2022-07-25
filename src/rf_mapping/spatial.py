@@ -623,7 +623,10 @@ def xn_to_center_rf(model):
     layer_indices, rf_sizes = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
     xn_list = []
     
-    for layer_index, rf_size in zip(layer_indices, rf_sizes):
+    for conv_i, (layer_index, rf_size) in enumerate(zip(layer_indices, rf_sizes)):
+        sys.stdout.write('\r')
+        sys.stdout.write(f"Searching appropriate xn for conv{conv_i+1}...")
+        sys.stdout.flush()
         # Set before and after to different values first
         center_response_before = -2
         center_response_after = -1
