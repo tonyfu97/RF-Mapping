@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 sys.path.append('../..')
+from src.rf_mapping.image import make_box
 from src.rf_mapping.hook import ConvUnitCounter
 from src.rf_mapping.files import delete_all_npy_files
 from src.rf_mapping.spatial import (xn_to_center_rf,
@@ -890,3 +891,68 @@ if __name__ == '__main__':
     dummy_map[2, 4] = 1
     com0, com1, radius = mapstat_comr_1(dummy_map, 0.9)
     print(com0, com1, radius)
+
+
+#######################################.#######################################
+#                                                                             #
+#                            MAKE_RFMP4a_GRID_PDF                             #
+#                                                                             #
+###############################################################################
+def make_rfmp4a_grid_pdf(pdf_path, model):
+    xn_list = xn_to_center_rf(model)  # Get the xn just big enough.
+    img_size = 227
+    _, max_rfs = get_rf_sizes(model, (img_size, img_size), layer_type=nn.Conv2d)
+    num_layers = len(max_rfs)
+
+    # Array of bar lengths
+    barlen = np.array([48/64 * max_rf,
+                        24/64 * max_rf,
+                        12/64 * max_rf,
+                        6/64 * max_rf])
+    barlenstr = np.array(['48/64',
+                          '24/64',
+                          '12/64',
+                          '6/64'])
+    # Array of aspect ratios
+    arat = np.array([1/2, 1/5, 1/10])
+
+    with PdfPages(pdf_path) as pdf:
+        for bl_i, bl in enumerate(barlen):
+            for ar in arat:
+                bw = bl * ar
+                plt.figure(figsize=(4*num_layers, 5))
+                plt.suptitle(f"Bar Length = {barlenstr[bl_i]} M, aspect_ratio = {ar}", fontsize=24)
+
+                for conv_i, max_rf in enumerate(max_rfs):
+                    layer_name = f"conv{conv_i + 1}"
+                    # Get layer-specific info
+                    xn = xn_list[conv_i]
+                    max_rf = max_rf[0]
+                    xlist = stimset_gridx_barmap(max_rf,bl)
+
+                    # Plot the bar
+                    bar = stimfr_bar(xn, xn, 0, 0, 30, bl, bw, 0.5, 1, 0.25)
+                    plt.imshow(bar, cmap='gray')
+                    
+                    # Plot the bar centers (i.e., the "grids").
+                    for y0 in xlist:
+                        for x0 in xlist:
+                            plt.plot(y0, x0, 'k.')
+
+                    # Highlight maximum RF
+                    padding = (xn - max_rf)//2
+                    rect = make_box((padding, padding, padding+max_rf-1, padding+max_rf-1), linewidth=1)
+                    ax = plt.gca()
+                    ax.add_patch(rect)
+                    ax.invert_yaxis()
+        
+                pdf.savefig()
+                plt.show()
+                plt.close()
+
+
+# Generate a RFMP4a grid pdf for AlexNet
+if __name__ == "__main__":
+    model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)
+    pdf_path = os.path.join(c.REPO_DIR,'results','rfmp4a','mapping','test','alexnet_test_grid.pdf')
+    make_rfmp4a_grid_pdf(pdf_path, model)
