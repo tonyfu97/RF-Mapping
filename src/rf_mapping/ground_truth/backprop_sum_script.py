@@ -40,13 +40,13 @@ result_dir = c.REPO_DIR + f'/results/ground_truth/backprop_sum/{model_name}'
 ###############################################################################
 
 # Script guard
-if __name__ == "__main__":
-    print("Look for a prompt.")
-    user_input = input("This code may take time to run. Are you sure? [y/n] ")
-    if user_input == 'y':
-        pass
-    else: 
-        raise KeyboardInterrupt("Interrupted by user")
+# if __name__ == "__main__":
+#     print("Look for a prompt.")
+#     user_input = input("This code may take time to run. Are you sure? [y/n] ")
+#     if user_input == 'y':
+#         pass
+#     else: 
+#         raise KeyboardInterrupt("Interrupted by user")
 
 # Delete previous results from result directories.
 for sum_mode in sum_modes:
