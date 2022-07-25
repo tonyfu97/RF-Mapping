@@ -753,22 +753,19 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
     non_overlap_counts_path = os.path.join(result_dir, f"{model_name}_rfmp4a_non_overlap_counts.txt")
     
     # Delete previous files
-    # delete_all_npy_files(result_dir)
-    # if os.path.exists(tb1_path):
-    #     os.remove(tb1_path)
-    # if os.path.exists(tb20_path):
-    #     os.remove(tb20_path)
-    # if os.path.exists(tb100_path):
-    #     os.remove(tb100_path)
-    # if os.path.exists(weighted_counts_path):
-    #     os.remove(weighted_counts_path)
-    # if os.path.exists(non_overlap_counts_path):
-    #     os.remove(non_overlap_counts_path)
+    delete_all_npy_files(result_dir)
+    if os.path.exists(tb1_path):
+        os.remove(tb1_path)
+    if os.path.exists(tb20_path):
+        os.remove(tb20_path)
+    if os.path.exists(tb100_path):
+        os.remove(tb100_path)
+    if os.path.exists(weighted_counts_path):
+        os.remove(weighted_counts_path)
+    if os.path.exists(non_overlap_counts_path):
+        os.remove(non_overlap_counts_path)
     
     for conv_i in range(len(layer_indices)):
-        if model_name == 'vgg16' and conv_i < 11:
-            continue
-
         layer_name = f"conv{conv_i + 1}"
         print(f"\n{layer_name}\n")
         # Get layer-specific info
