@@ -1,11 +1,22 @@
 -- Before running the following queries:
 -- 1. first create the directory '/tmp/rfmap', and make sure it
---    is owned by mysql (sudo chmod mysql /tmp/rfmap).
+--    is owned by mysql (sudo chmod +r mysql /tmp/rfmap).
 -- 2. must manually delete the files that already exist. MySQL cannot
 --    delete/overwrite existing files due to security reasons.
 --
 
+-- # mannally remove existing txt files
+-- cd /tmp/rfmap
+-- sudo rm *
+-- # after file generation, to allow gnuplot to read
+-- sudo chmod +r *
+
+
 USE rf_mapping;
+
+SELECT mux, 
+
+
 
 
 SELECT SQRT(POWER((t.mux - b.mux), 2) + POWER((t.muy - b.muy), 2))
