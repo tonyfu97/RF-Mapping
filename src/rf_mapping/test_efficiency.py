@@ -74,6 +74,7 @@ if __name__ == "__main__":
 #                       MONITOR MEMORY WITH TRACEMALLOC                       #
 #                                                                             #
 ###############################################################################
+"""Credit: https://stackoverflow.com/questions/552744/how-do-i-profile-memory-usage-in-python"""
 from collections import Counter
 import linecache
 import os

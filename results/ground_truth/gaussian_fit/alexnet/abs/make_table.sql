@@ -1,3 +1,5 @@
+DROP DATABASE IF EXISTS rf_mapping;
+CREATE DATABASE rf_mapping; 
 USE rf_mapping;
 
 -- Ground truth data based on the average gradient back-prop visualizations

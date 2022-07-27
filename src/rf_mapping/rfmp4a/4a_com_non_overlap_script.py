@@ -25,14 +25,16 @@ import src.rf_mapping.constants as c
 
 
 # Please specify some details here:
-model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)
+model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)  # repeat for correct bar_count
 model_name = 'alexnet'
+# model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
+# model_name = 'vgg16'
 image_shape = (227, 227)
 this_is_a_test_run = False
 
 # Source paths:
 mapping_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', model_name)
-bar_counts_path = os.path.join(mapping_dir, f"{model_name}_rfmp4a_weighted_counts.txt")
+bar_counts_path = os.path.join(mapping_dir, f"{model_name}_rfmp4a_non_overlap_counts.txt")
 
 # Result paths:
 if this_is_a_test_run:
@@ -116,6 +118,8 @@ def write_pdf(pdf, layer_name, unit_i, top_map, bot_map,
 
 # Find the center of mass coordinates and radius of RF.
 for conv_i in range(len(layer_indices)):
+    if model_name == 'vgg16' and conv_i < 4:
+        continue
     # Get layer-specific info
     layer_name = f"conv{conv_i + 1}"
     rf_size = rf_sizes[conv_i][0]

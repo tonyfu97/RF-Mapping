@@ -15,3 +15,15 @@ The '-m' option let python know that the script is part of a module. Note that t
 (6) Then enter 'bg' in the terminal to run the last stopped process in the background.
 (7) Finally enter 'disown -h %1' to detach the first running job from the terminal.
 (8) In a separate terminal window, do " ps -e | grep 'python' " to make sure that the process (check the job number) is running in the background.
+
+
+OR 
+
+(1) Comment out script guard.
+(2) Use something like:
+    nohup python3 -m src.rf_mapping.ground_truth.backprop_sum_script &
+(3) Check progress and error messages using
+    ps -e | grep 'python'
+or
+    cat git_repos/borderownership/nohup.out | more
+(4) Exit terminal.
