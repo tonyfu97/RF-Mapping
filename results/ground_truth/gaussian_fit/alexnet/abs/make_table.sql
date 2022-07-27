@@ -1,6 +1,7 @@
 DROP DATABASE IF EXISTS rf_mapping;
 CREATE DATABASE rf_mapping; 
 USE rf_mapping;
+SET GLOBAL local_infile = true;
 
 -- Ground truth data based on the average gradient back-prop visualizations
 -- for the top 100 image patches. A 2D Gaussian fit is performed.

@@ -1,4 +1,5 @@
 USE rf_mapping;
+SET GLOBAL local_infile = true;
 
 -- Using RF mapping paradigm 4a (rfmp-4a), this reports the stimulus
 -- index, coordinates, and response values for the top stimulus (maximal

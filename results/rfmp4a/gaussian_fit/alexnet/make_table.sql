@@ -1,4 +1,5 @@
 USE rf_mapping;
+SET GLOBAL local_infile = true;
 
 -- Using RF mapping paradigm 4a (rfmp-4a), this reports the coordinates and
 -- radii of the 'non-overlap bar maps', which are constructed by sequentially
@@ -28,7 +29,7 @@ CREATE TABLE n01_rfmp4a_non_overlap (
     bot_num_bars  INT,							-- the number of bars included in bottom map
     PRIMARY KEY (layer, unit)
 );
-LOAD DATA INFILE "/Users/tonyfu/Desktop/Bair Lab/borderownership/results/rfmp4a/gaussian_fit/alexnet/non_overlap.txt"
+LOAD DATA LOCAL INFILE "/Users/tonyfu/Desktop/Bair Lab/borderownership/results/rfmp4a/gaussian_fit/alexnet/non_overlap.txt"
 INTO TABLE n01_rfmp4a_non_overlap
 FIELDS TERMINATED BY ' ';
 -- NOTE: A COM or radius value of -1 means there is no center of mass (COM).
