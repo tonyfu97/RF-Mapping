@@ -35,14 +35,14 @@ result_dir = c.REPO_DIR + f'/results/ground_truth/top_n/{model_name}'
 
 ###############################################################################
 
-# Script guard.
-if __name__ == "__main__":
-    user_input = input("This code takes time to run. Are you sure? "\
-                       "Enter 'y' to proceed. Type any other key to stop: ")
-    if user_input == 'y':
-        pass
-    else: 
-        raise KeyboardInterrupt("Interrupted by user")
+# # Script guard.
+# if __name__ == "__main__":
+#     user_input = input("This code takes time to run. Are you sure? "\
+#                        "Enter 'y' to proceed. Type any other key to stop: ")
+#     if user_input == 'y':
+#         pass
+#     else: 
+#         raise KeyboardInterrupt("Interrupted by user")
 
 
 class ConvMaxMinInspector(HookFunctionBase):
