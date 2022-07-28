@@ -21,9 +21,11 @@ import src.rf_mapping.constants as c
 
 
 # Please specify some details here:
-model = models.alexnet()
-model_name = "alexnet"
-sum_modes = ['abs', 'sqr']
+# model = models.alexnet()
+# model_name = "alexnet"
+model = models.vgg16()
+model_name = 'vgg16'
+sum_modes = ['abs']
 this_is_a_test_run = False
 
 # Please double-check the directories:
@@ -50,7 +52,6 @@ for sum_mode in sum_modes:
         min_sum_path = os.path.join(backprop_sum_dir_with_modes, f"{layer_name}_min.npy")
         max_sum = np.load(max_sum_path)
         min_sum = np.load(min_sum_path)
-        both_sum = (max_sum + min_sum)/2
 
         print(f"Making pdf for {model_name} conv{conv_i + 1} sum mode: {sum_mode}")
         pdf_path = os.path.join(pdf_dir_with_sum_modes, f"{layer_name}.pdf")
@@ -58,7 +59,7 @@ for sum_mode in sum_modes:
             _, yn, xn = max_sum.shape
 
             fig, (ax1, ax2) = plt.subplots(1, 2)
-            fig.set_size_inches(15, 5)
+            fig.set_size_inches(10, 5)
             im1 = ax1.imshow(np.zeros((yn, xn)), cmap='gray', vmin=0, vmax=1)
             im2 = ax2.imshow(np.zeros((yn, xn)), cmap='gray', vmin=0, vmax=1)
 

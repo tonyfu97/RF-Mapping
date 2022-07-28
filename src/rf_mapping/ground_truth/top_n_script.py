@@ -8,7 +8,7 @@ import sys
 
 import numpy as np
 import torch.nn as nn
-from torchvision.models import VGG16_Weights
+# from torchvision.models import VGG16_Weights
 from torchvision import models
 from tqdm import tqdm
 
@@ -20,8 +20,10 @@ from src.rf_mapping.files import delete_all_npy_files
 import src.rf_mapping.constants as c
 
 # Please specify some details here:
-model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
-model_name = "vgg16"  
+# model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
+# model_name = "vgg16"
+model = models.resnet18(pretrained=True).to(c.DEVICE)
+model_name = "resnet18"
 num_images = 50000
 top_n = 100
 

@@ -20,7 +20,7 @@ class GtGaussian(Enum):
     FXVAR  = 9  # fraction of explained variance
 
 
-class Rfmp4aTb1(Enum):
+class Rfmp4aTB1(Enum):
     LAYER  = 0  # layer name
     UNIT   = 1  # index of unit, 0...
     
@@ -35,7 +35,7 @@ class Rfmp4aTb1(Enum):
     BOT_R  = 9  # response value
 
 
-class Rfmp4aTbx0(Enum):
+class Rfmp4aTBn(Enum):
     LAYER   = 0  # layer name
     UNIT    = 1  # index of unit, 0...
     

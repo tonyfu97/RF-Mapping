@@ -10,7 +10,7 @@ import sys
 import numpy as np
 import torch.nn as nn
 from torchvision import models
-from torchvision.models import AlexNet_Weights
+# from torchvision.models import AlexNet_Weights, VGG16_Weights
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
@@ -26,8 +26,10 @@ import src.rf_mapping.constants as c
 
 
 # Please specify some details here:
-model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)
-model_name = 'alexnet'
+# model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)
+# model_name = 'alexnet'
+model = models.vgg16(pretrained=True).to(c.DEVICE)
+model_name = "vgg16"
 sum_modes = ['abs', 'sqr']
 this_is_a_test_run = False
 
