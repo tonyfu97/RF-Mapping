@@ -563,43 +563,6 @@ class RfGrid:
 
 #######################################.#######################################
 #                                                                             #
-#                               TRUNCATED_MODEL                               #
-#                                                                             #
-###############################################################################
-def truncated_model(x, model, layer_index):
-    """
-    Returns the output of the specified layer without forward passing to
-    the subsequent layers.
-
-    Parameters
-    ----------
-    x : torch.tensor
-        The input. Should have dimension (1, 3, 2xx, 2xx).
-    model : torchvision.model.Module
-        The neural network (or the layer if in a recursive case).
-    layer_index : int
-        The index of the layer, the output of which will be returned. The
-        indexing excludes container layers.
-
-    Returns
-    -------
-    y : torch.tensor
-        The output of layer with the layer_index.
-    layer_index : int
-        Used for recursive cases. Should be ignored.
-    """
-    # If the layer is not a container, forward pass.
-    if (len(list(model.children())) == 0):
-        return model(x), layer_index - 1
-    else:  # Recurse otherwise.
-        for sublayer in model.children():
-            x, layer_index = truncated_model(x, sublayer, layer_index)
-            if layer_index < 0:  # Stop at the specified layer.
-                return x, layer_index
-
-
-#######################################.#######################################
-#                                                                             #
 #                               XN_TO_CENTER_RF                               #
 #                                                                             #
 ###############################################################################

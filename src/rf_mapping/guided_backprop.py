@@ -37,15 +37,15 @@ class GuidedBackprop:
         self.forward_relu_outputs = []
 
         self.model.eval()
-        self.register_hook_to_first_layer(self.model)
-        self.update_relus(self.model)
+        self._register_hook_to_first_layer(self.model)
+        self._update_relus(self.model)
         
-    def first_hook_function(self, module, grad_in, grad_out):  
+    def _first_hook_function(self, module, grad_in, grad_out):  
         self.gradients = grad_in[0]
         # [0] bc we are only interested in one unit at a time, so grad_in
         # will be a tuple of size 1.
 
-    def relu_forward_hook_function(self, module, ten_in, ten_out):
+    def _relu_forward_hook_function(self, module, ten_in, ten_out):
         """
         Stores results of forward pass.
         """
@@ -53,7 +53,7 @@ class GuidedBackprop:
         if isinstance(module, nn.Conv2d):
             warnings.warn("The first layer is not Conv2d.")
  
-    def relu_backward_hook_function(self, module, grad_in, grad_out):
+    def _relu_backward_hook_function(self, module, grad_in, grad_out):
         """
         Rectifies gradients.
         """
@@ -68,18 +68,18 @@ class GuidedBackprop:
 
         # Rectification (see Springenberg et al. 2015 Figure 1).
         modified_grad_out = corresponding_forward_output * F.relu(target_grad)
-        
+
         # Remove last forward output and return.
         del self.forward_relu_outputs[-1]
         return (modified_grad_out,)
 
-    def register_hook_to_first_layer(self, layer):
+    def _register_hook_to_first_layer(self, layer):
         # Skip any container layers.
         while (len(list(layer.children())) != 0):
             layer = list(layer.children())[0]
-        layer.register_backward_hook(self.first_hook_function)
+        layer.register_backward_hook(self._first_hook_function)
 
-    def update_relus(self, layer):
+    def _update_relus(self, layer):
         """
         Updates ReLU activation functions so that they now:
             1- rectify gradient values so that there's no negative gradients.
@@ -89,13 +89,13 @@ class GuidedBackprop:
         if (len(list(layer.children())) == 0):
             self.layers.append(layer)  # Keep track of all non-container layers
             if (isinstance(layer, nn.ReLU)):
-                layer.register_forward_hook(self.relu_forward_hook_function)
-                layer.register_backward_hook(self.relu_backward_hook_function)
+                layer.register_forward_hook(self._relu_forward_hook_function)
+                layer.register_backward_hook(self._relu_backward_hook_function)
 
         # Otherwise (i.e.,the layer is a container type layer), recurse.
         else:
             for i, sublayer in enumerate(layer.children()):
-                self.update_relus(sublayer)
+                self._update_relus(sublayer)
 
     def generate_gradients(self, img, target_layer, target_unit, target_spatial_idx):
         """
@@ -112,8 +112,8 @@ class GuidedBackprop:
             The id of the unit. 
         target_spatial_idx : int or (int, int)
             The spatial index of the target location on the output feature map.
-            If only one scalar is provided, this function unravels it into
-            2D index.
+            If only one scalar is provided, this function unravels it into 2D
+            index.
 
         Returns
         -------
@@ -121,7 +121,7 @@ class GuidedBackprop:
             The gradient map.
         """
         self.model.zero_grad()
-        
+
         # Forward pass.
         x = preprocess_img_to_tensor(img).clone().detach().requires_grad_(True)
         for layer in self.layers[:target_layer+1]:
@@ -138,7 +138,7 @@ class GuidedBackprop:
 
         if self.gradients is None:
             raise ValueError("Target layer must be Conv2d.")
-        
+
         # [0] to get rid of the first channel (1, 3, 22x, 22x).
         gradients_img = self.gradients.data.numpy()[0]
         return gradients_img
@@ -146,18 +146,19 @@ class GuidedBackprop:
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    model = models.alexnet(pretrained = True).to(c.DEVICE)
-    
+    # model = models.alexnet(pretrained = True).to(c.DEVICE)
+    model = models.resnet18(pretrained = True).to(c.DEVICE)
+
     inspector = SizeInspector(model, (227, 227))
     inspector.print_summary()
-    
+
     img_dir = c.REPO_DIR + '/data/imagenet'
     img_idx = 1
     img_path = os.path.join(img_dir, f"{img_idx}.npy")
     img = np.load(img_path)
     img = preprocess_img_for_plot(img)
-    
-    layer_idx = 10  # AlexNet = [0, 3, 6, 8, 10] for conv1-5
+
+    layer_idx = 21  # AlexNet = [0, 3, 6, 8, 10] for conv1-5
     unit_idx = 1
     spatial_idx = (5, 5)
     gbp = GuidedBackprop(model)

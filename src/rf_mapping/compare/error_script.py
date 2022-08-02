@@ -20,10 +20,10 @@ from src.rf_mapping.result_txt_format import (GtGaussian as GT,
                                               Rfmp4aWeighted as W)
 
 # Please specify the model
-# model = models.alexnet()
-# model_name = 'alexnet'
-model = models.vgg16()
-model_name = 'vgg16'
+model = models.alexnet()
+model_name = 'alexnet'
+# model = models.vgg16()
+# model_name = 'vgg16'
 
 # Source directories
 gt_dir             = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'gaussian_fit')
@@ -75,10 +75,10 @@ gt_no_data = gt_t_df[['LAYER', 'UNIT']].copy()  # template df used for padding
 def pad_missing_layers(df):
     return pd.merge(gt_no_data, df, how='left')
 
-tb1_df = pad_missing_layers(tb1_df)
-tb20_df = pad_missing_layers(tb20_df)
+tb1_df   = pad_missing_layers(tb1_df)
+tb20_df  = pad_missing_layers(tb20_df)
 tb100_df = pad_missing_layers(tb100_df)
-no_df = pad_missing_layers(no_df)
+no_df  = pad_missing_layers(no_df)
 w_t_df = pad_missing_layers(w_t_df)
 w_b_df = pad_missing_layers(w_b_df)
 
@@ -439,8 +439,9 @@ if __name__ == '__main__':
 def eccentricity(sd1, sd2):
     a = np.minimum(sd1, sd2)
     b = np.maximum(sd1, sd2)
-    ecc = 1 - np.power(a, 2)/np.power(b, 2)
-    return np.sqrt(ecc)
+    # ecc = np.sqrt(1 - np.power(a, 2)/np.power(b, 2))
+    ecc = b/a
+    return ecc
 
 def make_ori_pdf():
     pdf_path = os.path.join(result_dir, f"{model_name}_ori.pdf")
@@ -449,6 +450,7 @@ def make_ori_pdf():
             # Get some layer-specific information.
             layer_name = f'conv{conv_i+1}'
             num_units_total = len(gt_t_df.loc[(gt_t_df.LAYER == layer_name)])
+            ylim = (0, 3)
 
             plt.figure(figsize=(10,11))
             plt.suptitle(f"Estimations of {model_name} {layer_name} RF orientation using different techniques\n(n = {num_units_total})", fontsize=16)
@@ -458,7 +460,7 @@ def make_ori_pdf():
             ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
             ax = plt.subplot(221, projection='polar')
             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
-            plt.ylim([0, 1])
+            plt.ylim(ylim)
             plt.title(f'ground truth top (n = {num_units_included})')
             plt.text(5, 0.2, 'eccentricity')
 
@@ -467,7 +469,7 @@ def make_ori_pdf():
             ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
             ax = plt.subplot(223, projection='polar')
             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
-            plt.ylim([0, 1])
+            plt.ylim(ylim)
             plt.title(f'ground truth bottom (n = {num_units_included})')
             plt.text(5, 0.2, 'eccentricity')
 
@@ -476,7 +478,7 @@ def make_ori_pdf():
             ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
             ax = plt.subplot(222, projection='polar')
             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
-            plt.ylim([0, 1])
+            plt.ylim(ylim)
             plt.title(f'weighted map (top, n = {num_units_included})')
             plt.text(5, 0.2, 'eccentricity')
 
@@ -485,7 +487,7 @@ def make_ori_pdf():
             ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
             ax = plt.subplot(224, projection='polar')
             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
-            plt.ylim([0, 1])
+            plt.ylim(ylim)
             plt.title(f'weighted map (bottom, n = {num_units_included})')
             plt.text(5, 0.2, 'eccentricity')
 
@@ -493,7 +495,7 @@ def make_ori_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_ori_pdf()
+    make_ori_pdf()
     pass
 
 
@@ -594,44 +596,44 @@ def make_error_coords_pdf():
             r_val, p_val = pearsonr(gt_ydata, ydata)
             plt.title(f'GT vs. top 100 bars (n={num_units_included}, r={r_val:.2f})')
 
-            xdata = no_df.loc[(no_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_X']
+            xdata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_X']
             num_units_included = len(xdata)
             plt.subplot(4,5,4)
             config_plot(limits)
-            plt.scatter(gt_xdata, xdata, alpha=0.4)
+            plt.scatter(gt_xdata.loc[no_df.TOP_RAD_10 != -1], xdata, alpha=0.4)
             plt.xlabel('GT x')
             plt.ylabel('top non overlap x')
-            r_val, p_val = pearsonr(gt_xdata, xdata)
+            r_val, p_val = pearsonr(gt_xdata.loc[no_df.TOP_RAD_10 != -1], xdata)
             plt.title(f'GT vs. top non-overlap (n={num_units_included}, r={r_val:.2f})')
 
-            ydata = no_df.loc[(no_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_Y']
+            ydata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_Y']
             num_units_included = len(xdata)
             plt.subplot(4,5,9)
             config_plot(limits)
-            plt.scatter(gt_ydata, ydata, alpha=0.4)
+            plt.scatter(gt_ydata.loc[no_df.TOP_RAD_10 != -1], ydata, alpha=0.4)
             plt.xlabel('GT y')
             plt.ylabel('top non overlap y')
-            r_val, p_val = pearsonr(gt_ydata, ydata)
+            r_val, p_val = pearsonr(gt_ydata.loc[no_df.TOP_RAD_10 != -1], ydata)
             plt.title(f'GT vs. top non-overlap (n={num_units_included}, r={r_val:.2f})')
 
-            xdata = w_t_df.loc[(w_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'MUX']
+            xdata = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres) & (gt_t_df.FXVAR > fxvar_thres), 'MUX']
             num_units_included = len(xdata)
             plt.subplot(4,5,5)
             config_plot(limits)
-            plt.scatter(gt_xdata, xdata, alpha=0.4)
+            plt.scatter(gt_xdata.loc[w_t_df.FXVAR > fxvar_thres], xdata, alpha=0.4)
             plt.xlabel('GT x')
             plt.ylabel('top weighted x')
-            r_val, p_val = pearsonr(gt_xdata, xdata)
+            r_val, p_val = pearsonr(gt_xdata.loc[w_t_df.FXVAR > fxvar_thres], xdata)
             plt.title(f'GT vs. top weighted (n={num_units_included}, r={r_val:.2f})')
 
-            ydata = w_t_df.loc[(w_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'MUY']
+            ydata = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres) & (gt_t_df.FXVAR > fxvar_thres), 'MUY']
             num_units_included = len(xdata)
             plt.subplot(4,5,10)
             config_plot(limits)
-            plt.scatter(gt_ydata, ydata, alpha=0.4)
+            plt.scatter(gt_ydata.loc[w_t_df.FXVAR > fxvar_thres], ydata, alpha=0.4)
             plt.xlabel('GT y')
             plt.ylabel('top weighted y')
-            r_val, p_val = pearsonr(gt_ydata, ydata)
+            r_val, p_val = pearsonr(gt_ydata.loc[w_t_df.FXVAR > fxvar_thres], ydata)
             plt.title(f'GT vs. top weighted (n={num_units_included}, r={r_val:.2f})')
 
             xdata = tb1_df.loc[(tb1_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_X']
@@ -694,44 +696,56 @@ def make_error_coords_pdf():
             r_val, p_val = pearsonr(gb_ydata, ydata)
             plt.title(f'GT vs. bottom 100 bars (n={num_units_included}, r={r_val:.2f})')
 
-            xdata = no_df.loc[(no_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_X']
+            xdata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_10 != -1) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_X']
             num_units_included = len(xdata)
             plt.subplot(4,5,14)
             config_plot(limits)
-            plt.scatter(gb_xdata, xdata, alpha=0.4)
+            plt.scatter(gb_xdata.loc[no_df.BOT_RAD_10 != -1], xdata, alpha=0.4)
             plt.xlabel('GT x')
             plt.ylabel('bottom non overlap x')
-            r_val, p_val = pearsonr(gb_xdata, xdata)
+            try:
+                r_val, p_val = pearsonr(gb_xdata.loc[no_df.BOT_RAD_10 != -1], xdata)
+            except:
+                r_val = np.NaN
             plt.title(f'GT vs. bottom non-overlap (n={num_units_included}, r={r_val:.2f})')
 
-            ydata = no_df.loc[(no_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_Y']
+            ydata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_10 != -1) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_Y']
             num_units_included = len(xdata)
             plt.subplot(4,5,19)
             config_plot(limits)
-            plt.scatter(gb_ydata, ydata, alpha=0.4)
+            plt.scatter(gb_ydata.loc[no_df.BOT_RAD_10 != -1], ydata, alpha=0.4)
             plt.xlabel('GT y')
             plt.ylabel('bottom non overlap y')
-            r_val, p_val = pearsonr(gb_ydata, ydata)
+            try:
+                r_val, p_val = pearsonr(gb_ydata.loc[no_df.BOT_RAD_10 != -1], ydata)
+            except:
+                r_val = np.NaN
             plt.title(f'GT vs. bottom non-overlap (n={num_units_included}, r={r_val:.2f})')
 
-            xdata = w_b_df.loc[(w_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'MUX']
+            xdata = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres) & (gt_b_df.FXVAR > fxvar_thres), 'MUX']
             num_units_included = len(xdata)
             plt.subplot(4,5,15)
             config_plot(limits)
-            plt.scatter(gb_xdata, xdata, alpha=0.4)
+            plt.scatter(gb_xdata.loc[w_b_df.FXVAR > fxvar_thres], xdata, alpha=0.4)
             plt.xlabel('GT x')
             plt.ylabel('bottom weighted x')
-            r_val, p_val = pearsonr(gb_xdata, xdata)
+            try:
+                r_val, p_val = pearsonr(gb_xdata.loc[w_b_df.FXVAR > fxvar_thres], xdata)
+            except:
+                r_val = np.NaN
             plt.title(f'GT vs. bottom weighted (n={num_units_included}, r={r_val:.2f})')
 
-            ydata = w_b_df.loc[(w_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'MUY']
+            ydata = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres) & (gt_b_df.FXVAR > fxvar_thres), 'MUY']
             num_units_included = len(xdata)
             plt.subplot(4,5,20)
             config_plot(limits)
-            plt.scatter(gb_ydata, ydata, alpha=0.4)
+            plt.scatter(gb_ydata.loc[w_b_df.FXVAR > fxvar_thres], ydata, alpha=0.4)
             plt.xlabel('GT y')
             plt.ylabel('bottom weighted y')
-            r_val, p_val = pearsonr(gb_ydata, ydata)
+            try:
+                r_val, p_val = pearsonr(gb_ydata.loc[w_b_df.FXVAR > fxvar_thres], ydata)
+            except:
+                r_val = np.NaN
             plt.title(f'GT vs. bottom weighted map (n = {num_units_included}, r = {r_val:.2f})')
 
             pdf.savefig()
@@ -778,83 +792,106 @@ def make_error_radius_pdf():
             plt.figure(figsize=(20,10))
             plt.suptitle(f"Comparing of {model_name} {layer_name} RF radii of different techniques (n = {num_units_total}, ERF = {rf_size[0]})", fontsize=24)
 
-            radius = no_df.loc[(no_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_RAD_10']
+            radius = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_RAD_10']
             if sum(np.isfinite(radius)) == 0: 
                 continue  # Skip this layer if no data
-
             plt.subplot(2,4,1)
             config_plot(limits)
-            plt.scatter(gt_radius, radius, alpha=0.4)
+            plt.scatter(gt_radius.loc[no_df.TOP_RAD_10 != -1], radius, alpha=0.4)
             plt.xlabel('GT $\sqrt{sd_1^2+sd_2^2}$')
             plt.ylabel('10% of mass')
-            r_val, p_val = pearsonr(gt_radius, radius)
+            try:
+                r_val, p_val = pearsonr(gt_radius.loc[no_df.TOP_RAD_10 != -1], radius)
+            except:
+                r_val = np.NaN
             plt.title(f'GT vs. non-overlap (top, n={num_top_units}, r={r_val:.2f})')
 
-            radius = no_df.loc[(no_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_RAD_50']
+            radius = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_50 != -1) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_RAD_50']
             plt.subplot(2,4,2)
             config_plot(limits)
-            plt.scatter(gt_radius, radius, alpha=0.4)
+            plt.scatter(gt_radius.loc[no_df.TOP_RAD_50 != -1], radius, alpha=0.4)
             plt.xlabel('GT $\sqrt{sd_1^2+sd_2^2}$')
             plt.ylabel('50% of mass')
-            r_val, p_val = pearsonr(gt_radius, radius)
+            try:
+                r_val, p_val = pearsonr(gt_radius.loc[no_df.TOP_RAD_50 != -1], radius)
+            except:
+                r_val = np.NaN
             plt.title(f'GT vs. non-overlap (top, n={num_top_units}, r={r_val:.2f})')
 
-            radius = no_df.loc[(no_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_RAD_90']
+            radius = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_90 != -1) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_RAD_90']
             plt.subplot(2,4,3)
             config_plot(limits)
-            plt.scatter(gt_radius, radius, alpha=0.4)
+            plt.scatter(gt_radius.loc[no_df.TOP_RAD_90 != -1], radius, alpha=0.4)
             plt.xlabel('GT $\sqrt{sd_1^2+sd_2^2}$')
             plt.ylabel('90% of mass')
-            r_val, p_val = pearsonr(gt_radius, radius)
+            try:
+                r_val, p_val = pearsonr(gt_radius.loc[no_df.TOP_RAD_90 != -1], radius)
+            except:
+                r_val = np.NaN
             plt.title(f'GT vs. non-overlap (top, n={num_top_units}, r={r_val:.2f})')
 
-            sd1 = w_t_df.loc[(w_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'SD1']
-            sd2 = w_t_df.loc[(w_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'SD2']
+            sd1 = w_t_df.loc[(w_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (gt_t_df.FXVAR > fxvar_thres), 'SD1']
+            sd2 = w_t_df.loc[(w_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (gt_t_df.FXVAR > fxvar_thres), 'SD2']
             radius = geo_mean(sd1, sd2)
             plt.subplot(2,4,4)
             config_plot(limits)
-            plt.scatter(gt_radius, radius, alpha=0.4)
+            plt.scatter(gt_radius.loc[gt_t_df.FXVAR > fxvar_thres], radius, alpha=0.4)
             plt.xlabel('GT $\sqrt{sd_1^2+sd_2^2}$')
             plt.ylabel('weighted $\sqrt{sd_1^2+sd_2^2}$')
-            r_val, p_val = pearsonr(gt_radius, radius)
+            try:
+                r_val, p_val = pearsonr(gt_radius.loc[gt_t_df.FXVAR > fxvar_thres], radius)
+            except:
+                r_val = np.NaN
             plt.title(f'GT vs. weighted (top, n={num_top_units}, r={r_val:.2f})')
             
-            radius = no_df.loc[(no_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_RAD_10']
+            radius = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_10 != -1) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_RAD_10']
             plt.subplot(2,4,5)
             config_plot(limits)
-            plt.scatter(gb_radius, radius, alpha=0.4)
+            plt.scatter(gb_radius.loc[no_df.BOT_RAD_10 != -1], radius, alpha=0.4)
             plt.xlabel('GT $\sqrt{sd_1^2+sd_2^2}$')
             plt.ylabel('10% of mass')
-            r_val, p_val = pearsonr(gb_radius, radius)
+            try:
+                r_val, p_val = pearsonr(gb_radius.loc[no_df.BOT_RAD_10 != -1], radius)
+            except:
+                r_val = np.NaN
             plt.title(f'GT vs. non-overlap (bottom, n={num_bot_units}, r={r_val:.2f})')
 
-            radius = no_df.loc[(no_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_RAD_50']
+            radius = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_50 != -1) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_RAD_50']
             plt.subplot(2,4,6)
             config_plot(limits)
-            plt.scatter(gb_radius, radius, alpha=0.4)
+            plt.scatter(gb_radius.loc[no_df.BOT_RAD_50 != -1], radius, alpha=0.4)
             plt.xlabel('GT $\sqrt{sd_1^2+sd_2^2}$')
             plt.ylabel('50% of mass')
-            r_val, p_val = pearsonr(gb_radius, radius)
+            try:
+                r_val, p_val = pearsonr(gb_radius.loc[no_df.BOT_RAD_50 != -1], radius)
+            except:
+                r_val = np.NaN
             plt.title(f'GT vs. non-overlap (bottom, n={num_bot_units}, r={r_val:.2f})')
             
-            radius = no_df.loc[(no_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_RAD_90']
+            radius = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_90 != -1) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_RAD_90']
             plt.subplot(2,4,7)
             config_plot(limits)
-            plt.scatter(gb_radius, radius, alpha=0.4)
+            plt.scatter(gb_radius.loc[no_df.BOT_RAD_90 != -1], radius, alpha=0.4)
             plt.xlabel('GT $\sqrt{sd_1^2+sd_2^2}$')
             plt.ylabel('90% of mass')
-            r_val, p_val = pearsonr(gb_radius, radius)
+            try:
+                r_val, p_val = pearsonr(gb_radius.loc[no_df.BOT_RAD_90 != -1], radius)
+            except:
+                r_val = np.NaN
             plt.title(f'GT vs. non-overlap (bottom, n={num_bot_units}, r={r_val:.2f})')
             
-            sd1 = w_b_df.loc[(w_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'SD1']
-            sd2 = w_b_df.loc[(w_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'SD2']
+            sd1 = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres) & (gt_b_df.FXVAR > fxvar_thres), 'SD1']
+            sd2 = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres) & (gt_b_df.FXVAR > fxvar_thres), 'SD2']
             radius = geo_mean(sd1, sd2)
             plt.subplot(2,4,8)
             config_plot(limits)
-            plt.scatter(gb_radius, radius, alpha=0.4)
+            plt.scatter(gb_radius.loc[w_b_df.FXVAR > fxvar_thres], radius, alpha=0.4)
             plt.xlabel('GT $\sqrt{sd_1^2+sd_2^2}$')
             plt.ylabel('weighted $\sqrt{sd_1^2+sd_2^2}$')
-            r_val, p_val = pearsonr(gb_radius, radius)
+            try:
+                r_val, p_val = pearsonr(gb_radius.loc[w_b_df.FXVAR > fxvar_thres], radius)
+            except:
+                r_val = np.NaN
             plt.title(f'GT vs. weighted (bottom, n={num_bot_units}, r={r_val:.2f})')
 
             pdf.savefig()
@@ -870,6 +907,23 @@ if __name__ == '__main__':
 #                          PDF NO.6 ERROR ORIENTATION                         #
 #                                                                             #
 ###############################################################################
+
+def config_plot(limits):
+    line = np.linspace(min(limits), max(limits), 100)
+    plt.plot(line, line, 'k', alpha=0.4)
+    plt.xlim(limits)
+    plt.ylim(limits)
+    ax = plt.gca()
+    ax.set_aspect('equal')
+
+def delta_ori(ori_1, ori_2):
+    # Note: this function assumes 0 <= ori < 180.
+    theta_small = np.minimum(ori_1, ori_2)
+    theta_large = np.maximum(ori_1, ori_2)
+    # Because angles wraps around 0 and 180 deg, we need to consider two cases:
+    delta_theta_a = theta_large - theta_small
+    delta_theta_b = (theta_small + 180) - theta_large
+    return np.minimum(delta_theta_a, delta_theta_b)
 
 def make_error_ori_pdf():
     pdf_path = os.path.join(result_dir, f"{model_name}_error_ori.pdf")
@@ -930,5 +984,5 @@ def make_error_ori_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_error_ori_pdf()
+    # make_error_ori_pdf()
     pass
