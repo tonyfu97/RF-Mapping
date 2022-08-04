@@ -2,6 +2,7 @@ import sys
 
 import numpy as np
 import torch
+import torch.fx as fx
 import torch.nn as nn
 from torchvision import models
 
@@ -9,11 +10,52 @@ sys.path.append('../..')
 import src.rf_mapping.constants as c
 
 
-model = models.inception_v3()
-from torchvision.models.feature_extraction import get_graph_node_names
-train_nodes, eval_nodes = get_graph_node_names(model, suppress_diff_warning=True)
-print(eval_nodes)
+model = models.resnet18()
+from torch.fx import symbolic_trace
+# Symbolic tracing frontend - captures the semantics of the module
+symbolic_traced : torch.fx.GraphModule = symbolic_trace(model)
 
+# Code generation - valid Python code
+print(symbolic_traced.code)
+"""
+def forward(self, x):
+    param = self.param
+    add = x + param;  x = param = None
+    linear = self.linear(add);  add = None
+    clamp = linear.clamp(min = 0.0, max = 1.0);  linear = None
+    return clamp
+"""
+
+# TODO:
+# 1. Modify import for 'truncated_model' from spatial to this module
+# 2. Write code that reproduce the model architecture and feedforward ops.
+# 3. Implement network dissection: https://github.com/zhoubolei/cnnvisualizer/blob/master/pytorch_generate_unitsegments.py
+# 4. Make sure that the model are put in eval() model before graph generation.
+def truncated_model(model, conv_i):
+    graph = fx.Tracer().trace(model)
+    new_graph = fx.Graph()
+    conv_counter = 0
+
+    for node in graph.nodes:
+        new_graph.create_node(node.op, node.target, args=node.args, kwargs=node.kwargs, name=node.name)
+        if node.op == 'call_module':
+            layer = model
+            for level in node.target.split("."):
+                layer = getattr(layer, level)
+            if isinstance(layer, nn.Conv2d):
+                conv_counter += 1
+
+        if conv_counter >= conv_i:
+            new_graph.output(node)
+            break
+
+    return fx.GraphModule(model, new_graph)
+    
+if __name__ == "__main__":
+    model = models.resnet18(pretrained=True)
+    dummy_input = torch.ones(1,3,200,200)
+    tm = truncated_model(model, 100)
+    torch.testing.assert_allclose(tm(dummy_input), model(dummy_input))
 
 #######################################.#######################################
 #                                                                             #
