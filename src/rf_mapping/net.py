@@ -10,52 +10,64 @@ sys.path.append('../..')
 import src.rf_mapping.constants as c
 
 
-model = models.resnet18()
-from torch.fx import symbolic_trace
-# Symbolic tracing frontend - captures the semantics of the module
-symbolic_traced : torch.fx.GraphModule = symbolic_trace(model)
-
-# Code generation - valid Python code
-print(symbolic_traced.code)
-"""
-def forward(self, x):
-    param = self.param
-    add = x + param;  x = param = None
-    linear = self.linear(add);  add = None
-    clamp = linear.clamp(min = 0.0, max = 1.0);  linear = None
-    return clamp
-"""
-
 # TODO:
-# 1. Modify import for 'truncated_model' from spatial to this module
-# 2. Write code that reproduce the model architecture and feedforward ops.
-# 3. Implement network dissection: https://github.com/zhoubolei/cnnvisualizer/blob/master/pytorch_generate_unitsegments.py
-# 4. Make sure that the model are put in eval() model before graph generation.
-def truncated_model(model, conv_i):
-    graph = fx.Tracer().trace(model)
+# 2. Implement network dissection: https://github.com/zhoubolei/cnnvisualizer/blob/master/pytorch_generate_unitsegments.py
+#######################################.#######################################
+#                                                                             #
+#                             GET_TRUNCATED_MODEL                             #
+#                                                                             #
+###############################################################################
+def get_truncated_model(model, layer_index):
+    """
+    Create a truncated version of the neural network.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        The neural network to be truncated.
+    layer_index : int
+        The last layer (inclusive) to be included in the truncated model.
+
+    Returns
+    -------
+    truncated_model : torch.nn.Module
+        The truncated model.
+
+    Example
+    -------
+    model = models.alexnet(pretrained=True)
+    model_to_conv2 = get_truncated_model(model, 3)
+    y = model(torch.ones(1,3,200,200))
+    """
+    graph = fx.Tracer().trace(model.eval())
     new_graph = fx.Graph()
-    conv_counter = 0
+    layer_counter = 0
 
     for node in graph.nodes:
-        new_graph.create_node(node.op, node.target, args=node.args, kwargs=node.kwargs, name=node.name)
+        # Create a new module that will be returned
+        new_graph.create_node(node.op, node.target, args=node.args,
+                              kwargs=node.kwargs, name=node.name)
+
+        # If the node is a module...
         if node.op == 'call_module':
+            # Get the layer object using the node.target attribute.
             layer = model
             for level in node.target.split("."):
                 layer = getattr(layer, level)
-            if isinstance(layer, nn.Conv2d):
-                conv_counter += 1
+            # Stop at the desired layer (i.e., truncate).
+            if layer_counter == layer_index:
+                new_graph.output(node)
+                break
 
-        if conv_counter >= conv_i:
-            new_graph.output(node)
-            break
-
+            layer_counter += 1
     return fx.GraphModule(model, new_graph)
     
 if __name__ == "__main__":
     model = models.resnet18(pretrained=True)
     dummy_input = torch.ones(1,3,200,200)
-    tm = truncated_model(model, 100)
+    tm = get_truncated_model(model, 100)
     torch.testing.assert_allclose(tm(dummy_input), model(dummy_input))
+
 
 #######################################.#######################################
 #                                                                             #
@@ -110,48 +122,13 @@ def is_residual(container_layer):
     if torch.sum(subsampled_x != original_output) == 0:
         return 2
 
-res_block = list(list(models.resnet18().children())[4].children())[0]
-print(is_residual(res_block))
 
-not_res_block = list(models.alexnet().children())[0]
-print(is_residual(not_res_block))
+if __name__ == "__main__":
+    res_block = list(list(models.resnet18().children())[4].children())[0]
+    print(is_residual(res_block))
 
-not_res_block2 = nn.Sequential()
-print(is_residual(not_res_block2))
+    not_res_block = list(models.alexnet().children())[0]
+    print(is_residual(not_res_block))
 
-
-#######################################.#######################################
-#                                                                             #
-#                               TRUNCATED_MODEL                               #
-#                                                                             #
-###############################################################################
-def truncated_model(x, model, layer_index):
-    """
-    Returns the output of the specified layer without forward passing to
-    the subsequent layers.
-
-    Parameters
-    ----------
-    x : torch.tensor
-        The input. Should have dimension (1, 3, 2xx, 2xx).
-    model : torchvision.model.Module
-        The neural network (or the layer if in a recursive case).
-    layer_index : int
-        The index of the layer, the output of which will be returned. The
-        indexing excludes container layers.
-
-    Returns
-    -------
-    y : torch.tensor
-        The output of layer with the layer_index.
-    layer_index : int
-        Used for recursive cases. Should be ignored.
-    """
-    # If the layer is not a container, forward pass.
-    if (len(list(model.children())) == 0):
-        return model(x), layer_index - 1
-    else:  # Recurse otherwise.
-        for sublayer in model.children():
-            x, layer_index = truncated_model(x, sublayer, layer_index)
-            if layer_index < 0:  # Stop at the specified layer.
-                return x, layer_index
+    not_res_block2 = nn.Sequential()
+    print(is_residual(not_res_block2))

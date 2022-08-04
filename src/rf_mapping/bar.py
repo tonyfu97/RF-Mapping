@@ -14,7 +14,7 @@ from numba import njit
 import torch
 import torch.nn as nn
 from torchvision import models
-from torchvision.models import AlexNet_Weights, VGG16_Weights
+# from torchvision.models import AlexNet_Weights, VGG16_Weights
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -23,9 +23,9 @@ from src.rf_mapping.image import make_box
 from src.rf_mapping.hook import ConvUnitCounter
 from src.rf_mapping.files import delete_all_npy_files
 from src.rf_mapping.spatial import (xn_to_center_rf,
-                                    truncated_model,
                                     calculate_center,
                                     get_rf_sizes,)
+from src.rf_mapping.net import get_truncated_model
 import src.rf_mapping.constants as c
 
 
@@ -403,8 +403,7 @@ def print_progress(text):
 #                                BARMAP_RUN_01b                               #
 #                                                                             #
 ###############################################################################
-def barmap_run_01b(splist, model, layer_idx, num_units, batch_size=100,
-                  _debug=False):
+def barmap_run_01b(splist, truncated_model, num_units, batch_size=100, _debug=False):
     """
     Presents bars and returns the center responses in array of dimension:
     [num_stim, num_units].
@@ -412,8 +411,7 @@ def barmap_run_01b(splist, model, layer_idx, num_units, batch_size=100,
     Parameters
     ----------
     splist     - bar stimulus parameter list.\n
-    model      - neural network.\n
-    layer_idx  - index of the layer of interest.\n
+    truncated_model - neural network up to the layer of interest.\n
     num_units  - number of units/channels.\n
     batch_size - how many bars to present at once.\n
     _debug     - if true, reduce the number of bars and plot them.\n
@@ -444,8 +442,7 @@ def barmap_run_01b(splist, model, layer_idx, num_units, batch_size=100,
             bar_batch[i, 2] = new_bar
 
         # Present the patch of bars to the truncated model.
-        y, _ = truncated_model(torch.tensor(bar_batch).type('torch.FloatTensor'),
-                               model, layer_idx)
+        y = truncated_model(torch.tensor(bar_batch).type('torch.FloatTensor'))
         yc, xc = calculate_center(y.shape[-2:])
         center_responses[bar_i:bar_i+real_batch_size, :] = y[:, :, yc, xc].detach().numpy()
         bar_i += real_batch_size
@@ -783,7 +780,8 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
         padding = (xn - max_rf)//2
 
         # Present all bars to the model
-        center_responses = barmap_run_01b(splist, model, layer_idx,
+        truncated_model = get_truncated_model(model, layer_idx)
+        center_responses = barmap_run_01b(splist, truncated_model,
                                           num_units, batch_size=100,
                                           _debug=_debug)
 

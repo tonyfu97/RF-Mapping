@@ -15,7 +15,6 @@ from torchvision import models
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
-
 sys.path.append('../..')
 from src.rf_mapping.spatial import (get_conv_output_shapes,
                                     calculate_center,
@@ -26,6 +25,7 @@ from src.rf_mapping.image import make_box
 from src.rf_mapping.hook import ConvUnitCounter
 from src.rf_mapping.bar import stimfr_bar, stimset_dict_rfmp_4a
 import src.rf_mapping.constants as c
+from src.rf_mapping.net import get_truncated_model
 
 
 #######################################.#######################################
@@ -49,7 +49,6 @@ class RfMapper:
         image_shape : (int, int)
             The dimension of the image in (yn, xn) format (pix).
         """
-        self.model = copy.deepcopy(model)
         self.conv_i = conv_i
         self.yn, self.xn = image_shape
         print(f"The RF mapper is for Conv{conv_i + 1} (not Conv{conv_i}) "
@@ -62,6 +61,7 @@ class RfMapper:
         self.num_units = self._get_num_units()
         self.layer_idx = layer_indices[conv_i]  # See hook.py module for 
                                                 # indexing convention.
+        self.truncated_model = get_truncated_model(model, self.layer_idx)
 
         # Locate spatial center of the layer's output.
         self.output_shape = self._get_output_shape()
@@ -100,37 +100,6 @@ class RfMapper:
         sys.stdout.write('\r')
         sys.stdout.write(f"{pre_text}{progess}{post_text}")
         sys.stdout.flush()
-
-    def _truncated_model(self, x, model, layer_index):
-        """
-        Returns the output of the specified layer without forward passing to
-        the subsequent layers.
-
-        Parameters
-        ----------
-        x : torch.tensor
-            The input. Should have dimension (1, 3, 2xx, 2xx).
-        model : torchvision.model.Module
-            The neural network (or the layer if in a recursive case).
-        layer_index : int
-            The index of the layer, the output of which will be returned. The
-            indexing excludes container layers.
-
-        Returns
-        -------
-        y : torch.tensor
-            The output of layer with the layer_index.
-        layer_index : int
-            Used for recursive cases. Should be ignored.
-        """
-        # If the layer is not a container, forward pass.
-        if (len(list(model.children())) == 0):
-            return model(x), layer_index - 1
-        else:  # Recurse otherwise.
-            for sublayer in model.children():
-                x, layer_index = self._truncated_model(x, sublayer, layer_index)
-                if layer_index < 0:  # Stop at the specified layer.
-                    return x, layer_index
     
 
 #######################################.#######################################
@@ -174,7 +143,7 @@ class BarRfMapper(RfMapper):
     def _get_center_responses(self, input):
         """Gets the responses of the spatial centers of all bars and units."""
         input_tensor = self._bar_to_tensor(input)
-        y, _ = self._truncated_model(input_tensor, self.model, self.layer_idx)
+        y = self.truncated_model(input_tensor)
         return y[:, :, self.output_yc, self.output_xc].cpu().detach().numpy()
 
     def map(self):

@@ -21,6 +21,7 @@ sys.path.append('../..')
 from src.rf_mapping.hook import SizeInspector, LayerOutputInspector
 from src.rf_mapping.image import clip, preprocess_img_to_tensor, tensor_to_img
 import src.rf_mapping.constants as c
+from src.rf_mapping.net import get_truncated_model
 
 
 #######################################.#######################################
@@ -586,6 +587,7 @@ def xn_to_center_rf(model):
     layer_indices, rf_sizes = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
     xn_list = []
     
+    
     for conv_i, (layer_index, rf_size) in enumerate(zip(layer_indices, rf_sizes)):
         sys.stdout.write('\r')
         sys.stdout.write(f"Searching appropriate xn for conv{conv_i+1}...")
@@ -595,13 +597,14 @@ def xn_to_center_rf(model):
         center_response_after = -1
         rf_size = rf_size[0]
         xn = int(rf_size * 1.1)  # add a 10% padding.
+        truncated_model = get_truncated_model(model, layer_index)
 
         # If response before and after perturbation are identical, the unit
         # RF is centered.
         while(center_response_before != center_response_after):
             xn += 1
             dummy_input = torch.rand((1, 3, xn, xn))
-            y, _ = truncated_model(dummy_input, model, layer_index)
+            y = truncated_model(dummy_input)
             yc, xc = calculate_center(y.shape[-2:])
             center_response_before = y[0, 0, yc, xc].item()
             
@@ -614,7 +617,7 @@ def xn_to_center_rf(model):
             # Add perturbation to the surrounding padding.
             dummy_input[:, :,  :padding,  :padding] = 10000
             dummy_input[:, :, -padding:, -padding:] = 10000
-            y, _ = truncated_model(dummy_input, model, layer_index)
+            y = truncated_model(dummy_input)
             center_response_after = y[0, 0, yc, xc].item()
 
         xn_list.append(xn)
@@ -623,7 +626,7 @@ def xn_to_center_rf(model):
 
 # Test
 if __name__ == '__main__':
-    from torchvision.models import AlexNet_Weights, VGG16_Weights
-    model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)
+    # from torchvision.models import AlexNet_Weights, VGG16_Weights
+    model = models.alexnet(pretrained=True)
     # model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1)
     print(xn_to_center_rf(model))
