@@ -180,13 +180,18 @@ class SpatialIndexConverter(SizeInspector):
         except:
             _, output_height, output_width = self.output_sizes[start_layer_index]
             return np.unravel_index(index, (output_height, output_width))
-    
-    def _merge_boxes(self, box1, box2):
-        vx_min1, hx_min1, vx_max1, hx_max1 = box1
-        vx_min2, hx_min2, vx_max2, hx_max2 = box2
-        return min(vx_min1, vx_min2), min(hx_min1, hx_min2),\
-               max(vx_max1, vx_max2), max(hx_max1, hx_max2)
-    
+
+    def _merge_boxes(self, box_list):
+        """
+        Merges the two boxes such that the new box can contain all the boxes
+        in the box_list. Each box must be in (vx_min, hx_min, vx_max, hx_max)
+        format.
+        """
+        return min([box[0] for box in box_list]),\
+               min([box[1] for box in box_list]),\
+               max([box[2] for box in box_list]),\
+               max([box[3] for box in box_list])
+
     def _forward_convert(self, vx_min, hx_min, vx_max, hx_max, start_layer_name,
                          end_layer_name):
         # If this 'start_layer_name' is a layer (as opposed to an operation),
@@ -202,12 +207,12 @@ class SpatialIndexConverter(SizeInspector):
 
         # Recurse case:
         children = self.graph_dict[start_layer_name].children
+        boxes = []
         for child in children:
-            return self._forward_convert(vx_min, hx_min, vx_max, hx_max, child, end_layer_name)
-        # TODO: return all child boxes and merge them.
-    
-    def _backward_convert(self, vx_min, hx_min
-                          , vx_max, hx_max, start_layer_name,
+            boxes.append(self._forward_convert(vx_min, hx_min, vx_max, hx_max, child, end_layer_name))
+        return self._merge_boxes(boxes)
+
+    def _backward_convert(self, vx_min, hx_min, vx_max, hx_max, start_layer_name,
                           end_layer_name):
         # If this 'start_layer_name' is a layer (as opposed to an operation),
         # calculate the new box.
@@ -215,8 +220,6 @@ class SpatialIndexConverter(SizeInspector):
         if isinstance(layer_index, int):
             vx_min, hx_min, vx_max, hx_max = self._one_projection(layer_index,
                                 vx_min, hx_min, vx_max, hx_max, is_forward=False)
-        else: 
-            return vx_min, hx_min, vx_max, hx_max
 
         # Base case:
         if start_layer_name == end_layer_name:
@@ -224,10 +227,11 @@ class SpatialIndexConverter(SizeInspector):
 
         # Recurse case:
         parents = self.graph_dict[start_layer_name].parents
+        boxes = []
         for parent in parents:
             # Recurse case:
-            return self._backward_convert(vx_min, hx_min, vx_max, hx_max, parent, end_layer_name)
-        # TODO: return all parent boxes and merge them.
+            boxes.append(self._backward_convert(vx_min, hx_min, vx_max, hx_max, parent, end_layer_name))
+        return self._merge_boxes(boxes)
 
     def convert(self, index, start_layer_index, end_layer_index, is_forward):
         """
@@ -294,7 +298,6 @@ class SpatialIndexConverter(SizeInspector):
         vx, hx = self._process_index(index, start_layer_index)
         vx_min, vx_max = vx, vx
         hx_min, hx_max = hx, hx
-
         # if is_forward:
         #     index_gen = range(start_layer_index, end_layer_index + 1)
         # else:

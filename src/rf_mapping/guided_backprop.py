@@ -72,7 +72,17 @@ class GuidedBackprop:
                 corresponding_forward_output[corresponding_forward_output > 0] = 1
                 # Rectification (see Springenberg et al. 2015 Figure 1).
                 modified_grad_out = corresponding_forward_output * F.relu(target_grad)
-            except:  # TODO: This is a temporary fix for ResNets.
+            except:
+                # TODO: This is a temporary fix for resnet18().
+                # Why this work: the original error (in the 'try' clause) is
+                # because, for the shortcut conv layers, the target_grad comes
+                # from the ReLU between the residual blocks, while the
+                # corresponding_forward_output comes from the ReLU inside the
+                # residual block that runs parallel to the shortcut. This is
+                # because the network calculates the residual path first, then
+                # calculates the shortcut path. So, even though the backprop
+                # did not require the residual path, its ReLU is calculated and
+                # appended to the self.forward_relu_outputs list nonetheless.
                 del self.forward_relu_outputs[-1]
                 corresponding_forward_output = self.forward_relu_outputs[-1]
                 corresponding_forward_output[corresponding_forward_output > 0] = 1

@@ -95,7 +95,7 @@ def plot_one_grad_map(im, ax, img_idx, unit_idx, patch_idx, box):
 
 
 for conv_i, layer_idx in enumerate(layer_indices):
-    # if conv_i < 6: continue
+    if conv_i < 10: continue
     grad_method = GuidedBackprop(model, layer_idx)
     layer_name = f"conv{conv_i + 1}"
     index_path = os.path.join(index_dir, f"{layer_name}.npy")
