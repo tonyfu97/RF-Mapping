@@ -98,7 +98,7 @@ def get_grad_patch(img, layer_idx, unit_i, spatial_idx, rf_size):
     """
     vx_min, hx_min, vx_max, hx_max = converter.convert(spatial_idx, layer_idx, 0,
                                                        is_forward=False)
-    grad_map = grad_method.generate_gradients(img, layer_idx, unit_i, spatial_idx)
+    grad_map = grad_method.generate_gradients(img, unit_i, spatial_idx)
     grad_patch = grad_map[:, vx_min:vx_max+1, hx_min:hx_max+1]
     
     # Get rid of color channel.

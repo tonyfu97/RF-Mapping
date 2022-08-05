@@ -1,6 +1,13 @@
+"""
+Code for truncating models and tracing data flow inside them. Need these
+functions because many models like resnets are not single-path, i.e., the data
+do not neccessarily flow from one layer to another in the order they are
+presented in model.children().
+
+Tony Fu, Aug 4th, 2022
+"""
 import sys
 
-import numpy as np
 import torch
 import torch.fx as fx
 import torch.nn as nn
@@ -10,8 +17,6 @@ sys.path.append('../..')
 import src.rf_mapping.constants as c
 
 
-# TODO:
-# 1. Implement network dissection: https://github.com/zhoubolei/cnnvisualizer/blob/master/pytorch_generate_unitsegments.py
 #######################################.#######################################
 #                                                                             #
 #                             GET_TRUNCATED_MODEL                             #
@@ -98,13 +103,28 @@ class LayerNode:
 #                                                                             #
 ###############################################################################
 def make_graph(truncated_model):
+    """
+    Generate a directed, acyclic graph representation of the model.
+
+    Parameters
+    ----------
+    truncated_model : UNION[fx.graph_module.GraphModule, torch.nn.Module]
+        The neural network. Can be truncated or not.
+
+    Returns
+    -------
+    nodes : dict
+        key : the unique name of each operation performed on the input tensor.
+        value : a LayerNode object containing the information about the
+                operation.
+    """
     # Make sure that the truncated_model is a GraphModule. 
     if not isinstance(truncated_model, fx.graph_module.GraphModule):
         graph = fx.Tracer().trace(truncated_model.eval())
         truncated_model = fx.GraphModule(truncated_model, graph)
 
     nodes = {}
-    idx_count = 0
+    idx_count = 0  # for layer indexing
     # Populate the nodes dictionary with the initialized Nodes.
     for node in truncated_model.graph.nodes:
         # Get the layer torch.nn object.
@@ -141,6 +161,7 @@ if __name__ == '__main__':
 #######################################.#######################################
 #                                                                             #
 #                                 IS_RESIDUAL                                 #
+#                                 (NOT USED)                                  #
 #                                                                             #
 ###############################################################################
 def is_residual(container_layer):
