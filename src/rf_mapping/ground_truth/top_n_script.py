@@ -15,7 +15,6 @@ from tqdm import tqdm
 sys.path.append('../../..')
 from src.rf_mapping.image import preprocess_img_to_tensor
 from src.rf_mapping.hook import HookFunctionBase, ConvUnitCounter
-from src.rf_mapping.spatial import SpatialIndexConverter
 from src.rf_mapping.files import delete_all_npy_files
 import src.rf_mapping.constants as c
 
@@ -110,7 +109,6 @@ class ConvMaxMinInspector(HookFunctionBase):
 
 
 # Initiate helper objects.
-converter = SpatialIndexConverter(model, (227, 227))
 inspector = ConvMaxMinInspector(model)
 
 # Get info of conv layers.

@@ -30,7 +30,6 @@ import src.rf_mapping.constants as c
 model = models.resnet18(pretrained=True).to(c.DEVICE)
 model_name = "resnet18"
 sum_modes = ['abs', 'sqr']
-grad_method = GuidedBackprop(model)
 top_n = 100
 this_is_a_test_run = False
 
@@ -117,6 +116,7 @@ for conv_i, rf_size in enumerate(rf_sizes):
     index_path = os.path.join(index_dir, f"{layer_name}.npy")
     max_min_indices = np.load(index_path).astype(int)
     num_units, num_images, _ = max_min_indices.shape
+    grad_method = GuidedBackprop(model, layer_idx)
     print(f"Summing gradient results for {layer_name}...")
 
     # Initializing arrays:

@@ -14,6 +14,7 @@ import warnings
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.fx as fx
 from torchvision import models
 import matplotlib.pyplot as plt
 
@@ -21,7 +22,7 @@ sys.path.append('../..')
 from src.rf_mapping.hook import SizeInspector, LayerOutputInspector
 from src.rf_mapping.image import clip, preprocess_img_to_tensor, tensor_to_img
 import src.rf_mapping.constants as c
-from src.rf_mapping.net import get_truncated_model
+from src.rf_mapping.net import get_truncated_model, make_graph
 
 
 #######################################.#######################################
@@ -97,6 +98,10 @@ class SpatialIndexConverter(SizeInspector):
                                     nn.BatchNorm2d,
                                     nn.Dropout2d,)
         self.need_convsersion = (nn.Conv2d, nn.AvgPool2d, nn.MaxPool2d)
+        
+        # Represent the model as a directed, acyclic graph stored in a dict
+        self.graph_dict = make_graph(model)
+        self.idx_to_node = {node.idx: name for name, node in self.graph_dict.items()}
 
     def _forward_transform(self, x_min, x_max, stride, kernel_size, padding, max_size):
         x_min = math.floor((x_min + padding - kernel_size)/stride + 1)
@@ -175,8 +180,54 @@ class SpatialIndexConverter(SizeInspector):
         except:
             _, output_height, output_width = self.output_sizes[start_layer_index]
             return np.unravel_index(index, (output_height, output_width))
+    
+    def _merge_boxes(self, box1, box2):
+        vx_min1, hx_min1, vx_max1, hx_max1 = box1
+        vx_min2, hx_min2, vx_max2, hx_max2 = box2
+        return min(vx_min1, vx_min2), min(hx_min1, hx_min2),\
+               max(vx_max1, vx_max2), max(hx_max1, hx_max2)
+    
+    def _forward_convert(self, vx_min, hx_min, vx_max, hx_max, start_layer_name,
+                         end_layer_name):
+        # If this 'start_layer_name' is a layer (as opposed to an operation),
+        # calculate the new box.
+        layer_index = self.graph_dict[start_layer_name].idx
+        if isinstance(layer_index, int):
+            vx_min, hx_min, vx_max, hx_max = self._one_projection(layer_index,
+                                vx_min, hx_min, vx_max, hx_max, is_forward=True)
 
-        
+        # Base case:
+        if start_layer_name == end_layer_name:
+            return vx_min, hx_min, vx_max, hx_max
+
+        # Recurse case:
+        children = self.graph_dict[start_layer_name].children
+        for child in children:
+            return self._forward_convert(vx_min, hx_min, vx_max, hx_max, child, end_layer_name)
+        # TODO: return all child boxes and merge them.
+    
+    def _backward_convert(self, vx_min, hx_min
+                          , vx_max, hx_max, start_layer_name,
+                          end_layer_name):
+        # If this 'start_layer_name' is a layer (as opposed to an operation),
+        # calculate the new box.
+        layer_index = self.graph_dict[start_layer_name].idx
+        if isinstance(layer_index, int):
+            vx_min, hx_min, vx_max, hx_max = self._one_projection(layer_index,
+                                vx_min, hx_min, vx_max, hx_max, is_forward=False)
+        else: 
+            return vx_min, hx_min, vx_max, hx_max
+
+        # Base case:
+        if start_layer_name == end_layer_name:
+            return vx_min, hx_min, vx_max, hx_max
+
+        # Recurse case:
+        parents = self.graph_dict[start_layer_name].parents
+        for parent in parents:
+            # Recurse case:
+            return self._backward_convert(vx_min, hx_min, vx_max, hx_max, parent, end_layer_name)
+        # TODO: return all parent boxes and merge them.
 
     def convert(self, index, start_layer_index, end_layer_index, is_forward):
         """
@@ -244,22 +295,30 @@ class SpatialIndexConverter(SizeInspector):
         vx_min, vx_max = vx, vx
         hx_min, hx_max = hx, hx
 
+        # if is_forward:
+        #     index_gen = range(start_layer_index, end_layer_index + 1)
+        # else:
+        #     index_gen = range(start_layer_index, end_layer_index - 1, -1)
+
+        # for layer_index in index_gen:
+        #     vx_min, hx_min, vx_max, hx_max = self._one_projection(layer_index, 
+        #                            vx_min, hx_min, vx_max, hx_max, is_forward)
+
+        start_layer_name = self.idx_to_node[start_layer_index]
+        end_layer_name = self.idx_to_node[end_layer_index]
         if is_forward:
-            index_gen = range(start_layer_index, end_layer_index + 1)
+            return self._forward_convert(vx_min, hx_min, vx_max, hx_max,
+                                         start_layer_name, end_layer_name)
         else:
-            index_gen = range(start_layer_index, end_layer_index - 1, -1)
-
-        for layer_index in index_gen:
-            vx_min, hx_min, vx_max, hx_max = self._one_projection(layer_index, 
-                                   vx_min, hx_min, vx_max, hx_max, is_forward)
-
-        return vx_min, hx_min, vx_max, hx_max
+            return self._backward_convert(vx_min, hx_min, vx_max, hx_max, 
+                                          start_layer_name, end_layer_name)
+        # Return format: (vx_min, hx_min, vx_max, hx_max)
 
 
 if __name__ == '__main__':
-    model = models.alexnet()
+    model = models.resnet18()
     converter = SpatialIndexConverter(model, (227, 227))
-    coord = converter.convert((0, 0), 0, 0, is_forward=False)
+    coord = converter.convert((111, 111), 0, 2, is_forward=True)
     print(coord)
 
 
@@ -586,7 +645,6 @@ def xn_to_center_rf(model):
     model.eval()
     layer_indices, rf_sizes = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
     xn_list = []
-    
     
     for conv_i, (layer_index, rf_size) in enumerate(zip(layer_indices, rf_sizes)):
         sys.stdout.write('\r')

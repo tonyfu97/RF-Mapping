@@ -229,10 +229,11 @@ if __name__ == '__main__':
 ###############################################################################
 class SizeInspector(HookFunctionBase):
     """
-    A class that computes the input and output sizes of all layers. This
-    class determines the indexing convention of the layers. The indexing
-    follows the flow of data through the model and excludes all container-type
-    layers. For example, the indexing of torchvision.models.alexnet() is:
+    A class that empirically determines the input and output sizes of all
+    layers. This class determines the indexing convention of the layers. The
+    indexing follows the flow of data through the model and excludes all
+    container-type layers. For example, the indexing of
+    torchvision.models.alexnet() is:
 
           no. | layer name
         ------+-----------
