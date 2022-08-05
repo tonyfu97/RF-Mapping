@@ -148,7 +148,7 @@ class GuidedBackprop:
         # We only care about the gradient w.r.t. the target. 
         if not isinstance(target_spatial_idx, (tuple, list)):
             target_spatial_idx = np.unravel_index(target_spatial_idx, (x.shape[2], x.shape[3]))
-        x_target_only = torch.zeros(x.shape, dtype=torch.float)
+        x_target_only = torch.zeros(x.shape, dtype=torch.float).to(c.DEVICE)
         x_target_only[0, target_unit, target_spatial_idx[0], target_spatial_idx[1]] =\
                         x[0, target_unit, target_spatial_idx[0], target_spatial_idx[1]]
         x.backward(gradient=x_target_only)
