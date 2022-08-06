@@ -10,7 +10,7 @@ import sys
 
 import numpy as np
 from torchvision import models
-from torchvision.models import AlexNet_Weights, VGG16_Weights
+# from torchvision.models import AlexNet_Weights, VGG16_Weights
 import matplotlib.pyplot as plt
 
 sys.path.append('../../..')
@@ -20,8 +20,10 @@ import src.rf_mapping.constants as c
 # Please specify some details here:
 # model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1).to(c.DEVICE)
 # model_name = 'alexnet'
-model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
-model_name = 'vgg16'
+# model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
+# model_name = 'vgg16'
+model = models.resnet18(pretrained=True).to(c.DEVICE)
+model_name = "resnet18"
 this_is_a_test_run = False
 
 # Please double-check the directories:

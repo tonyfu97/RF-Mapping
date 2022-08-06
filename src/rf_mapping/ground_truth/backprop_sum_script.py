@@ -12,7 +12,7 @@ import numpy as np
 from tqdm import tqdm
 import torch.nn as nn
 from torchvision import models
-from torchvision.models import AlexNet_Weights, VGG16_Weights
+# from torchvision.models import AlexNet_Weights, VGG16_Weights
 import matplotlib.pyplot as plt
 
 sys.path.append('../../..')

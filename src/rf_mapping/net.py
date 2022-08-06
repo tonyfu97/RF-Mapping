@@ -93,8 +93,9 @@ class LayerNode:
         self.children = children
 
     def __repr__(self):
-        return f"LayerNode '{self.name}', layer = {self.layer}, idx = {self.idx}, "\
-               f"parents = {self.parents}, children = {self.children}\n"
+        return f"LayerNode '{self.name}' (idx = {self.idx})\n"\
+               f"       parents  = {self.parents}\n"\
+               f"       children = {self.children}"
 
 
 #######################################.#######################################
@@ -137,11 +138,13 @@ def make_graph(truncated_model):
         else:
             layer = None
             idx = None
+
         # Get the name of the parents.
         parents = []
         for parent in node.args:
             if isinstance(parent, fx.node.Node):
                 parents.append(parent.name)
+
         # Initialize Nodes.
         nodes[node.name] = LayerNode(node.name, layer, parents=tuple(parents),
                                      idx=idx)
@@ -151,11 +154,47 @@ def make_graph(truncated_model):
         for parent in nodes[node.name].parents:
             existing_children = nodes[parent].children
             nodes[parent].children = (*existing_children, node.name)
+
     return nodes
 
+
 if __name__ == '__main__':
+    model = models.resnet18()
+    for layer in make_graph(model).values():
+        print(layer)
+
+
+#######################################.#######################################
+#                                                                             #
+#                               GET_LAYER_INDICES                             #
+#                                                                             #
+###############################################################################
+def get_conv_layer_indices(model, layer_types=(nn.Conv2d)):
+    """
+    Gets the indicies of all layers of the types {layer_types}.
+    
+    Parameters
+    ----------
+    model : UNION[fx.graph_module.GraphModule, torch.nn.Module]
+        The neural network. Can be truncated or not.
+    layer_types : [type, ...]
+        The type of layer to include in the indexing.
+
+    Returns
+    -------
+    layer_indices : [int, ...]
+        Indices of the layer given by the torch.fx.Tracer() object.
+    """
+    layer_indices = []
+    for layer in make_graph(model).values():
+        if isinstance(layer.layer, layer_types):
+            layer_indices.append(layer.idx)
+    return layer_indices
+
+
+if __name__ == "__main__":
     model = models.alexnet()
-    print(make_graph(model))
+    print(get_conv_layer_indices(model, layer_types=(nn.Conv2d)))
 
 
 #######################################.#######################################

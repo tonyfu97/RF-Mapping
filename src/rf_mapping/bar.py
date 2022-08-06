@@ -442,9 +442,9 @@ def barmap_run_01b(splist, truncated_model, num_units, batch_size=100, _debug=Fa
             bar_batch[i, 2] = new_bar
 
         # Present the patch of bars to the truncated model.
-        y = truncated_model(torch.tensor(bar_batch).type('torch.FloatTensor'))
+        y = truncated_model(torch.tensor(bar_batch).type('torch.FloatTensor').to(c.DEVICE))
         yc, xc = calculate_center(y.shape[-2:])
-        center_responses[bar_i:bar_i+real_batch_size, :] = y[:, :, yc, xc].detach().numpy()
+        center_responses[bar_i:bar_i+real_batch_size, :] = y[:, :, yc, xc].detach().cpu().numpy()
         bar_i += real_batch_size
 
     return center_responses

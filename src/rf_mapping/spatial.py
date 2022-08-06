@@ -22,7 +22,9 @@ sys.path.append('../..')
 from src.rf_mapping.hook import SizeInspector, LayerOutputInspector
 from src.rf_mapping.image import clip, preprocess_img_to_tensor, tensor_to_img
 import src.rf_mapping.constants as c
-from src.rf_mapping.net import get_truncated_model, make_graph
+from src.rf_mapping.net import (get_truncated_model,
+                                make_graph,
+                                get_conv_layer_indices,)
 
 
 #######################################.#######################################
@@ -321,7 +323,7 @@ class SpatialIndexConverter(SizeInspector):
 if __name__ == '__main__':
     model = models.resnet18()
     converter = SpatialIndexConverter(model, (227, 227))
-    coord = converter.convert((111, 111), 0, 2, is_forward=True)
+    coord = converter.convert((64, 64), 21, 0, is_forward=False)
     print(coord)
 
 
@@ -373,7 +375,7 @@ def _test_forward_conversion():
     except:
         print(f"The rest of the layers are probably 1D.")
 
-def _test_backward_conversion():
+def _test_backward_conversion_outside_RF(model):
     """
     Test function for the SpatialIndexConverter class when is_forward is set to
     False, i.e., backward projection from the output of a deeper layer onto
@@ -388,7 +390,6 @@ def _test_backward_conversion():
            backward index conversion is deemed successful.
     """
     # Parameters: You are welcomed to change them.
-    model = models.vgg16(pretrained=True)
     model.eval()
     image_size = (227, 227)
     show = True
@@ -462,10 +463,100 @@ def _test_backward_conversion():
             print(f"The rest of the layers from layer no.{layer_i} are probably 1D.")
             break
 
+def _test_backward_conversion_inside_RF(model):
+    """
+    If perturbing the input inside the RF results in no different in the output
+    response, plots a red dot. Repeats for all layers.
+    
+    Note: This test takes time because it tests all pixels of the RFs.
+    Also, unlike _test_backward_conversion_outside_RF(), this method only tests
+    conv layers to save time.
+    """
+    image_size = (227, 227)
+    model.eval()
+    test_image_tensor = torch.zeros((1, 3, *image_size))
+    
+    # The Converter object to be tested.
+    converter = SpatialIndexConverter(model, image_size)
 
-# if __name__ == '__main__':
-#     # _test_forward_conversion() TODO: finish implementing this test
-#     _test_backward_conversion()
+    layer_indices = get_conv_layer_indices(model, layer_types=(nn.Conv2d))
+    for conv_i, layer_i in enumerate(layer_indices):
+        # if conv_i < 15: continue
+        try:
+            # Get the truncated model
+            truncated_model = get_truncated_model(model, layer_i)
+            
+            # Use the center point of the layer output as starting point for
+            # back projection. You are welcome to change this.
+            _, max_height, max_width = converter.output_sizes[layer_i]
+            index = (max_height//2, max_width//2)
+
+            # Get the RF box that should contain all the points in that can
+            # influence the output at the index specified above.
+            vx_min, hx_min, vx_max, hx_max = converter.convert(index, 
+                                                layer_i, 0, is_forward=False)
+            rf_size = (vx_max - vx_min + 1, hx_max - hx_min + 1)
+            
+            
+            # Determine where on the image to perturb such that i/j_locations =
+            # [min, min+1, ..., min+perimeter-1, max-perimeter+1, ..., max-1, max]
+            # And also makes sure that i and j don't go out of range.
+            perimeter = 10  # thickness of the rim of RF to be perturb.
+            i_locations = []
+            j_locations = []
+            for peri in range(perimeter):
+                i_locations.append(max(vx_min+peri, 0))
+                j_locations.append(max(hx_min+peri, 0))
+            for peri in range(perimeter-1,-1,-1):
+                i_locations.append(min(vx_max-peri, image_size[0]-1))
+                j_locations.append(min(hx_max-peri, image_size[1]-1))
+            
+            # Perturb the test image and compare the output with the original
+            # output. The coordinates fail to produce a difference will be
+            # recorded.
+            original_output = truncated_model(test_image_tensor)
+            failed_i = []
+            failed_j = []
+            for i in i_locations:
+                for j in j_locations:
+                    sys.stdout.write('\r')
+                    sys.stdout.write(f"conv{conv_i+1}: ({i:3}, {j:3})")
+                    sys.stdout.flush()
+
+                    test_image_tensor[:, :, i, j] = 999
+                    perturb_output = truncated_model(test_image_tensor)
+                    test_image_tensor[:, :, i, j] = 0
+
+                    result = torch.allclose(original_output[:, :, index[0], index[1]],
+                                            perturb_output[:, :, index[0], index[1]])
+
+                    # If the outputs are the same despite perturbation, the
+                    # RF box is invalid.
+                    if result:
+                        failed_i.append(i)
+                        failed_j.append(j)
+            
+            # Plot the 'blindspot' of the RF as red dots-- A clean canvas
+            # means the index conversion is successful.
+            plt.plot(failed_i, failed_j, 'r.')
+            plt.xlim([hx_min, hx_max+1])
+            plt.ylim([vx_min, vx_max+1])
+            plt.title(f"conv{conv_i+1} (idx = {layer_i}) (RF = {rf_size})")
+            ax = plt.gca()
+            ax.set_aspect('equal')
+            ax.invert_yaxis()
+            plt.show()
+
+        except:
+            print(f"The rest of the layers from layer no.{layer_i} are probably 1D.")
+            break
+
+
+if __name__ == '__main__':
+    model = models.resnet18(pretrained=True)
+    _test_backward_conversion_inside_RF(model)
+#     _test_backward_conversion_outside_RF(model)
+#     _test_forward_conversion() TODO: finish implementing this test
 
 
 #######################################.#######################################
@@ -513,7 +604,7 @@ def get_rf_sizes(model, image_shape, layer_type=nn.Conv2d):
 
 
 if __name__ == '__main__':
-    model = models.alexnet()
+    model = models.resnet18()
     layer_indices, rf_sizes = get_rf_sizes(model, (227, 227))
     print(layer_indices)
     print(rf_sizes)
@@ -629,7 +720,7 @@ class RfGrid:
 #                               XN_TO_CENTER_RF                               #
 #                                                                             #
 ###############################################################################
-def xn_to_center_rf(model):
+def xn_to_center_rf(model, image_size=(227, 227)):
     """
     Return the input image size xn = yn just big enough to center the RF of
     the center units (of all Conv2d layer) in the pixel space. Need this
@@ -639,6 +730,8 @@ def xn_to_center_rf(model):
     ----------
     model : torchvision.models
         The neural network.
+    image_size : (int, int)
+        The image dimension in (yn, xn) format.
 
     Returns
     -------
@@ -646,13 +739,10 @@ def xn_to_center_rf(model):
         A list of xn (which is also yn since we assume RF to be square). 
     """
     model.eval()
-    layer_indices, rf_sizes = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
+    layer_indices, rf_sizes = get_rf_sizes(model, image_size, layer_type=nn.Conv2d)
     xn_list = []
     
     for conv_i, (layer_index, rf_size) in enumerate(zip(layer_indices, rf_sizes)):
-        sys.stdout.write('\r')
-        sys.stdout.write(f"Searching appropriate xn for conv{conv_i+1}...")
-        sys.stdout.flush()
         # Set before and after to different values first
         center_response_before = -2
         center_response_after = -1
@@ -663,8 +753,16 @@ def xn_to_center_rf(model):
         # If response before and after perturbation are identical, the unit
         # RF is centered.
         while(center_response_before != center_response_after):
+            sys.stdout.write('\r')
+            sys.stdout.write(f"Searching appropriate xn for conv{conv_i+1}, xn = {xn}...")
+            sys.stdout.flush()
+            
             xn += 1
-            dummy_input = torch.rand((1, 3, xn, xn))
+            # xn cannot exceed image_size.
+            if xn >= max(image_size):
+                break
+            
+            dummy_input = torch.rand((1, 3, xn, xn)).to(c.DEVICE)
             y = truncated_model(dummy_input)
             yc, xc = calculate_center(y.shape[-2:])
             center_response_before = y[0, 0, yc, xc].item()
@@ -688,6 +786,7 @@ def xn_to_center_rf(model):
 # Test
 if __name__ == '__main__':
     # from torchvision.models import AlexNet_Weights, VGG16_Weights
-    model = models.alexnet(pretrained=True)
+    # model = models.alexnet(pretrained=True)
+    model = models.resnet18(pretrained=True)
     # model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1)
     print(xn_to_center_rf(model))
