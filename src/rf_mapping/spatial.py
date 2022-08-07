@@ -20,8 +20,11 @@ import matplotlib.pyplot as plt
 
 sys.path.append('../..')
 from src.rf_mapping.hook import SizeInspector, LayerOutputInspector
-from src.rf_mapping.image import clip, preprocess_img_to_tensor, tensor_to_img
 import src.rf_mapping.constants as c
+from src.rf_mapping.image import (clip,
+                                  preprocess_img_to_tensor,
+                                  tensor_to_img,
+                                  make_box,)
 from src.rf_mapping.net import (get_truncated_model,
                                 make_graph,
                                 get_conv_layer_indices,)
@@ -496,20 +499,25 @@ def _test_backward_conversion_inside_RF(model):
             vx_min, hx_min, vx_max, hx_max = converter.convert(index, 
                                                 layer_i, 0, is_forward=False)
             rf_size = (vx_max - vx_min + 1, hx_max - hx_min + 1)
-            
-            
+
             # Determine where on the image to perturb such that i/j_locations =
             # [min, min+1, ..., min+perimeter-1, max-perimeter+1, ..., max-1, max]
             # And also makes sure that i and j don't go out of range.
-            perimeter = 10  # thickness of the rim of RF to be perturb.
+            perimeter = 5  # thickness of the rim of RF to be perturb.
             i_locations = []
             j_locations = []
-            for peri in range(perimeter):
+            for peri in range(perimeter-1,-1,-1):
+                i_locations.append(max(vx_min-peri, 0))
+                j_locations.append(max(hx_min-peri, 0))
+            for peri in range(1, perimeter):
                 i_locations.append(max(vx_min+peri, 0))
                 j_locations.append(max(hx_min+peri, 0))
             for peri in range(perimeter-1,-1,-1):
                 i_locations.append(min(vx_max-peri, image_size[0]-1))
                 j_locations.append(min(hx_max-peri, image_size[1]-1))
+            for peri in range(1, perimeter):
+                i_locations.append(min(vx_max+peri, image_size[0]-1))
+                j_locations.append(min(hx_max+peri, image_size[1]-1))
             
             # Perturb the test image and compare the output with the original
             # output. The coordinates fail to produce a difference will be
@@ -539,10 +547,12 @@ def _test_backward_conversion_inside_RF(model):
             # Plot the 'blindspot' of the RF as red dots-- A clean canvas
             # means the index conversion is successful.
             plt.plot(failed_i, failed_j, 'r.')
-            plt.xlim([hx_min, hx_max+1])
-            plt.ylim([vx_min, vx_max+1])
+            plt.xlim([hx_min-perimeter, hx_max+1+perimeter])
+            plt.ylim([vx_min-perimeter, vx_max+1+perimeter])
             plt.title(f"conv{conv_i+1} (idx = {layer_i}) (RF = {rf_size})")
+            rect = make_box((vx_min, hx_min, vx_max, hx_max))
             ax = plt.gca()
+            ax.add_patch(rect)
             ax.set_aspect('equal')
             ax.invert_yaxis()
             plt.show()
@@ -554,9 +564,9 @@ def _test_backward_conversion_inside_RF(model):
 
 if __name__ == '__main__':
     model = models.resnet18(pretrained=True)
-    _test_backward_conversion_inside_RF(model)
-#     _test_backward_conversion_outside_RF(model)
-#     _test_forward_conversion() TODO: finish implementing this test
+    # _test_backward_conversion_inside_RF(model)
+    # _test_backward_conversion_outside_RF(model)
+    # _test_forward_conversion() TODO: finish implementing this test
 
 
 #######################################.#######################################
@@ -605,7 +615,7 @@ def get_rf_sizes(model, image_shape, layer_type=nn.Conv2d):
 
 if __name__ == '__main__':
     model = models.resnet18()
-    layer_indices, rf_sizes = get_rf_sizes(model, (227, 227))
+    layer_indices, rf_sizes = get_rf_sizes(model, (999, 999))
     print(layer_indices)
     print(rf_sizes)
 
@@ -758,11 +768,11 @@ def xn_to_center_rf(model, image_size=(227, 227)):
             sys.stdout.flush()
             
             xn += 1
-            # xn cannot exceed image_size.
-            if xn >= max(image_size):
-                break
-            
-            dummy_input = torch.rand((1, 3, xn, xn)).to(c.DEVICE)
+            # # xn cannot exceed image_size.
+            # if xn >= max(image_size):
+            #     break
+
+            dummy_input = torch.zeros((1, 3, xn, xn)).to(c.DEVICE)
             y = truncated_model(dummy_input)
             yc, xc = calculate_center(y.shape[-2:])
             center_response_before = y[0, 0, yc, xc].item()
@@ -789,4 +799,4 @@ if __name__ == '__main__':
     # model = models.alexnet(pretrained=True)
     model = models.resnet18(pretrained=True)
     # model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1)
-    print(xn_to_center_rf(model))
+    print(xn_to_center_rf(model, image_size=(999,999)))

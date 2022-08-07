@@ -903,7 +903,7 @@ if __name__ == '__main__':
 #                                                                             #
 ###############################################################################
 def make_rfmp4a_grid_pdf(pdf_path, model):
-    xn_list = xn_to_center_rf(model)  # Get the xn just big enough.
+    xn_list = xn_to_center_rf(model, image_size=(999,999))  # Get the xn just big enough.
     img_size = 227
     layer_indices, max_rfs = get_rf_sizes(model, (img_size, img_size), layer_type=nn.Conv2d)
     num_layers = len(max_rfs)
@@ -963,7 +963,7 @@ def make_rfmp4a_grid_pdf(pdf_path, model):
 
 # Generate a RFMP4a grid pdf for AlexNet
 if __name__ == "__main__":
-    model = models.alexnet()
-    # model = models.vgg16()
-    pdf_path = os.path.join(c.REPO_DIR,'results','rfmp4a','mapping','test','alexnet_test_grid.pdf')
+    model = models.resnet18()
+    model_name = 'resnet18'
+    pdf_path = os.path.join(c.REPO_DIR,'results','rfmp4a','mapping', model_name,f'{model_name}_test_grid.pdf')
     make_rfmp4a_grid_pdf(pdf_path, model)
