@@ -737,10 +737,10 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
     result_dir - directories to save the npy, txt, and pdf files.\n
     _debug     - if true, only run the first 10 units of every layer.
     """
-    xn_list = xn_to_center_rf(model)  # Get the xn just big enough.
+    xn_list = xn_to_center_rf(model, image_size=(999, 999))  # Get the xn just big enough.
     unit_counter = ConvUnitCounter(model)
     layer_indices, nums_units = unit_counter.count()
-    _, max_rfs = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
+    _, max_rfs = get_rf_sizes(model, (999, 999), layer_type=nn.Conv2d)
 
     # Set paths
     tb1_path = os.path.join(result_dir, f"{model_name}_rfmp4a_tb1.txt")

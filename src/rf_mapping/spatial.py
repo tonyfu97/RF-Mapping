@@ -762,7 +762,7 @@ def xn_to_center_rf(model, image_size=(227, 227)):
 
         # If response before and after perturbation are identical, the unit
         # RF is centered.
-        while(center_response_before != center_response_after):
+        while(not math.isclose(center_response_before, center_response_after)):
             sys.stdout.write('\r')
             sys.stdout.write(f"Searching appropriate xn for conv{conv_i+1}, xn = {xn}...")
             sys.stdout.flush()
