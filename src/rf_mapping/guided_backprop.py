@@ -9,12 +9,16 @@ import torch.nn as nn
 import torch.fx as fx
 from torchvision import models
 import torch.nn.functional as F
+import matplotlib.pyplot as plt
 
 sys.path.append('../..')
 from src.rf_mapping.hook import SizeInspector
-from src.rf_mapping.image import preprocess_img_to_tensor, preprocess_img_for_plot
+from src.rf_mapping.spatial import get_rf_sizes, SpatialIndexConverter
 import src.rf_mapping.constants as c
 from src.rf_mapping.net import get_truncated_model
+from src.rf_mapping.image import (preprocess_img_to_tensor,
+                                  preprocess_img_for_plot,
+                                  make_box,)
 
 
 #######################################.#######################################
@@ -41,7 +45,7 @@ class GuidedBackprop:
         self._register_hook_to_first_layer(self.model)
         self._update_relus(self.model)
         
-    def _first_hook_function(self, module, grad_in, grad_out):  
+    def _first_hook_function(self, module, grad_in, grad_out):
         self.gradients = grad_in[0]
         # [0] bc we are only interested in one unit at a time, so grad_in
         # will be a tuple of size 1.
@@ -187,3 +191,86 @@ if __name__ == "__main__":
     plt.subplot(1, 2, 2)
     plt.imshow(preprocess_img_for_plot(gbp_map))
     plt.show()
+
+
+#######################################.#######################################
+#                                                                             #
+#                             TEST_GUIDED_BACKPROP                            #
+#                                                                             #
+###############################################################################
+def _test_guided_backprop():
+    model = models.resnet18(pretrained=True)
+    unit_idx = 1
+    image_size = (227, 227)
+    layer_indices, rf_sizes = get_rf_sizes(model, image_size, nn.Conv2d)
+
+    output_sizes = SizeInspector(model, image_size).output_sizes
+    converter = SpatialIndexConverter(model, image_size)
+
+    img_idx = 5
+    img_path = os.path.join(c.REPO_DIR, img_dir, f"{img_idx}.npy")
+    img = np.load(img_path)
+    dummy_img = preprocess_img_for_plot(img)
+
+    def img_proc(img):
+        vmax = img.max()
+        vmin = img.min()
+        img = (img - vmin)/(vmax - vmin)
+        return np.transpose(img, (1,2,0))
+    
+    for conv_i, layer_idx in enumerate(layer_indices):
+        output_size = output_sizes[layer_idx][-1]
+        rf_size = rf_sizes[conv_i][0]
+        spatial_idx = ((output_size-1)//2, (output_size-1)//2)
+
+        gbp = GuidedBackprop(model, layer_idx)
+        gbp_map = gbp.generate_gradients(dummy_img, unit_idx, spatial_idx)
+        
+        box = converter.convert(spatial_idx, layer_idx, 0, is_forward=False)
+        
+        plt.figure(figsize=(10, 5))
+        plt.suptitle(f"guided backprop of conv{conv_i+1} (RF = {rf_size}, output_size = {output_size})")
+
+        plt.subplot(1,2,1)
+        plt.imshow(img_proc(gbp_map))
+        plt.title(f"array of ones")
+        rect = make_box(box)
+        ax = plt.gca()
+        ax.add_patch(rect)
+
+        plt.subplot(1,2,2)
+        plt.imshow((gbp_map != 0)[0], cmap='gray')
+        plt.title(f"binarized (non-zeros = white)")
+        rect = make_box(box)
+        ax = plt.gca()
+        ax.add_patch(rect)
+        
+        plt.grid()
+        plt.show()
+
+
+if __name__ == "__main__":
+    _test_guided_backprop()
+
+"""
+Test observations:
+
+(1) When the input image is an array of ones, i.e., 
+                dummy_img = torch.ones((1,3,227,227))
+    the binarized gradient maps show that non-zero gradients are distributed at
+    the top-left corner of the RF and failed to fill the entire RF. Instead,
+    the area of the non-zero gradient is roughly equal to the RF of an early
+    layer. This suggests that gradient calculations may systemically bias the
+    top-left. [Need math proof]
+
+(2) When the input image is natural, the non-zero gradients fill the entire
+    RF.
+
+(3) When the RF of the unit is close to or larger than the image size, the left
+    and upper edge of the RF is often cropped off. This is because many of
+    those layers (e.g. conv16-20 of resnet18) have a feature map size that is
+    an even number. For exmample, the center unit of the feature map size of
+    8 is (8 - 1)//2 = 3, a little bit to the left of the actual center, and
+    since the RF is so large in deeper layers, a little bit off-center will
+    result in a big shift from the actual center on the image.
+"""

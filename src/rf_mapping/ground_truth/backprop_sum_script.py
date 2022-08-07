@@ -23,15 +23,15 @@ from src.rf_mapping.files import delete_all_npy_files
 import src.rf_mapping.constants as c
 
 # Please specify some details here:
-# model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1).to(c.DEVICE)
-# model_name = "alexnet"
+model = models.alexnet(pretrained=True).to(c.DEVICE)
+model_name = "alexnet"
 # model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
 # model_name = "vgg16"
-model = models.resnet18(pretrained=True).to(c.DEVICE)
-model_name = "resnet18"
+# model = models.resnet18(pretrained=True).to(c.DEVICE)
+# model_name = "resnet18"
 sum_modes = ['abs', 'sqr']
 top_n = 100
-this_is_a_test_run = False
+this_is_a_test_run = True
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR
@@ -101,7 +101,7 @@ def get_grad_patch(img, layer_idx, unit_i, spatial_idx, rf_size):
     grad_map = grad_method.generate_gradients(img, unit_i, spatial_idx)
     grad_patch = grad_map[:, vx_min:vx_max+1, hx_min:hx_max+1]
     
-    # Get rid of color channel.
+    # Average over the color channels.
     grad_patch = np.mean(grad_patch, axis=0)
     
     grad_patch_padded = one_sided_zero_pad(grad_patch, rf_size,

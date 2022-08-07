@@ -6,7 +6,9 @@ presented in model.children().
 
 Tony Fu, Aug 4th, 2022
 """
+from os import truncate
 import sys
+import copy
 
 import torch
 import torch.fx as fx
@@ -44,6 +46,7 @@ def get_truncated_model(model, layer_index):
     model_to_conv2 = get_truncated_model(model, 3)
     y = model(torch.ones(1,3,200,200))
     """
+    model = copy.deepcopy(model)
     graph = fx.Tracer().trace(model.eval())
     new_graph = fx.Graph()
     layer_counter = 0
@@ -121,6 +124,7 @@ def make_graph(truncated_model):
     """
     # Make sure that the truncated_model is a GraphModule. 
     if not isinstance(truncated_model, fx.graph_module.GraphModule):
+        truncated_model = copy.deepcopy(truncated_model)
         graph = fx.Tracer().trace(truncated_model.eval())
         truncated_model = fx.GraphModule(truncated_model, graph)
 

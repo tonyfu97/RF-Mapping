@@ -21,14 +21,14 @@ import src.rf_mapping.constants as c
 
 
 # Please specify some details here:
-# model = models.alexnet()
-# model_name = "alexnet"
+model = models.alexnet()
+model_name = "alexnet"
 # model = models.vgg16()
 # model_name = 'vgg16'
-model = models.resnet18()
-model_name = 'resnet18'
+# model = models.resnet18()
+# model_name = 'resnet18'
 sum_modes = ['abs', 'sqr']
-this_is_a_test_run = False
+this_is_a_test_run = True
 
 # Please double-check the directories:
 backprop_sum_dir = c.REPO_DIR + f'/results/ground_truth/backprop_sum/{model_name}'
@@ -40,6 +40,9 @@ pdf_dir = backprop_sum_dir
 conv_counter = ConvUnitCounter(model)
 layer_indices, nums_units = conv_counter.count()
 num_layers = len(layer_indices)
+
+if this_is_a_test_run:
+    sum_modes = ['test']
 
 for sum_mode in sum_modes:
     backprop_sum_dir_with_modes = os.path.join(backprop_sum_dir, sum_mode)

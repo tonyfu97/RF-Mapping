@@ -741,6 +741,9 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
     unit_counter = ConvUnitCounter(model)
     layer_indices, nums_units = unit_counter.count()
     _, max_rfs = get_rf_sizes(model, (999, 999), layer_type=nn.Conv2d)
+    # Note that the image sizes above are set to (999, 999). This change
+    # was made so that layers with RF larger than (227, 227) could be properly
+    # centered during bar mapping.
 
     # Set paths
     tb1_path = os.path.join(result_dir, f"{model_name}_rfmp4a_tb1.txt")
@@ -750,19 +753,20 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
     non_overlap_counts_path = os.path.join(result_dir, f"{model_name}_rfmp4a_non_overlap_counts.txt")
     
     # Delete previous files
-    delete_all_npy_files(result_dir)
-    if os.path.exists(tb1_path):
-        os.remove(tb1_path)
-    if os.path.exists(tb20_path):
-        os.remove(tb20_path)
-    if os.path.exists(tb100_path):
-        os.remove(tb100_path)
-    if os.path.exists(weighted_counts_path):
-        os.remove(weighted_counts_path)
-    if os.path.exists(non_overlap_counts_path):
-        os.remove(non_overlap_counts_path)
+    # delete_all_npy_files(result_dir)
+    # if os.path.exists(tb1_path):
+    #     os.remove(tb1_path)
+    # if os.path.exists(tb20_path):
+    #     os.remove(tb20_path)
+    # if os.path.exists(tb100_path):
+    #     os.remove(tb100_path)
+    # if os.path.exists(weighted_counts_path):
+    #     os.remove(weighted_counts_path)
+    # if os.path.exists(non_overlap_counts_path):
+    #     os.remove(non_overlap_counts_path)
     
     for conv_i in range(len(layer_indices)):
+        if conv_i < 16: continue
         layer_name = f"conv{conv_i + 1}"
         print(f"\n{layer_name}\n")
         # Get layer-specific info
@@ -782,7 +786,7 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
         # Present all bars to the model
         truncated_model = get_truncated_model(model, layer_idx)
         center_responses = barmap_run_01b(splist, truncated_model,
-                                          num_units, batch_size=100,
+                                          num_units, batch_size=10,
                                           _debug=_debug)
 
         # Append to txt files that summarize the top and bottom bars.
