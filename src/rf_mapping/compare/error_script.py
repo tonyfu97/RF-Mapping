@@ -20,10 +20,12 @@ from src.rf_mapping.result_txt_format import (GtGaussian as GT,
                                               Rfmp4aWeighted as W)
 
 # Please specify the model
-model = models.alexnet()
-model_name = 'alexnet'
+# model = models.alexnet()
+# model_name = 'alexnet'
 # model = models.vgg16()
 # model_name = 'vgg16'
+model = models.resnet18()
+model_name = 'resnet18'
 
 # Source directories
 gt_dir             = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'gaussian_fit')
@@ -176,7 +178,7 @@ def make_fxvar_pdf():
         plt.close()
 
 if __name__ == '__main__':
-    # make_fxvar_pdf()
+    make_fxvar_pdf()
     pass
 
 
@@ -203,7 +205,7 @@ def make_coords_pdf():
             num_units_total = len(gt_t_df.loc[(gt_t_df.LAYER == layer_name)])
             rf_size = rf_size[0]
             # limits=(-rf_size//2, rf_size//2)
-            limits = (-50, 50)
+            limits = (-200, 200)
 
             plt.figure(figsize=(30,10))
             plt.suptitle(f"Estimations of {model_name} {layer_name} RF center coordinates using different techniques (n = {num_units_total})", fontsize=20)
@@ -216,6 +218,8 @@ def make_coords_pdf():
             plt.scatter(xdata, ydata, alpha=0.4)
             plt.ylabel('y')
             plt.title(f'ground truth top (n = {num_units_included})')
+            ax = plt.gca()
+            ax.invert_yaxis()
 
             xdata = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'MUX']
             ydata = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'MUY']
@@ -226,6 +230,8 @@ def make_coords_pdf():
             plt.xlabel('x')
             plt.ylabel('y')
             plt.title(f'ground truth bot (n = {num_units_included})')
+            ax = plt.gca()
+            ax.invert_yaxis()
 
             xdata = tb1_df.loc[(tb1_df.LAYER == layer_name), 'TOP_X']
             ydata = tb1_df.loc[(tb1_df.LAYER == layer_name), 'TOP_Y']
@@ -236,6 +242,8 @@ def make_coords_pdf():
             config_plot(limits)
             plt.scatter(xdata + xnoise, ydata + ynoise, alpha=0.4)
             plt.title(f'top bar (n = {num_units_included}, with noise)')
+            ax = plt.gca()
+            ax.invert_yaxis()
 
             xdata = tb1_df.loc[(tb1_df.LAYER == layer_name), 'BOT_X']
             ydata = tb1_df.loc[(tb1_df.LAYER == layer_name), 'BOT_Y']
@@ -247,6 +255,8 @@ def make_coords_pdf():
             plt.scatter(xdata + xnoise, ydata + ynoise, alpha=0.4)
             plt.xlabel('x')
             plt.title(f'bottom bar (n = {num_units_included}, with noise)')
+            ax = plt.gca()
+            ax.invert_yaxis()
 
             xdata = tb20_df.loc[(tb20_df.LAYER == layer_name), 'TOP_MUX']
             ydata = tb20_df.loc[(tb20_df.LAYER == layer_name), 'TOP_MUY']
@@ -255,6 +265,8 @@ def make_coords_pdf():
             config_plot(limits)
             plt.scatter(xdata, ydata, alpha=0.4)
             plt.title(f'avg of top 20 bars (n = {num_units_included})')
+            ax = plt.gca()
+            ax.invert_yaxis()
 
             xdata = tb20_df.loc[(tb20_df.LAYER == layer_name), 'BOT_MUX']
             ydata = tb20_df.loc[(tb20_df.LAYER == layer_name), 'BOT_MUY']
@@ -264,6 +276,8 @@ def make_coords_pdf():
             plt.scatter(xdata, ydata, alpha=0.4)
             plt.xlabel('x')
             plt.title(f'avg of bottom 20 bars (n = {num_units_included})')
+            ax = plt.gca()
+            ax.invert_yaxis()
 
             xdata = tb100_df.loc[(tb100_df.LAYER == layer_name), 'TOP_MUX']
             ydata = tb100_df.loc[(tb100_df.LAYER == layer_name), 'TOP_MUY']
@@ -272,6 +286,8 @@ def make_coords_pdf():
             config_plot(limits)
             plt.scatter(xdata, ydata, alpha=0.4)
             plt.title(f'avg of top 100 bars (n = {num_units_included})')
+            ax = plt.gca()
+            ax.invert_yaxis()
 
             xdata = tb100_df.loc[(tb100_df.LAYER == layer_name), 'BOT_MUX']
             ydata = tb100_df.loc[(tb100_df.LAYER == layer_name), 'BOT_MUY']
@@ -281,6 +297,8 @@ def make_coords_pdf():
             plt.scatter(xdata, ydata, alpha=0.4)
             plt.xlabel('x')
             plt.title(f'avg of bottom 100 bars (n = {num_units_included})')
+            ax = plt.gca()
+            ax.invert_yaxis()
 
             xdata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_X']
             ydata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_Y']
@@ -289,6 +307,8 @@ def make_coords_pdf():
             config_plot(limits)
             plt.scatter(xdata, ydata, alpha=0.4)
             plt.title(f'non overlap bar maps (top, n = {num_units_included})')
+            ax = plt.gca()
+            ax.invert_yaxis()
 
             xdata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'BOT_X']
             ydata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'BOT_Y']
@@ -298,6 +318,8 @@ def make_coords_pdf():
             plt.scatter(xdata, ydata, alpha=0.4)
             plt.xlabel('x')
             plt.title(f'non overlap bar maps(bottom, n = {num_units_included})')
+            ax = plt.gca()
+            ax.invert_yaxis()
 
             xdata = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres), 'MUX']
             ydata = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres), 'MUY']
@@ -306,6 +328,8 @@ def make_coords_pdf():
             config_plot(limits)
             plt.scatter(xdata, ydata, alpha=0.4)
             plt.title(f'weighted bar maps (top, n = {num_units_included})')
+            ax = plt.gca()
+            ax.invert_yaxis()
 
             xdata = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres), 'MUX']
             ydata = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres), 'MUY']
@@ -315,12 +339,14 @@ def make_coords_pdf():
             plt.scatter(xdata, ydata, alpha=0.4)
             plt.xlabel('x')
             plt.title(f'weighted bar maps (bottom, n = {num_units_included})')
+            ax = plt.gca()
+            ax.invert_yaxis()
         
             pdf.savefig()
             plt.close()
 
 if __name__ == '__main__':
-    # make_coords_pdf()
+    make_coords_pdf()
     pass
 
 
@@ -426,7 +452,7 @@ def make_radius_pdf():
 
 
 if __name__ == '__main__':
-    # make_radius_pdf()
+    make_radius_pdf()
     pass
 
 
@@ -460,6 +486,7 @@ def make_ori_pdf():
             ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
             ax = plt.subplot(221, projection='polar')
             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
+            ax.scatter(-layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
             plt.ylim(ylim)
             plt.title(f'ground truth top (n = {num_units_included})')
             plt.text(5, 0.2, 'eccentricity')
@@ -469,6 +496,7 @@ def make_ori_pdf():
             ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
             ax = plt.subplot(223, projection='polar')
             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
+            ax.scatter(-layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
             plt.ylim(ylim)
             plt.title(f'ground truth bottom (n = {num_units_included})')
             plt.text(5, 0.2, 'eccentricity')
@@ -478,6 +506,7 @@ def make_ori_pdf():
             ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
             ax = plt.subplot(222, projection='polar')
             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
+            ax.scatter(-layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
             plt.ylim(ylim)
             plt.title(f'weighted map (top, n = {num_units_included})')
             plt.text(5, 0.2, 'eccentricity')
@@ -487,6 +516,7 @@ def make_ori_pdf():
             ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
             ax = plt.subplot(224, projection='polar')
             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
+            ax.scatter(-layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
             plt.ylim(ylim)
             plt.title(f'weighted map (bottom, n = {num_units_included})')
             plt.text(5, 0.2, 'eccentricity')
@@ -522,7 +552,7 @@ def make_error_coords_pdf():
             # Get some layer-specific information.
             layer_name = f'conv{conv_i+1}'
             num_units_total = len(gt_t_df.loc[(gt_t_df.LAYER == layer_name)])
-            limits = (-50, 50)
+            limits = (-200, 200)
 
             gt_xdata = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'MUX']
             gt_ydata = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'MUY']
@@ -752,7 +782,7 @@ def make_error_coords_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_error_coords_pdf()
+    make_error_coords_pdf()
     pass
 
 
@@ -898,7 +928,7 @@ def make_error_radius_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_error_radius_pdf()
+    make_error_radius_pdf()
     pass    
 
 
@@ -908,81 +938,81 @@ if __name__ == '__main__':
 #                                                                             #
 ###############################################################################
 
-def config_plot(limits):
-    line = np.linspace(min(limits), max(limits), 100)
-    plt.plot(line, line, 'k', alpha=0.4)
-    plt.xlim(limits)
-    plt.ylim(limits)
-    ax = plt.gca()
-    ax.set_aspect('equal')
+# def config_plot(limits):
+#     line = np.linspace(min(limits), max(limits), 100)
+#     plt.plot(line, line, 'k', alpha=0.4)
+#     plt.xlim(limits)
+#     plt.ylim(limits)
+#     ax = plt.gca()
+#     ax.set_aspect('equal')
 
-def delta_ori(ori_1, ori_2):
-    # Note: this function assumes 0 <= ori < 180.
-    theta_small = np.minimum(ori_1, ori_2)
-    theta_large = np.maximum(ori_1, ori_2)
-    # Because angles wraps around 0 and 180 deg, we need to consider two cases:
-    delta_theta_a = theta_large - theta_small
-    delta_theta_b = (theta_small + 180) - theta_large
-    return np.minimum(delta_theta_a, delta_theta_b)
+# def delta_ori(ori_1, ori_2):
+#     # Note: this function assumes 0 <= ori < 180.
+#     theta_small = np.minimum(ori_1, ori_2)
+#     theta_large = np.maximum(ori_1, ori_2)
+#     # Because angles wraps around 0 and 180 deg, we need to consider two cases:
+#     delta_theta_a = theta_large - theta_small
+#     delta_theta_b = (theta_small + 180) - theta_large
+#     return np.minimum(delta_theta_a, delta_theta_b)
 
-def make_error_ori_pdf():
-    pdf_path = os.path.join(result_dir, f"{model_name}_error_ori.pdf")
-    with PdfPages(pdf_path) as pdf:
-        for conv_i, rf_size in enumerate(rf_sizes):
-            # Get some layer-specific information.
-            layer_name = f'conv{conv_i+1}'
-            num_units_total = len(gt_t_df.loc[(gt_t_df.LAYER == layer_name)])
+# def make_error_ori_pdf():
+#     pdf_path = os.path.join(result_dir, f"{model_name}_error_ori.pdf")
+#     with PdfPages(pdf_path) as pdf:
+#         for conv_i, rf_size in enumerate(rf_sizes):
+#             # Get some layer-specific information.
+#             layer_name = f'conv{conv_i+1}'
+#             num_units_total = len(gt_t_df.loc[(gt_t_df.LAYER == layer_name)])
             
-            # Get ground truth data (top and bottom)
-            gt_data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres)]
-            gt_ecc = eccentricity(gt_data['SD1'], gt_data['SD2'])
-            gt_ori = gt_data['ORI']
-            gb_data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres)]
-            gb_ecc = eccentricity(gb_data['SD1'], gb_data['SD2'])
-            gb_ori = gb_data['ORI']
+#             # Get ground truth data (top and bottom)
+#             gt_data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres)]
+#             gt_ecc = eccentricity(gt_data['SD1'], gt_data['SD2'])
+#             gt_ori = gt_data['ORI']
+#             gb_data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres)]
+#             gb_ecc = eccentricity(gb_data['SD1'], gb_data['SD2'])
+#             gb_ori = gb_data['ORI']
 
-            plt.figure(figsize=(10,11))
-            plt.suptitle(f"Comparing {model_name} {layer_name} RF orientations of different techniques\n(n = {num_units_total})", fontsize=16)
+#             plt.figure(figsize=(10,11))
+#             plt.suptitle(f"Comparing {model_name} {layer_name} RF orientations of different techniques\n(n = {num_units_total})", fontsize=16)
 
-            layer_data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres)]
-            num_units_included = len(layer_data)
-            ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
-            ax = plt.subplot(221, projection='polar')
-            ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
-            plt.ylim([0, 1])
-            plt.title(f'ground truth top (n = {num_units_included})')
-            plt.text(5, 0.2, 'eccentricity')
+#             layer_data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres)]
+#             num_units_included = len(layer_data)
+#             ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
+#             ax = plt.subplot(221, projection='polar')
+#             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
+#             plt.ylim([0, 1])
+#             plt.title(f'ground truth top (n = {num_units_included})')
+#             plt.text(5, 0.2, 'eccentricity')
 
-            layer_data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres)]
-            num_units_included = len(layer_data)
-            ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
-            ax = plt.subplot(223, projection='polar')
-            ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
-            plt.ylim([0, 1])
-            plt.title(f'ground truth bottom (n = {num_units_included})')
-            plt.text(5, 0.2, 'eccentricity')
+#             layer_data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres)]
+#             num_units_included = len(layer_data)
+#             ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
+#             ax = plt.subplot(223, projection='polar')
+#             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
+#             plt.ylim([0, 1])
+#             plt.title(f'ground truth bottom (n = {num_units_included})')
+#             plt.text(5, 0.2, 'eccentricity')
 
-            layer_data = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres)]
-            num_units_included = len(layer_data)
-            ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
-            ax = plt.subplot(222, projection='polar')
-            ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
-            plt.ylim([0, 1])
-            plt.title(f'weighted map (top, n = {num_units_included})')
-            plt.text(5, 0.2, 'eccentricity')
+#             layer_data = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres)]
+#             num_units_included = len(layer_data)
+#             ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
+#             ax = plt.subplot(222, projection='polar')
+#             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
+#             plt.ylim([0, 1])
+#             plt.title(f'weighted map (top, n = {num_units_included})')
+#             plt.text(5, 0.2, 'eccentricity')
 
-            layer_data = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres)]
-            num_units_included = len(layer_data)
-            ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
-            ax = plt.subplot(224, projection='polar')
-            ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
-            plt.ylim([0, 1])
-            plt.title(f'weighted map (bottom, n = {num_units_included})')
-            plt.text(5, 0.2, 'eccentricity')
+#             layer_data = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres)]
+#             num_units_included = len(layer_data)
+#             ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
+#             ax = plt.subplot(224, projection='polar')
+#             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
+#             plt.ylim([0, 1])
+#             plt.title(f'weighted map (bottom, n = {num_units_included})')
+#             plt.text(5, 0.2, 'eccentricity')
 
-            pdf.savefig()
-            plt.close()
+#             pdf.savefig()
+#             plt.close()
 
-if __name__ == '__main__':
-    # make_error_ori_pdf()
-    pass
+# if __name__ == '__main__':
+#     # make_error_ori_pdf()
+#     pass

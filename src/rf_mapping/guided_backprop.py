@@ -239,8 +239,10 @@ def _test_guided_backprop():
         ax = plt.gca()
         ax.add_patch(rect)
 
+        print(gbp_map.shape)
+        print(gbp_map.max(), gbp_map.min())
         plt.subplot(1,2,2)
-        plt.imshow((gbp_map != 0)[0], cmap='gray')
+        plt.imshow((np.mean(gbp_map, axis=0) != 0), cmap='gray')
         plt.title(f"binarized (non-zeros = white)")
         rect = make_box(box)
         ax = plt.gca()

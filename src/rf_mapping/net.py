@@ -46,7 +46,7 @@ def get_truncated_model(model, layer_index):
     model_to_conv2 = get_truncated_model(model, 3)
     y = model(torch.ones(1,3,200,200))
     """
-    model = copy.deepcopy(model)
+    model = copy.deepcopy(model).to(c.DEVICE)
     graph = fx.Tracer().trace(model.eval())
     new_graph = fx.Graph()
     layer_counter = 0

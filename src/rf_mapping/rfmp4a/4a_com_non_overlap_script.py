@@ -10,7 +10,7 @@ import sys
 import numpy as np
 import torch.nn as nn
 from torchvision import models
-from torchvision.models import AlexNet_Weights, VGG16_Weights
+# from torchvision.models import AlexNet_Weights, VGG16_Weights
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -25,10 +25,12 @@ import src.rf_mapping.constants as c
 
 
 # Please specify some details here:
-model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)  # repeat for correct bar_count
-model_name = 'alexnet'
-# model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
-# model_name = 'vgg16'
+# model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)  # repeat for correct bar_count
+# model_name = 'alexnet'
+# # model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
+# # model_name = 'vgg16'
+model = models.resnet18(pretrained=True)
+model_name = 'resnet18'
 image_shape = (227, 227)
 this_is_a_test_run = False
 

@@ -34,14 +34,14 @@ else:
 
 ###############################################################################
 
-# # Script guard
-# if __name__ == "__main__":
-#     print("Look for a prompt.")
-#     user_input = input("This code may take time to run. Are you sure? [y/n] ")
-#     if user_input == 'y':
-#         pass
-#     else: 
-#         raise KeyboardInterrupt("Interrupted by user")
+# Script guard
+if __name__ == "__main__":
+    print("Look for a prompt.")
+    user_input = input("This code may take time to run. Are you sure? [y/n] ")
+    if user_input == 'y':
+        pass
+    else: 
+        raise KeyboardInterrupt("Interrupted by user")
 
 rfmp4a_run_01b(model, model_name, result_dir, _debug=this_is_a_test_run)
 
