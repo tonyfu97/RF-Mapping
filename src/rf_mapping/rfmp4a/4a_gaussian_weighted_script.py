@@ -33,7 +33,7 @@ import src.rf_mapping.constants as c
 model = models.resnet18(pretrained=True).to(c.DEVICE)
 model_name = "resnet18"
 image_shape = (227, 227)
-this_is_a_test_run = True
+this_is_a_test_run = False
 
 # Source paths:
 mapping_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', model_name)
