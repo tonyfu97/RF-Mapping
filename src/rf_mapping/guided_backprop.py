@@ -210,7 +210,8 @@ def _test_guided_backprop():
     img_idx = 5
     img_path = os.path.join(c.REPO_DIR, img_dir, f"{img_idx}.npy")
     img = np.load(img_path)
-    dummy_img = preprocess_img_for_plot(img)
+    # dummy_img = preprocess_img_for_plot(img)
+    dummy_img = np.random.rand(3,227,227)
 
     def img_proc(img):
         vmax = img.max()

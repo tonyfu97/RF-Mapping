@@ -10,7 +10,7 @@ import sys
 import numpy as np
 import torch.nn as nn
 from torchvision import models
-from torchvision.models import AlexNet_Weights, VGG16_Weights
+# from torchvision.models import AlexNet_Weights, VGG16_Weights
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
@@ -28,10 +28,12 @@ import src.rf_mapping.constants as c
 # Please specify some details here:
 # model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)
 # model_name = 'alexnet'
-model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
-model_name = 'vgg16'
+# model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
+# model_name = 'vgg16'
+model = models.resnet18(pretrained=True).to(c.DEVICE)
+model_name = "resnet18"
 image_shape = (227, 227)
-this_is_a_test_run = False
+this_is_a_test_run = True
 
 # Source paths:
 mapping_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', model_name)
@@ -48,13 +50,13 @@ bot_txt_path = os.path.join(result_dir, f"weighted_bot.txt")
 ###############################################################################
 
 # Script guard
-if __name__ == "__main__":
-    print("Look for a prompt.")
-    user_input = input("This code may take time to run. Are you sure? [y/n] ")
-    if user_input == 'y':
-        pass
-    else: 
-        raise KeyboardInterrupt("Interrupted by user")
+# if __name__ == "__main__":
+#     print("Look for a prompt.")
+#     user_input = input("This code may take time to run. Are you sure? [y/n] ")
+#     if user_input == 'y':
+#         pass
+#     else: 
+#         raise KeyboardInterrupt("Interrupted by user")
 
 # Delete previous files
 if os.path.exists(top_txt_path):
