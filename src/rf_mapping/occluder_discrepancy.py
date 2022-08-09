@@ -300,7 +300,7 @@ model_name = "vgg16"
 top_n = 5
 image_size = (227, 227)
 this_is_a_test_run = False
-batch_size = 200
+batch_size = 10
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR
