@@ -131,8 +131,8 @@ def get_occluder_params(box, rf_size):
     if (vx_max - vx_min + 1 > rf_size) or (hx_max - hx_min + 1 > rf_size):
         raise ValueError("The box should not be larger than RF_size.")
 
-    for i in np.arange(vx_min, max(vx_max-occluder_size+1, vx_min+1), occluder_stride):
-        for j in np.arange(hx_min, max(hx_max-occluder_size+1, hx_min+1), occluder_stride):
+    for i in np.arange(vx_min, max(vx_max-occluder_size+2, vx_min+1), occluder_stride):
+        for j in np.arange(hx_min, max(hx_max-occluder_size+2, hx_min+1), occluder_stride):
             occluder_params.append({'top_left' : (i, j), 
                                     'bottom_right' : (i+occluder_size-1, j+occluder_size-1)})
     return occluder_params
@@ -140,11 +140,12 @@ def get_occluder_params(box, rf_size):
 
 # Plot the occulder boxes.
 if __name__ == "__main__":
-    box = (10, 20, 19, 29)
+    box = (10, 20, 20, 30)
     occluder_params = get_occluder_params(box, 20)
     print(len(occluder_params))
     plt.ylim([5, 25])
     plt.xlim([15, 35])
+    plt.grid()
     ax = plt.gca()
     for occluder_param in occluder_params:
         occ_box = make_box((occluder_param['top_left'][0],
@@ -185,12 +186,12 @@ def add_discrepancy_maps(response_diff, occluder_params, discrepancy_maps, box,
     vx_min, hx_min, vx_max, hx_max = box
 
     if vx_min == 0:
-        v_offset = rf_size - (vx_max - vx_min) + vx_min
+        v_offset = rf_size - (vx_max - vx_min + 1) + vx_min
     else:
         v_offset = vx_min
     
     if hx_min == 0:
-        h_offset = rf_size - (hx_max - hx_min) + hx_min
+        h_offset = rf_size - (hx_max - hx_min + 1) + hx_min
     else:
         h_offset = hx_min
 
@@ -317,7 +318,6 @@ layer_indices, rf_sizes = get_rf_sizes(model, image_size)
 
 if __name__ == "__main__":
     for conv_i, layer_idx in enumerate(layer_indices):
-        if conv_i == 0: continue
         truncated_model = get_truncated_model(model, layer_idx)
         layer_name = f"conv{conv_i + 1}"
         index_path = os.path.join(index_dir, f"{layer_name}.npy")
@@ -338,7 +338,8 @@ if __name__ == "__main__":
             for ax_row in plt_axes:
                 for ax in ax_row:
                     ax_handles.append(ax)
-                    im_handles.append(ax.imshow(np.zeros((rf_size, rf_size)), vmin=0, vmax=1))
+                    im_handles.append(ax.imshow(np.zeros((rf_size, rf_size)),
+                                                vmin=0, vmax=1, cmap='gray'))
 
             for unit_i in tqdm(range(num_units)):
                 sys.stdout.write('\r')
@@ -378,5 +379,6 @@ if __name__ == "__main__":
                     im_handles[i+top_n].set_data(discrepancy_map/discrepancy_map.max())
                     ax_handles[i+top_n].set_title(f"bottom {i+1} image")
 
+                plt.show()
                 pdf.savefig(fig)
                 plt.close()
