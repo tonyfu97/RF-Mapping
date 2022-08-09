@@ -37,7 +37,6 @@ Tony Fu, Aug 5, 2022
 """
 import os
 import sys
-from unittest import result
 
 import numpy as np
 import torch
@@ -49,7 +48,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 sys.path.append('../..')
 from src.rf_mapping.hook import ConvUnitCounter
-from src.rf_mapping.image import preprocess_img_for_plot, make_box, preprocess_img_to_tensor
+from src.rf_mapping.image import make_box, preprocess_img_to_tensor
 from src.rf_mapping.spatial import SpatialIndexConverter, get_rf_sizes
 from src.rf_mapping.net import get_truncated_model
 import src.rf_mapping.constants as c
@@ -250,7 +249,7 @@ def get_discrepancy_map(img, occluder_params, truncated_model, rf_size,
         of the response to original image and the occluded image.
     """
     img_tensor = preprocess_img_to_tensor(img)
-    with torch.no_grad():
+    with torch.no_grad():  # turn off gradient calculations for speed.
         y = truncated_model(img_tensor)
     yc, xc = np.unravel_index(spatial_index, y.shape[-2:])
     original_response = y[:, unit_i, yc, xc].cpu().detach().numpy()

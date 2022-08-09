@@ -7,6 +7,7 @@ import os
 import sys
 
 import numpy as np
+import torch
 import torch.nn as nn
 # from torchvision.models import VGG16_Weights
 from torchvision import models
@@ -91,7 +92,9 @@ class ConvMaxMinInspector(HookFunctionBase):
         """
         if isinstance(image, np.ndarray):
             image = preprocess_img_to_tensor(image)
-        _ = self.model(image)
+        
+        with torch.no_grad():  # turn off gradient calculations for speed.
+            _ = self.model(image)
         
         # Make copies of the list attributes and set them to empty lists before
         # returning them. Otherwise, they would use up too much memory.

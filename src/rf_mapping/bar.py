@@ -442,7 +442,8 @@ def barmap_run_01b(splist, truncated_model, num_units, batch_size=100, _debug=Fa
             bar_batch[i, 2] = new_bar
 
         # Present the patch of bars to the truncated model.
-        y = truncated_model(torch.tensor(bar_batch).type('torch.FloatTensor').to(c.DEVICE))
+        with torch.no_grad():  # turn off gradient calculations for speed.
+            y = truncated_model(torch.tensor(bar_batch).type('torch.FloatTensor').to(c.DEVICE))
         yc, xc = calculate_center(y.shape[-2:])
         center_responses[bar_i:bar_i+real_batch_size, :] = y[:, :, yc, xc].detach().cpu().numpy()
         bar_i += real_batch_size
@@ -753,17 +754,17 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
     non_overlap_counts_path = os.path.join(result_dir, f"{model_name}_rfmp4a_non_overlap_counts.txt")
     
     # Delete previous files
-    # delete_all_npy_files(result_dir)
-    # if os.path.exists(tb1_path):
-    #     os.remove(tb1_path)
-    # if os.path.exists(tb20_path):
-    #     os.remove(tb20_path)
-    # if os.path.exists(tb100_path):
-    #     os.remove(tb100_path)
-    # if os.path.exists(weighted_counts_path):
-    #     os.remove(weighted_counts_path)
-    # if os.path.exists(non_overlap_counts_path):
-    #     os.remove(non_overlap_counts_path)
+    delete_all_npy_files(result_dir)
+    if os.path.exists(tb1_path):
+        os.remove(tb1_path)
+    if os.path.exists(tb20_path):
+        os.remove(tb20_path)
+    if os.path.exists(tb100_path):
+        os.remove(tb100_path)
+    if os.path.exists(weighted_counts_path):
+        os.remove(weighted_counts_path)
+    if os.path.exists(non_overlap_counts_path):
+        os.remove(non_overlap_counts_path)
     
     for conv_i in range(len(layer_indices)):
         if conv_i < 16: continue

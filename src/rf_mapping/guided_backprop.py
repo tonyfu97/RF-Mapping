@@ -6,7 +6,6 @@ import warnings
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.fx as fx
 from torchvision import models
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
