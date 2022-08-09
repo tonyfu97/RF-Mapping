@@ -37,6 +37,7 @@ Tony Fu, Aug 5, 2022
 """
 import os
 import sys
+from unittest import result
 
 import numpy as np
 import torch
@@ -45,7 +46,6 @@ from torchvision import models
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from tqdm import tqdm
 
 sys.path.append('../..')
 from src.rf_mapping.hook import ConvUnitCounter
@@ -100,7 +100,7 @@ if __name__ == "__main__":
 #                               OCCLUDER_PARMS                                #
 #                                                                             #
 ###############################################################################
-def get_occluder_params(box, rf_size):
+def get_occluder_params(box, rf_size, image_size):
     """
     Given an image, generate the random occluders in the patch, which is
     bounded by the box.
@@ -133,6 +133,10 @@ def get_occluder_params(box, rf_size):
 
     for i in np.arange(vx_min, max(vx_max-occluder_size+2, vx_min+1), occluder_stride):
         for j in np.arange(hx_min, max(hx_max-occluder_size+2, hx_min+1), occluder_stride):
+            # Skip if indexing out of range:
+            if (i+occluder_size-1 > image_size[0]-1) or (j+occluder_size-1 > image_size[1]-1):
+                continue
+
             occluder_params.append({'top_left' : (i, j), 
                                     'bottom_right' : (i+occluder_size-1, j+occluder_size-1)})
     return occluder_params
@@ -140,8 +144,8 @@ def get_occluder_params(box, rf_size):
 
 # Plot the occulder boxes.
 if __name__ == "__main__":
-    box = (10, 20, 20, 30)
-    occluder_params = get_occluder_params(box, 20)
+    box = (10, 19, 20, 29)
+    occluder_params = get_occluder_params(box, 20, (227,227))
     print(len(occluder_params))
     plt.ylim([5, 25])
     plt.xlim([15, 35])
@@ -326,6 +330,10 @@ if __name__ == "__main__":
         
         rf_size = rf_sizes[conv_i][0]
         num_units = nums_units[conv_i]
+        
+        # Array intializations
+        max_discrepancy_maps = np.zeros((top_n, num_units, rf_size, rf_size))
+        min_discrepancy_maps = np.zeros((top_n, num_units, rf_size, rf_size))
 
         pdf_path = os.path.join(result_dir, f"{layer_name}.pdf")
         with PdfPages(pdf_path) as pdf:
@@ -345,6 +353,7 @@ if __name__ == "__main__":
                 sys.stdout.write('\r')
                 sys.stdout.write(f"Making pdf for {layer_name} no.{unit_i}...")
                 sys.stdout.flush()
+                print()
 
                 fig.suptitle(f"{layer_name} unit no.{unit_i}", fontsize=20)
                 # Get top and bottom image indices and patch spatial indices
@@ -359,12 +368,13 @@ if __name__ == "__main__":
                     img_path = os.path.join(img_dir, f"{max_img_idx}.npy")
                     img = np.load(img_path)
                     box = converter.convert(max_patch_idx, layer_idx, 0, is_forward=False)
-                    occluder_params = get_occluder_params(box, rf_size)
+                    occluder_params = get_occluder_params(box, rf_size, image_size)
                     discrepancy_map = get_discrepancy_map(img, occluder_params, 
                                                           truncated_model, rf_size,
                                                           max_patch_idx, unit_i, batch_size=batch_size, _debug=this_is_a_test_run, image_size=image_size)
                     im_handles[i].set_data(discrepancy_map/discrepancy_map.max())
                     ax_handles[i].set_title(f"top {i+1} image")
+                    max_discrepancy_maps[i] = discrepancy_map
 
                 # Bottom N images and gradient patches:
                 for i, (min_img_idx, min_patch_idx) in enumerate(zip(min_n_img_indices,
@@ -372,13 +382,20 @@ if __name__ == "__main__":
                     img_path = os.path.join(img_dir, f"{min_img_idx}.npy")
                     img = np.load(img_path)
                     box = converter.convert(min_patch_idx, layer_idx, 0, is_forward=False)
-                    occluder_params = get_occluder_params(box, rf_size)
+                    occluder_params = get_occluder_params(box, rf_size, image_size)
                     discrepancy_map = get_discrepancy_map(img, occluder_params, 
                                                           truncated_model, rf_size,
                                                           min_patch_idx, unit_i, batch_size=batch_size, _debug=this_is_a_test_run, image_size=image_size)
                     im_handles[i+top_n].set_data(discrepancy_map/discrepancy_map.max())
                     ax_handles[i+top_n].set_title(f"bottom {i+1} image")
+                    min_discrepancy_maps[i] = discrepancy_map
 
                 plt.show()
                 pdf.savefig(fig)
                 plt.close()
+        
+        # Save the results in npy files.
+        max_map_path = os.path.join(result_dir, f'{layer_name}_max.npy')
+        min_map_path = os.path.join(result_dir, f'{layer_name}_min.npy')
+        np.save(max_map_path, max_discrepancy_maps)
+        np.save(min_map_path, min_discrepancy_maps)
