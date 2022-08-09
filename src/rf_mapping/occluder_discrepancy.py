@@ -299,7 +299,7 @@ model_name = "alexnet"
 # model_name = "resnet18"
 top_n = 5
 image_size = (227, 227)
-this_is_a_test_run = True
+this_is_a_test_run = False
 batch_size = 200
 
 # Please double-check the directories:
