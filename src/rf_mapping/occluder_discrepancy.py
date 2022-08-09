@@ -331,8 +331,6 @@ layer_indices, rf_sizes = get_rf_sizes(model, image_size)
 
 if __name__ == "__main__":
     for conv_i, layer_idx in enumerate(layer_indices):
-        if conv_i == 0: 
-            continue
         truncated_model = get_truncated_model(model, layer_idx)
         layer_name = f"conv{conv_i + 1}"
         index_path = os.path.join(index_dir, f"{layer_name}.npy")
