@@ -189,13 +189,16 @@ def add_discrepancy_maps(response_diff, occluder_params, discrepancy_maps, box,
     """
     vx_min, hx_min, vx_max, hx_max = box
 
+    # define the vertical and horizontal offset of the occluding box such that
+    # the box is between [0, rf_size - 1].
     if vx_min == 0:
-        v_offset = rf_size - (vx_max - vx_min + 1) + vx_min
+        v_offset = (vx_max - vx_min + 1) - rf_size + vx_min
+        # The offset is negative when the left side of the box is cropped off.
     else:
         v_offset = vx_min
-    
     if hx_min == 0:
-        h_offset = rf_size - (hx_max - hx_min + 1) + hx_min
+        h_offset = (hx_max - hx_min + 1) - rf_size + hx_min
+        # The offset is negative when the left side of the box is cropped off.
     else:
         h_offset = hx_min
 
@@ -256,8 +259,6 @@ def get_discrepancy_map(img, occluder_params, truncated_model, rf_size,
     discrepancy_map = np.zeros((rf_size, rf_size))
 
     while (occluder_i < num_stim):
-        if _debug and occluder_i > 200:
-            break
         sys.stdout.write('\r')
         sys.stdout.write(f"Presenting {occluder_i}/{num_stim} stimuli...")
         sys.stdout.flush()
@@ -277,7 +278,12 @@ def get_discrepancy_map(img, occluder_params, truncated_model, rf_size,
         y = y.cpu().detach().numpy()
         yc, xc = np.unravel_index(spatial_index, y.shape[-2:])
         response_diff = y[:, unit_i, yc, xc] - original_response
-        add_discrepancy_maps(response_diff,
+        if this_is_a_test_run:
+            # Skip some occluders for testing.
+            add_discrepancy_maps(response_diff,
+                                occluder_params[occluder_i:occluder_i+batch_size:5], discrepancy_map, box, rf_size)
+        else:
+            add_discrepancy_maps(response_diff,
                              occluder_params[occluder_i:occluder_i+batch_size], discrepancy_map, box, rf_size)
         occluder_i += real_batch_size
 
@@ -293,13 +299,16 @@ model_name = "alexnet"
 # model_name = "resnet18"
 top_n = 5
 image_size = (227, 227)
-this_is_a_test_run = False
+this_is_a_test_run = True
 batch_size = 200
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR
 index_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n', model_name)
-result_dir = os.path.join(c.REPO_DIR, 'results', 'occlude', 'mapping', 'test')
+if this_is_a_test_run:
+    result_dir = os.path.join(c.REPO_DIR, 'results', 'occlude', 'mapping', 'test')
+else:
+    result_dir = os.path.join(c.REPO_DIR, 'results', 'occlude', 'mapping', model_name)
 
 ###############################################################################
 
@@ -322,6 +331,8 @@ layer_indices, rf_sizes = get_rf_sizes(model, image_size)
 
 if __name__ == "__main__":
     for conv_i, layer_idx in enumerate(layer_indices):
+        if conv_i == 0: 
+            continue
         truncated_model = get_truncated_model(model, layer_idx)
         layer_name = f"conv{conv_i + 1}"
         index_path = os.path.join(index_dir, f"{layer_name}.npy")
@@ -350,6 +361,8 @@ if __name__ == "__main__":
                                                 vmin=0, vmax=1, cmap='gray'))
 
             for unit_i in tqdm(range(num_units)):
+                if this_is_a_test_run and unit_i > 2:
+                    continue
                 sys.stdout.write('\r')
                 sys.stdout.write(f"Making pdf for {layer_name} no.{unit_i}...")
                 sys.stdout.flush()
