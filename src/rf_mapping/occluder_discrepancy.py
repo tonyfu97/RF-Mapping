@@ -46,12 +46,12 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
-from rf_mapping.net import get_truncated_model
 
 sys.path.append('../..')
 from src.rf_mapping.hook import ConvUnitCounter
 from src.rf_mapping.image import preprocess_img_for_plot, make_box, preprocess_img_to_tensor
 from src.rf_mapping.spatial import SpatialIndexConverter, get_rf_sizes
+from src.rf_mapping.net import get_truncated_model
 import src.rf_mapping.constants as c
 
 
@@ -80,19 +80,19 @@ def draw_occluder(img_tensor, top_left, bottom_right):
     occluded_img_tensor : torch.tensor
         img but with random occluder at the specified location.
     """
-    occluded_img_tensor = img_tensor.copy()
+    occluded_img_tensor = img_tensor.clone().detach()
     occluder_size = (bottom_right[0] - top_left[0] + 1,
                      bottom_right[1] - top_left[1] + 1)
     occluder = (torch.rand(3, *occluder_size).to(c.DEVICE) * 2) - 1
-    occluded_img_tensor[:, top_left[0]:bottom_right[0]+1, top_left[1]:bottom_right[1]+1] = occluder
-    return occluded_img_tensor
+    occluded_img_tensor[0, :, top_left[0]:bottom_right[0]+1, top_left[1]:bottom_right[1]+1] = occluder
+    return occluded_img_tensor[0]
 
 
 # Plot an example occluder.
 if __name__ == "__main__":
-    img = torch.zeros((3, 5, 10))
+    img = torch.zeros((1, 3, 5, 10))
     occluded_img = draw_occluder(img, (0, 3), (3, 7))
-    plt.imshow(torch.transpose(occluded_img, (1,2,0)))
+    plt.imshow(np.transpose(occluded_img.numpy(), (1,2,0)))
 
 
 #######################################.#######################################
@@ -131,8 +131,8 @@ def get_occluder_params(box, rf_size):
     if (vx_max - vx_min + 1 > rf_size) or (hx_max - hx_min + 1 > rf_size):
         raise ValueError("The box should not be larger than RF_size.")
 
-    for i in np.arange(vx_min, max(vx_max-occluder_size, vx_min+1), occluder_stride):
-        for j in np.arange(hx_min, max(hx_max-occluder_size, hx_min+1), occluder_stride):
+    for i in np.arange(vx_min, max(vx_max-occluder_size+1, vx_min+1), occluder_stride):
+        for j in np.arange(hx_min, max(hx_max-occluder_size+1, hx_min+1), occluder_stride):
             occluder_params.append({'top_left' : (i, j), 
                                     'bottom_right' : (i+occluder_size-1, j+occluder_size-1)})
     return occluder_params
@@ -161,7 +161,7 @@ if __name__ == "__main__":
 #                                                                             #
 ###############################################################################
 def add_discrepancy_maps(response_diff, occluder_params, discrepancy_maps, box,
-                         rf_size, unit_i):
+                         rf_size):
     """
     Weighs the occluding area by the absolute difference between i-th unit's
     response to the original image and the occluded image. This function
@@ -181,8 +181,6 @@ def add_discrepancy_maps(response_diff, occluder_params, discrepancy_maps, box,
         occluders are going to be much smaller than this box.
     rf_size : int
         The theoretical side length of the square RF.
-    unit_i : int
-        The index of the unit.
     """
     vx_min, hx_min, vx_max, hx_max = box
 
@@ -206,8 +204,8 @@ def add_discrepancy_maps(response_diff, occluder_params, discrepancy_maps, box,
         occ_vx_max -= v_offset
         occ_hx_max -= h_offset
         
-        discrepancy_maps[unit_i, occ_vx_min:occ_vx_max+1, occ_hx_min:occ_hx_max+1] +=\
-                                                    np.abs(response_diff[occluder_i])
+        discrepancy_maps[occ_vx_min:occ_vx_max+1, occ_hx_min:occ_hx_max+1] +=\
+                                              np.abs(response_diff[occluder_i])
 
 
 #######################################.#######################################
@@ -239,7 +237,7 @@ def get_discrepancy_map(img, occluder_params, truncated_model, rf_size,
 
     Returns
     -------
-    discrepancy_map : numpy.ndarray [num_units, rf_size, rf_size]
+    discrepancy_map : numpy.ndarray [rf_size, rf_size]
         The sum of occluder area weighted by the absolute difference between
         of the response to original image and the occluded image.
     """
@@ -250,8 +248,7 @@ def get_discrepancy_map(img, occluder_params, truncated_model, rf_size,
 
     occluder_i = 0
     num_stim = len(occluder_params)
-    num_units = y.shape[1]
-    discrepancy_map = np.zeros((num_units, rf_size, rf_size))
+    discrepancy_map = np.zeros((rf_size, rf_size))
 
     while (occluder_i < num_stim):
         if _debug and occluder_i > 200:
@@ -274,8 +271,9 @@ def get_discrepancy_map(img, occluder_params, truncated_model, rf_size,
         y = truncated_model(occluder_batch)
         y = y.cpu().detach().numpy()
         yc, xc = np.unravel_index(spatial_index, y.shape[-2:])
-        responses_diff = y[:, unit_i, yc, xc] - original_response
-        add_discrepancy_maps(responses_diff, occluder_params, discrepancy_map, box, rf_size, unit_i)
+        response_diff = y[:, unit_i, yc, xc] - original_response
+        add_discrepancy_maps(response_diff,
+                             occluder_params[occluder_i:occluder_i+batch_size], discrepancy_map, box, rf_size)
         occluder_i += real_batch_size
 
     return discrepancy_map
@@ -291,7 +289,7 @@ model_name = "alexnet"
 top_n = 5
 image_size = (227, 227)
 this_is_a_test_run = False
-batch_size = 100
+batch_size = 200
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR
@@ -301,13 +299,13 @@ result_dir = os.path.join(c.REPO_DIR, 'results', 'occlude', 'mapping', 'test')
 ###############################################################################
 
 # Script guard
-if __name__ == "__main__":
-    print("Look for a prompt.")
-    user_input = input("This code may take hours to run. Are you sure? [y/n] ")
-    if user_input == 'y':
-        pass
-    else: 
-        raise KeyboardInterrupt("Interrupted by user")
+# if __name__ == "__main__":
+#     print("Look for a prompt.")
+#     user_input = input("This code may take hours to run. Are you sure? [y/n] ")
+#     if user_input == 'y':
+#         pass
+#     else: 
+#         raise KeyboardInterrupt("Interrupted by user")
 
 # Initiate helper objects.
 converter = SpatialIndexConverter(model, image_size)
@@ -319,6 +317,7 @@ layer_indices, rf_sizes = get_rf_sizes(model, image_size)
 
 if __name__ == "__main__":
     for conv_i, layer_idx in enumerate(layer_indices):
+        if conv_i == 0: continue
         truncated_model = get_truncated_model(model, layer_idx)
         layer_name = f"conv{conv_i + 1}"
         index_path = os.path.join(index_dir, f"{layer_name}.npy")
@@ -339,7 +338,7 @@ if __name__ == "__main__":
             for ax_row in plt_axes:
                 for ax in ax_row:
                     ax_handles.append(ax)
-                    im_handles.append(ax.imshow(np.zeros((*image_size, 3))))
+                    im_handles.append(ax.imshow(np.zeros((rf_size, rf_size)), vmin=0, vmax=1))
 
             for unit_i in tqdm(range(num_units)):
                 sys.stdout.write('\r')
@@ -363,7 +362,7 @@ if __name__ == "__main__":
                     discrepancy_map = get_discrepancy_map(img, occluder_params, 
                                                           truncated_model, rf_size,
                                                           max_patch_idx, unit_i, batch_size=batch_size, _debug=this_is_a_test_run, image_size=image_size)
-                    im_handles[i].set_data(discrepancy_map)
+                    im_handles[i].set_data(discrepancy_map/discrepancy_map.max())
                     ax_handles[i].set_title(f"top {i+1} image")
 
                 # Bottom N images and gradient patches:
@@ -376,7 +375,7 @@ if __name__ == "__main__":
                     discrepancy_map = get_discrepancy_map(img, occluder_params, 
                                                           truncated_model, rf_size,
                                                           min_patch_idx, unit_i, batch_size=batch_size, _debug=this_is_a_test_run, image_size=image_size)
-                    im_handles[i+top_n].set_data(discrepancy_map)
+                    im_handles[i+top_n].set_data(discrepancy_map/discrepancy_map.max())
                     ax_handles[i+top_n].set_title(f"bottom {i+1} image")
 
                 pdf.savefig(fig)

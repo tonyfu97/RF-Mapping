@@ -199,7 +199,8 @@ if __name__ == "__main__":
 #                                                                             #
 ###############################################################################
 def _test_guided_backprop():
-    model = models.resnet18(pretrained=True)
+    # model = models.resnet18(pretrained=True)
+    model = models.alexnet(pretrained=True)
     unit_idx = 1
     image_size = (227, 227)
     layer_indices, rf_sizes = get_rf_sizes(model, image_size, nn.Conv2d)
@@ -212,6 +213,7 @@ def _test_guided_backprop():
     img = np.load(img_path)
     # dummy_img = preprocess_img_for_plot(img)
     dummy_img = np.random.rand(3,227,227)
+    # dummy_img = np.ones((3, 227, 227)) * 100
 
     def img_proc(img):
         vmax = img.max()

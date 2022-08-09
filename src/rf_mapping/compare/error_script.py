@@ -95,7 +95,6 @@ fxvar_thres = 0.8
 #                              PDF NO.0 FXVAR                                 #
 #                                                                             #
 ###############################################################################
-
 def make_fxvar_pdf():
     gt_fxvar = []
     gb_fxvar = []
@@ -187,7 +186,6 @@ if __name__ == '__main__':
 #                       PDF NO.1 COORDINATES OF RF CENTERS                    #
 #                                                                             #
 ###############################################################################
-
 def config_plot(limits):
     plt.axhline(0, color=(0, 0, 0, 0.5))
     plt.axvline(0, color=(0, 0, 0, 0.5))
@@ -355,7 +353,6 @@ if __name__ == '__main__':
 #                              PDF NO.2 RF RADIUS                             #
 #                                                                             #
 ###############################################################################
-
 def geo_mean(sd1, sd2):
     return np.sqrt(np.power(sd1, 2) + np.power(sd2, 2))
 
@@ -461,7 +458,6 @@ if __name__ == '__main__':
 #                          PDF NO.3 RF ORIENTATION                            #
 #                                                                             #
 ###############################################################################
-
 def eccentricity(sd1, sd2):
     a = np.minimum(sd1, sd2)
     b = np.maximum(sd1, sd2)
@@ -791,7 +787,6 @@ if __name__ == '__main__':
 #                             PDF NO.5 ERROR RADIUS                           #
 #                                                                             #
 ###############################################################################
-
 def config_plot(limits):
     line = np.linspace(min(limits), max(limits), 100)
     plt.plot(line, line, 'k', alpha=0.4)
@@ -937,7 +932,6 @@ if __name__ == '__main__':
 #                          PDF NO.6 ERROR ORIENTATION                         #
 #                                                                             #
 ###############################################################################
-
 # def config_plot(limits):
 #     line = np.linspace(min(limits), max(limits), 100)
 #     plt.plot(line, line, 'k', alpha=0.4)
