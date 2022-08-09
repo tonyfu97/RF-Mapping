@@ -250,7 +250,8 @@ def get_discrepancy_map(img, occluder_params, truncated_model, rf_size,
         of the response to original image and the occluded image.
     """
     img_tensor = preprocess_img_to_tensor(img)
-    y = truncated_model(img_tensor)
+    with torch.no_grad():
+        y = truncated_model(img_tensor)
     yc, xc = np.unravel_index(spatial_index, y.shape[-2:])
     original_response = y[:, unit_i, yc, xc].cpu().detach().numpy()
 
@@ -291,10 +292,10 @@ def get_discrepancy_map(img, occluder_params, truncated_model, rf_size,
 
 
 # Please specify some details here:
-model = models.alexnet(pretrained=True).to(c.DEVICE)
-model_name = "alexnet"
-# model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
-# model_name = "vgg16"
+# model = models.alexnet(pretrained=True).to(c.DEVICE)
+# model_name = "alexnet"
+model = models.vgg16(pretrained=True).to(c.DEVICE)
+model_name = "vgg16"
 # model = models.resnet18(pretrained=True).to(c.DEVICE)
 # model_name = "resnet18"
 top_n = 5

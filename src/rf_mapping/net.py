@@ -47,7 +47,8 @@ def get_truncated_model(model, layer_index):
     y = model(torch.ones(1,3,200,200))
     """
     model = copy.deepcopy(model).to(c.DEVICE)
-    graph = fx.Tracer().trace(model.eval())
+    graph = fx.Tracer().trace(model.eval())  # Make sure to trace the eval() 
+                                             # version of the net.
     new_graph = fx.Graph()
     layer_counter = 0
     value_remap = {}
