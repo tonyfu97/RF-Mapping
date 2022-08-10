@@ -175,22 +175,22 @@ def stimfr_bar(xn, yn, x0, y0, theta, blen, bwid, aa, fgval, bgval):
 
 
 # Test
-if __name__ == "__main__":
-    xn = 200
-    yn = 300
-    # rotate test
-    for theta in np.linspace(0, 180, 8):
-        bar = stimfr_bar(xn, yn, 0, 0, theta, 100, 50, 1, 1, -1)
-        plt.imshow(bar, cmap='gray')
-        plt.title(f"theta = {theta:.2f}")
-        plt.show()
+# if __name__ == "__main__":
+#     xn = 200
+#     yn = 300
+#     # rotate test
+#     for theta in np.linspace(0, 180, 8):
+#         bar = stimfr_bar(xn, yn, 0, 0, theta, 100, 50, 1, 1, -1)
+#         plt.imshow(bar, cmap='gray')
+#         plt.title(f"theta = {theta:.2f}")
+#         plt.show()
 
-    # move from top to bottom
-    for y0 in np.linspace(-yn//2, yn//2, 5):
-        bar = stimfr_bar(xn, yn, 0, y0, 45, 80, 30, 2, 1, 0)
-        plt.imshow(bar, cmap='gray')
-        plt.title(f"y = {y0:.2f}")
-        plt.show()
+#     # move from top to bottom
+#     for y0 in np.linspace(-yn//2, yn//2, 5):
+#         bar = stimfr_bar(xn, yn, 0, y0, 45, 80, 30, 2, 1, 0)
+#         plt.imshow(bar, cmap='gray')
+#         plt.title(f"y = {y0:.2f}")
+#         plt.show()
         
 
 #######################################.#######################################
@@ -227,23 +227,35 @@ def stimfr_bar_color(xn,yn,x0,y0,theta,blen,bwid,aa,r1,g1,b1,r0,g0,b0):
 
 # Test
 if __name__ == '__main__':
-    xn = 200
-    yn = 240
-    colors = {'red':     (1, 0, 0),
-              'green':   (0, 1, 0),
-              'blue':    (0, 0, 1),
-              'yellow':  (1, 1, 0),
-              'magenta': (1, 0, 1),
-              'cyan':    (0, 1, 1),
-              'white':   (1, 1, 1),
-              'black':   (0, 0, 0)}
-    for color_name, (r1, g1, b1) in colors.items():
-        bar = stimfr_bar_color(xn, yn, 10, 0, 45, 80, 30, 2,
-                               r1, g1, b1,
-                               0.5, 0.5, 0.5)
-        plt.imshow(np.transpose(bar, (1,2,0)))
-        plt.title(color_name)
-        plt.show()
+    # xn = 20
+    # yn = 20
+    # colors = {'red':     (1, 0, 0),
+    #           'green':   (0, 1, 0),
+    #           'blue':    (0, 0, 1),
+    #           'yellow':  (1, 1, 0),
+    #           'magenta': (1, 0, 1),
+    #           'cyan':    (0, 1, 1),
+    #           'white':   (1, 1, 1),
+    #           'black':   (0, 0, 0)}
+    # for color_name, (r1, g1, b1) in colors.items():
+    #     bar = stimfr_bar_color(xn, yn, 0, 0, 40, 8, 3, 0.5,
+    #                            r1, g1, b1,
+    #                            0.5, 0.5, 0.5)
+
+    bar = stimfr_bar_color(15, 15, -4.125, -4.125, 20, 8.25, 4.125, 0.5,
+                            1, -1, 1, -1, 1, -1)
+    plt.imshow(np.transpose(bar, (1,2,0)))
+    plt.show()
+
+    bar = stimfr_bar_color(15, 15, -4.125, -4.125, 20, 8.25, 4.125, 0.5,
+                            1, -1, -1, -1, 1, 1)
+    plt.imshow(np.transpose(bar, (1,2,0)))
+    plt.show()
+
+    bar = stimfr_bar_color(15, 15, -4.125, -4.125, 20, 8.25, 4.125, 0.5,
+                           -1, 1, -1, -1, -1, 1)
+    plt.imshow(np.transpose(bar, (1,2,0)))
+    plt.show()
 
 
 #######################################.#######################################
@@ -299,6 +311,98 @@ def stim_dapp_bar_xyo_bw(splist,xn,xlist,orilist,blen,bwid,aa):
 
 #######################################.#######################################
 #                                                                             #
+#                            STIM_DAPP_BAR_XYO_RGB7O                          #
+#                                                                             #
+#  For each x, y and orientation in the lists,                                #
+#  creates dictionary entries for 14 color/BW conditions, 7 pairs in both     #
+#  ordering of foreground an background.                                      #
+#                                                                             #
+###############################################################################
+def stim_dapp_bar_xyo_rgb7o(splist,xn,xlist,orilist,blen,bwid,aa):
+    """
+    Parameters
+    ----------
+    splist  - stimulus parameter list - APPEND TO THIS LIST\n
+    xn      - horizontal and vertical image size\n
+    xlist   - list of x-coordinates (pix)\n
+    orilist - list of orientation values (degr)\n
+    blen    - Length of bar (pix)\n
+    bwid    - Width of bar (pix)\n
+    aa      - Anti-aliasing space constant (pix)
+    """
+    yn = xn        # Assuming image is square
+    ylist = xlist  # Use same coordinates for y grid locations
+    #print(xlist)   # Testing
+    
+    a0 = -1.0  # Amplitude low
+    a1 =  1.0  # Amplitude high
+    
+    # nstim = len(xlist) * len(ylist) * len(orilist) * 2
+    # print("  Creating ", nstim, " stimulus dictionary entries.")
+    
+    for i in xlist:
+        for j in ylist:
+            for o in orilist:
+                # 111 v 000          B&W
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
+                      "wid":bwid, "r1":a1, "g1":a1, "b1":a1,"r0":a0, "g0":a0, "b0":a0}
+                splist.append(tp)
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
+                      "wid":bwid, "r1":a0, "g1":a0, "b1":a0,"r0":a1, "g0":a1, "b0":a1}
+                splist.append(tp)
+                
+                # 100 v 010      red-green
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
+                      "wid":bwid, "r1":a1, "g1":a0, "b1":a0,"r0":a0, "g0":a1, "b0":a0}
+                splist.append(tp)
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
+                      "wid":bwid, "r1":a0, "g1":a1, "b1":a0,"r0":a1, "g0":a0, "b0":a0}
+                splist.append(tp)
+                
+                # 100 v 001      red-blue
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
+                      "wid":bwid, "r1":a1, "g1":a0, "b1":a0,"r0":a0, "g0":a0, "b0":a1}
+                splist.append(tp)
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
+                      "wid":bwid, "r1":a0, "g1":a0, "b1":a1,"r0":a1, "g0":a0, "b0":a0}
+                splist.append(tp)
+                
+                # 010 v 001      green-blue
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
+                      "wid":bwid, "r1":a0, "g1":a1, "b1":a0,"r0":a0, "g0":a0, "b0":a1}
+                splist.append(tp)
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
+                      "wid":bwid, "r1":a0, "g1":a0, "b1":a1,"r0":a0, "g0":a1, "b0":a0}
+                splist.append(tp)
+                
+                # 110 v 001     yellow-blue
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
+                      "wid":bwid, "r1":a1, "g1":a1, "b1":a0,"r0":a0, "g0":a0, "b0":a1}
+                splist.append(tp)
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
+                      "wid":bwid, "r1":a0, "g1":a0, "b1":a1,"r0":a1, "g0":a1, "b0":a0}
+                splist.append(tp)
+                
+                # 101 v 010    purple-green
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
+                      "wid":bwid, "r1":a1, "g1":a0, "b1":a1,"r0":a0, "g0":a1, "b0":a0}
+                splist.append(tp)
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
+                      "wid":bwid, "r1":a0, "g1":a1, "b1":a0,"r0":a1, "g0":a0, "b0":a1}
+                splist.append(tp)
+                
+                # 011 v 100    cyan-red
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
+                      "wid":bwid, "r1":a0, "g1":a1, "b1":a1,"r0":a1, "g0":a0, "b0":a0}
+                splist.append(tp)
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
+                      "wid":bwid, "r1":a1, "g1":a0, "b1":a0,"r0":a0, "g0":a1, "b0":a1}
+                splist.append(tp)
+
+
+
+#######################################.#######################################
+#                                                                             #
 #                             STIMSET_GRIDX_BARMAP                            #
 #                                                                             #
 #  Given a bar length and maximum RF size (both in pixels), return a list     #
@@ -322,7 +426,6 @@ def stimset_gridx_barmap(max_rf,blen):
     dx = blen / 2.0                       # Grid spacing is 1/2 of bar length
     xmax = round((max_rf/dx) / 2.0) * dx  # Max offset of grid point from center
     xlist = np.arange(-xmax,xmax+1,dx)
-
     return xlist
 
 
@@ -375,13 +478,58 @@ def stimset_dict_rfmp_4a(xn,max_rf):
             stim_dapp_bar_xyo_bw(splist,xn,xlist,orilist,bl,ar*bl,aa)
 
     # print("  Length of stimulus parameter list:",len(splist))
-
     return splist
 
 
-#  HERE IS AN EXAMPLE OF HOW TO CALL THE CODE ABOVE:
+# HERE IS AN EXAMPLE OF HOW TO CALL THE CODE ABOVE:
 if __name__ == "__main__":
     s = stimset_dict_rfmp_4a(11,11)
+
+
+#######################################.#######################################
+#                                                                             #
+#                            STIMSET_DICT_RFMP_4C7O                           #
+#                                                                             #
+#  Return the stimulus parameter dictionary with the appropriate entries      #
+#  for the entire stimulus set for RF mapping paradigm "4c7o".                #
+#                                                                             #
+###############################################################################
+def stimset_dict_rfmp_4c7o(xn,max_rf):
+    """
+    Parameters
+    ----------
+    xn     - stimulus image size (pix)\n
+    max_rf - maximum RF size (pix)
+    """
+    splist = []  # List of dictionary entries, one per stimulus image
+    
+    #  There are 4 bar lengths
+    barlen = np.array([48/64 * max_rf,    #  Array of bar lengths
+                       24/64 * max_rf,
+                       12/64 * max_rf,
+                        6/64 * max_rf])
+    
+    #  There are 3 aspect ratios
+    arat = np.array([1/2, 1/5, 1/10])   # Array of apsect ratios
+    
+    #  There are 16 orientations, even spaced around 360 deg starting at 0 deg
+    orilist = np.arange(0.0, 180.0, 22.5)
+    
+    #  This constant sets how much blurring occurs at the edges of the bars
+    aa =  0.5  # Antialias distance (pix)
+    
+    for bl in barlen:
+        xlist = stimset_gridx_barmap(max_rf,bl)
+        for ar in arat:
+            stim_dapp_bar_xyo_rgb7o(splist,xn,xlist,orilist,bl,ar*bl,aa)
+    
+    # print("  Length of stimulus parameter list:",len(splist))
+    return splist
+
+
+# HERE IS AN EXAMPLE OF HOW TO CALL THE CODE ABOVE:
+if __name__ == "__main__":
+    s = stimset_dict_rfmp_4c7o(79,51)
 
 
 #######################################.#######################################
@@ -403,7 +551,8 @@ def print_progress(text):
 #                                BARMAP_RUN_01b                               #
 #                                                                             #
 ###############################################################################
-def barmap_run_01b(splist, truncated_model, num_units, batch_size=100, _debug=False):
+def barmap_run_01b(splist, truncated_model, num_units, batch_size=100,
+                   _debug=False, has_color=False):
     """
     Presents bars and returns the center responses in array of dimension:
     [num_stim, num_units].
@@ -432,14 +581,25 @@ def barmap_run_01b(splist, truncated_model, num_units, batch_size=100, _debug=Fa
         # Create a batch of bars.
         for i in range(real_batch_size):
             params = splist[bar_i + i]
-            new_bar = stimfr_bar(params['xn'], params['yn'],
-                                 params['x0'], params['y0'],
-                                params['theta'], params['len'], params['wid'], 
-                                params['aa'], params['fgval'], params['bgval'])
-            # Replicate new bar to all color channel.
-            bar_batch[i, 0] = new_bar
-            bar_batch[i, 1] = new_bar
-            bar_batch[i, 2] = new_bar
+
+            if has_color:
+                new_bar = stimfr_bar_color(params['xn'], params['yn'],
+                                           params['x0'], params['y0'],
+                                           params['theta'],
+                                           params['len'], params['wid'], 
+                                           params['aa'],
+                                           params['r1'], params['g1'], params['b1'],
+                                           params['r0'], params['g0'], params['b0'])
+                bar_batch[i] = new_bar
+            else:
+                new_bar = stimfr_bar(params['xn'], params['yn'],
+                                     params['x0'], params['y0'],
+                                     params['theta'], params['len'], params['wid'], 
+                                     params['aa'], params['fgval'], params['bgval'])
+                # Replicate new bar to all color channel.
+                bar_batch[i, 0] = new_bar
+                bar_batch[i, 1] = new_bar
+                bar_batch[i, 2] = new_bar
 
         # Present the patch of bars to the truncated model.
         with torch.no_grad():  # turn off gradient calculations for speed.
@@ -507,7 +667,7 @@ def non_overlap_barmap(new_bar, sum_map, stim_thr):
 #                                                                             #
 ###############################################################################
 def make_barmaps(splist, center_responses, unit_i, response_thr=0.1,
-                 stim_thr=0.2, _debug=False):
+                 stim_thr=0.2, _debug=False, has_color=False):
     """
     Parameters
     ----------
@@ -526,10 +686,17 @@ def make_barmaps(splist, center_responses, unit_i, response_thr=0.1,
     """
     xn = splist[0]['xn']
     yn = splist[0]['yn']
-    weighted_max_map = np.zeros((yn, xn))
-    weighted_min_map = np.zeros((yn, xn))
-    non_overlap_max_map = np.zeros((yn, xn))
-    non_overlap_min_map = np.zeros((yn, xn))
+    
+    if has_color:
+        weighted_max_map = np.zeros((3, yn, xn))
+        weighted_min_map = np.zeros((3, yn, xn))
+        non_overlap_max_map = np.zeros((3, yn, xn))
+        non_overlap_min_map = np.zeros((3, yn, xn))
+    else:
+        weighted_max_map = np.zeros((yn, xn))
+        weighted_min_map = np.zeros((yn, xn))
+        non_overlap_max_map = np.zeros((yn, xn))
+        non_overlap_min_map = np.zeros((yn, xn))
 
     isort = np.argsort(center_responses[:, unit_i])  # Ascending
     r_max = center_responses[:, unit_i].max()
@@ -547,10 +714,21 @@ def make_barmaps(splist, center_responses, unit_i, response_thr=0.1,
     for max_bar_i in isort[::-1]:
         response = center_responses[max_bar_i, unit_i]
         params = splist[max_bar_i]
-        new_bar = stimfr_bar(params['xn'], params['yn'],
-                             params['x0'], params['y0'],
-                             params['theta'], params['len'], params['wid'],
-                             0.5, 1, 0)
+        # Note that the background color are set to 0, while the foreground
+        # values are always positive.
+        if has_color:
+            new_bar = stimfr_bar_color(params['xn'], params['yn'],
+                                        params['x0'], params['y0'],
+                                        params['theta'],
+                                        params['len'], params['wid'], 
+                                        params['aa'],
+                                        max(params['r1'], 0), max(params['g1'], 0), max(params['b1'], 0),
+                                        0, 0, 0)
+        else:
+            new_bar = stimfr_bar(params['xn'], params['yn'],
+                                params['x0'], params['y0'],
+                                params['theta'], params['len'], params['wid'],
+                                0.5, 1, 0)
         if response > abs(response_thr * r_max):
             has_included = non_overlap_barmap(new_bar, non_overlap_max_map, stim_thr)
             weighted_barmap(new_bar, weighted_max_map, max(response, 0))
@@ -563,10 +741,19 @@ def make_barmaps(splist, center_responses, unit_i, response_thr=0.1,
     for min_bar_i in isort:
         response = center_responses[min_bar_i, unit_i]
         params = splist[min_bar_i]
-        new_bar = stimfr_bar(params['xn'], params['yn'],
-                             params['x0'], params['y0'],
-                            params['theta'], params['len'], params['wid'],
-                            0.5, 1, 0) 
+        if has_color:
+            new_bar = stimfr_bar_color(params['xn'], params['yn'],
+                                        params['x0'], params['y0'],
+                                        params['theta'],
+                                        params['len'], params['wid'], 
+                                        params['aa'],
+                                        max(params['r1'], 0), max(params['g1'], 0), max(params['b1'], 0),
+                                        0, 0, 0)
+        else:
+            new_bar = stimfr_bar(params['xn'], params['yn'],
+                                params['x0'], params['y0'],
+                                params['theta'], params['len'], params['wid'],
+                                0.5, 1, 0) 
         if response < -abs(response_thr * r_min):
             has_included = non_overlap_barmap(new_bar, non_overlap_min_map, stim_thr)
             weighted_barmap(new_bar, weighted_min_map, abs(min(response, 0)))
@@ -601,7 +788,6 @@ def summarize_TB1(splist, center_responses, layer_name, txt_path):
     txt_path         - path name of the file, must end with '.txt'\n
     """
     num_units = center_responses.shape[1]  # shape = [stim, unit]
-
     with open(txt_path, 'a') as f:
         for unit_i in range(num_units):
             isort = np.argsort(center_responses[:, unit_i])  # Ascending
@@ -638,7 +824,6 @@ def summarize_TBn(splist, center_responses, layer_name, txt_path, top_n=20):
     top_n            - the top and bottom N bars to record.
     """
     num_units = center_responses.shape[1]  # shape = [stim, unit]
-
     with open(txt_path, 'a') as f:
         for unit_i in range(num_units):
             isort = np.argsort(center_responses[:, unit_i])  # Ascending
@@ -687,16 +872,17 @@ def make_map_pdf(max_maps, min_maps, pdf_path):
 
     Parameters
     ----------
-    maps     - maps with dimensions [unit_i, y, x].\n
+    maps     - maps with dimensions [unit_i, y, x] (black and white) or
+               [unit_i, y, x, rgb] (color)\n
     pdf_path - path name of the file, must end with '.pdf'\n
     """
-    _, yn, xn = max_maps.shape
+    yn, xn = max_maps.shape[1:3]
 
     with PdfPages(pdf_path) as pdf:
         fig, (ax1, ax2) = plt.subplots(1, 2)
         fig.set_size_inches(10, 5)
-        im1 = ax1.imshow(np.zeros((yn, xn, 3)), cmap='gray', vmax=1, vmin=0)
-        im2 = ax2.imshow(np.zeros((yn, xn, 3)), cmap='gray', vmax=1, vmin=0)
+        im1 = ax1.imshow(np.zeros((yn, xn, 3)), vmax=1, vmin=0) #, cmap='gray')
+        im2 = ax2.imshow(np.zeros((yn, xn, 3)), vmax=1, vmin=0) #, cmap='gray')
         for unit_i, (max_map, min_map) in enumerate(zip(max_maps, min_maps)):
             print_progress(f"Making pdf for unit {unit_i}...")
             fig.suptitle(f"no.{unit_i}", fontsize=20)
@@ -727,7 +913,7 @@ def make_map_pdf(max_maps, min_maps, pdf_path):
 #                                RFMP4a_RUN_01b                               #
 #                                                                             #
 ###############################################################################
-def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
+def rfmp4a_run_01b(model, model_name, result_dir, _debug=False, batch_size=10):
     """
     Map the RF of all conv layers in model using RF mapping paradigm 4a.
     
@@ -787,7 +973,7 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
         # Present all bars to the model
         truncated_model = get_truncated_model(model, layer_idx)
         center_responses = barmap_run_01b(splist, truncated_model,
-                                          num_units, batch_size=10,
+                                          num_units, batch_size=batch_size,
                                           _debug=_debug)
 
         # Append to txt files that summarize the top and bottom bars.
@@ -834,6 +1020,124 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False):
         make_map_pdf(weighted_max_maps, weighted_min_maps, weighted_pdf_path)
         non_overlap_pdf_path = os.path.join(result_dir, f"{layer_name}_non_overlap_barmaps.pdf")
         make_map_pdf(non_overlap_max_maps, non_overlap_min_maps, non_overlap_pdf_path)
+
+
+#######################################.#######################################
+#                                                                             #
+#                                RFMAP_TOP_4C7O                               #
+#                                                                             #
+###############################################################################
+def rfmp4c7o_run_01(model, model_name, result_dir, _debug=False, batch_size=100):
+    """
+    Map the RF of all conv layers in model using RF mapping paradigm 4c7o,
+    which is like paradigm 4a, but with 6 additional colors.
+    
+    Parameters
+    ----------
+    model      - neural network.\n
+    model_name - name of neural network. Used for txt file naming.\n
+    result_dir - directories to save the npy, txt, and pdf files.\n
+    _debug     - if true, only run the first 10 units of every layer.
+    """
+    xn_list = xn_to_center_rf(model, image_size=(999, 999))  # Get the xn just big enough.
+    unit_counter = ConvUnitCounter(model)
+    layer_indices, nums_units = unit_counter.count()
+    _, max_rfs = get_rf_sizes(model, (999, 999), layer_type=nn.Conv2d)
+    # Note that the image_size upper bounds are set to (999, 999). This change
+    # was made so that layers with RF larger than (227, 227) could be properly
+    # centered during bar mapping.
+
+    # Set paths
+    tb1_path = os.path.join(result_dir, f"{model_name}_rfmp4c7o_tb1.txt")
+    tb20_path = os.path.join(result_dir, f"{model_name}_rfmp4c7o_tb20.txt")
+    tb100_path = os.path.join(result_dir, f"{model_name}_rfmp4c7o_tb100.txt")
+    weighted_counts_path = os.path.join(result_dir, f"{model_name}_rfmp4c7o_weighted_counts.txt")
+    non_overlap_counts_path = os.path.join(result_dir, f"{model_name}_rfmp4c7o_non_overlap_counts.txt")
+    
+    # Delete previous files
+    delete_all_npy_files(result_dir)
+    if os.path.exists(tb1_path):
+        os.remove(tb1_path)
+    if os.path.exists(tb20_path):
+        os.remove(tb20_path)
+    if os.path.exists(tb100_path):
+        os.remove(tb100_path)
+    if os.path.exists(weighted_counts_path):
+        os.remove(weighted_counts_path)
+    if os.path.exists(non_overlap_counts_path):
+        os.remove(non_overlap_counts_path)
+    
+    for conv_i in range(len(layer_indices)):
+        layer_name = f"conv{conv_i + 1}"
+        print(f"\n{layer_name}\n")
+        # Get layer-specific info
+        xn = xn_list[conv_i]
+        layer_idx = layer_indices[conv_i]
+        num_units = nums_units[conv_i]
+        max_rf = max_rfs[conv_i][0]
+        splist = stimset_dict_rfmp_4c7o(xn, max_rf)
+
+        # Array initializations
+        weighted_max_maps = np.zeros((num_units, 3, max_rf, max_rf))
+        weighted_min_maps = np.zeros((num_units, 3, max_rf, max_rf))
+        non_overlap_max_maps = np.zeros((num_units, 3, max_rf, max_rf))
+        non_overlap_min_maps = np.zeros((num_units, 3, max_rf, max_rf))
+        padding = (xn - max_rf)//2
+
+        # Present all bars to the model
+        truncated_model = get_truncated_model(model, layer_idx)
+        center_responses = barmap_run_01b(splist, truncated_model,
+                                          num_units, batch_size=batch_size,
+                                          _debug=_debug, has_color=True)
+
+        # Append to txt files that summarize the top and bottom bars.
+        summarize_TB1(splist, center_responses, layer_name, tb1_path)
+        summarize_TBn(splist, center_responses, layer_name, tb20_path, top_n=20)
+        summarize_TBn(splist, center_responses, layer_name, tb100_path, top_n=100)
+
+        # Create maps of top/bottom bar average maps.
+        for unit_i in range(num_units):
+            if _debug and (unit_i > 10):
+                break
+            print_progress(f"Making maps for unit {unit_i}...")
+            weighted_max_map, weighted_min_map,\
+            non_overlap_max_map, non_overlap_min_map,\
+            num_weighted_max_bars, num_weighted_min_bars,\
+            num_non_overlap_max_bars, num_non_overlap_min_bars=\
+                                make_barmaps(splist, center_responses, unit_i,
+                                             response_thr=0.1, stim_thr=0.2,
+                                             _debug=_debug, has_color=True)
+            # Crop and save maps to layer-level array
+            weighted_max_maps[unit_i] = weighted_max_map[:,padding:padding+max_rf, padding:padding+max_rf]
+            weighted_min_maps[unit_i] = weighted_min_map[:,padding:padding+max_rf, padding:padding+max_rf]
+            non_overlap_max_maps[unit_i] = non_overlap_max_map[:,padding:padding+max_rf, padding:padding+max_rf]
+            non_overlap_min_maps[unit_i] = non_overlap_min_map[:,padding:padding+max_rf, padding:padding+max_rf]
+
+            # Record the number of bars used in each map (append to txt files).
+            record_bar_counts(weighted_counts_path, layer_name, unit_i,
+                              num_weighted_max_bars, num_weighted_min_bars)
+            record_bar_counts(non_overlap_counts_path, layer_name, unit_i,
+                              num_non_overlap_max_bars, num_non_overlap_min_bars)
+
+        # Save the maps of all units.
+        weighte_max_maps_path = os.path.join(result_dir, f"{layer_name}_weighted_max_barmaps.npy")
+        weighted_min_maps_path = os.path.join(result_dir, f"{layer_name}_weighted_min_barmaps.npy")
+        non_overlap_max_maps_path = os.path.join(result_dir, f"{layer_name}_non_overlap_max_barmaps.npy")
+        non_overlap_min_maps_path = os.path.join(result_dir, f"{layer_name}_non_overlap_min_barmaps.npy")
+        np.save(weighte_max_maps_path, weighted_max_maps)
+        np.save(weighted_min_maps_path, weighted_min_maps)
+        np.save(non_overlap_max_maps_path, non_overlap_max_maps)
+        np.save(non_overlap_min_maps_path, non_overlap_min_maps)
+
+        # Make pdf for the layer.
+        weighted_pdf_path = os.path.join(result_dir, f"{layer_name}_weighted_barmaps.pdf")
+        make_map_pdf(np.transpose(weighted_max_maps, (0,2,3,1)),
+                     np.transpose(weighted_min_maps, (0,2,3,1)),
+                     weighted_pdf_path)
+        non_overlap_pdf_path = os.path.join(result_dir, f"{layer_name}_non_overlap_barmaps.pdf")
+        make_map_pdf(np.transpose(non_overlap_max_maps, (0,2,3,1)),
+                     np.transpose(non_overlap_min_maps, (0,2,3,1)),
+                     non_overlap_pdf_path)
 
 
 #######################################.#######################################
@@ -895,11 +1199,11 @@ def mapstat_comr_1(map,f):
 
 
 # Test
-if __name__ == '__main__':
-    dummy_map = np.zeros((11, 11))
-    dummy_map[2, 4] = 1
-    com0, com1, radius = mapstat_comr_1(dummy_map, 0.9)
-    print(com0, com1, radius)
+# if __name__ == '__main__':
+#     dummy_map = np.zeros((11, 11))
+#     dummy_map[2, 4] = 1
+#     com0, com1, radius = mapstat_comr_1(dummy_map, 0.9)
+#     print(com0, com1, radius)
 
 
 #######################################.#######################################
@@ -967,8 +1271,11 @@ def make_rfmp4a_grid_pdf(pdf_path, model):
 
 
 # Generate a RFMP4a grid pdf for AlexNet
-if __name__ == "__main__":
-    model = models.resnet18()
-    model_name = 'resnet18'
-    pdf_path = os.path.join(c.REPO_DIR,'results','rfmp4a','mapping', model_name,f'{model_name}_test_grid.pdf')
-    make_rfmp4a_grid_pdf(pdf_path, model)
+# if __name__ == "__main__":
+#     # model = models.resnet18()
+#     # model_name = 'resnet18'
+#     model = models.alexnet()
+#     model_name = 'alexnet'
+#     pdf_path = os.path.join(c.REPO_DIR,'results','rfmp4a','mapping', 'test',
+#                             f'{model_name}_test_grid.pdf')
+#     make_rfmp4a_grid_pdf(pdf_path, model)
