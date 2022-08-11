@@ -18,12 +18,12 @@ from src.rf_mapping.bar import rfmp4a_run_01b
 import src.rf_mapping.constants as c
 
 # Please specify some details here:
-# model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1).to(c.DEVICE)
-# model_name = 'alexnet'
+model = models.alexnet(pretrained=True).to(c.DEVICE)
+model_name = 'alexnet'
 # model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
 # model_name = 'vgg16'
-model = models.resnet18(pretrained=True).to(c.DEVICE)
-model_name = "resnet18"
+# model = models.resnet18(pretrained=True).to(c.DEVICE)
+# model_name = "resnet18"
 this_is_a_test_run = False
 
 # Please double-check the directories:
@@ -34,14 +34,14 @@ else:
 
 ###############################################################################
 
-# Script guard
-if __name__ == "__main__":
-    print("Look for a prompt.")
-    user_input = input("This code may take time to run. Are you sure? [y/n] ")
-    if user_input == 'y':
-        pass
-    else: 
-        raise KeyboardInterrupt("Interrupted by user")
+# # Script guard
+# if __name__ == "__main__":
+#     print("Look for a prompt.")
+#     user_input = input("This code may take time to run. Are you sure? [y/n] ")
+#     if user_input == 'y':
+#         pass
+#     else: 
+#         raise KeyboardInterrupt("Interrupted by user")
 
 rfmp4a_run_01b(model, model_name, result_dir, _debug=this_is_a_test_run)
 

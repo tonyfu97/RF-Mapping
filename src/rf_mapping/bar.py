@@ -339,64 +339,64 @@ def stim_dapp_bar_xyo_rgb7o(splist,xn,xlist,orilist,blen,bwid,aa):
     
     # nstim = len(xlist) * len(ylist) * len(orilist) * 2
     # print("  Creating ", nstim, " stimulus dictionary entries.")
-    
+
     for i in xlist:
         for j in ylist:
             for o in orilist:
                 # 111 v 000          B&W
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
-                      "wid":bwid, "r1":a1, "g1":a1, "b1":a1,"r0":a0, "g0":a0, "b0":a0}
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                      "aa":aa, "r1":a1, "g1":a1, "b1":a1,"r0":a0, "g0":a0, "b0":a0}
                 splist.append(tp)
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
-                      "wid":bwid, "r1":a0, "g1":a0, "b1":a0,"r0":a1, "g0":a1, "b0":a1}
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                      "aa":aa, "r1":a0, "g1":a0, "b1":a0,"r0":a1, "g0":a1, "b0":a1}
                 splist.append(tp)
                 
                 # 100 v 010      red-green
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
-                      "wid":bwid, "r1":a1, "g1":a0, "b1":a0,"r0":a0, "g0":a1, "b0":a0}
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                      "aa":aa, "r1":a1, "g1":a0, "b1":a0,"r0":a0, "g0":a1, "b0":a0}
                 splist.append(tp)
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
-                      "wid":bwid, "r1":a0, "g1":a1, "b1":a0,"r0":a1, "g0":a0, "b0":a0}
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                      "aa":aa, "r1":a0, "g1":a1, "b1":a0,"r0":a1, "g0":a0, "b0":a0}
                 splist.append(tp)
                 
                 # 100 v 001      red-blue
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
-                      "wid":bwid, "r1":a1, "g1":a0, "b1":a0,"r0":a0, "g0":a0, "b0":a1}
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                      "aa":aa, "r1":a1, "g1":a0, "b1":a0,"r0":a0, "g0":a0, "b0":a1}
                 splist.append(tp)
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
-                      "wid":bwid, "r1":a0, "g1":a0, "b1":a1,"r0":a1, "g0":a0, "b0":a0}
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                      "aa":aa, "r1":a0, "g1":a0, "b1":a1,"r0":a1, "g0":a0, "b0":a0}
                 splist.append(tp)
                 
                 # 010 v 001      green-blue
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
-                      "wid":bwid, "r1":a0, "g1":a1, "b1":a0,"r0":a0, "g0":a0, "b0":a1}
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                      "aa":aa, "r1":a0, "g1":a1, "b1":a0,"r0":a0, "g0":a0, "b0":a1}
                 splist.append(tp)
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
-                      "wid":bwid, "r1":a0, "g1":a0, "b1":a1,"r0":a0, "g0":a1, "b0":a0}
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                      "aa":aa, "r1":a0, "g1":a0, "b1":a1,"r0":a0, "g0":a1, "b0":a0}
                 splist.append(tp)
                 
                 # 110 v 001     yellow-blue
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
-                      "wid":bwid, "r1":a1, "g1":a1, "b1":a0,"r0":a0, "g0":a0, "b0":a1}
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                      "aa":aa, "r1":a1, "g1":a1, "b1":a0,"r0":a0, "g0":a0, "b0":a1}
                 splist.append(tp)
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
-                      "wid":bwid, "r1":a0, "g1":a0, "b1":a1,"r0":a1, "g0":a1, "b0":a0}
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                      "aa":aa, "r1":a0, "g1":a0, "b1":a1,"r0":a1, "g0":a1, "b0":a0}
                 splist.append(tp)
                 
                 # 101 v 010    purple-green
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
-                      "wid":bwid, "r1":a1, "g1":a0, "b1":a1,"r0":a0, "g0":a1, "b0":a0}
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                      "aa":aa, "r1":a1, "g1":a0, "b1":a1,"r0":a0, "g0":a1, "b0":a0}
                 splist.append(tp)
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
-                      "wid":bwid, "r1":a0, "g1":a1, "b1":a0,"r0":a1, "g0":a0, "b0":a1}
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                      "aa":aa, "r1":a0, "g1":a1, "b1":a0,"r0":a1, "g0":a0, "b0":a1}
                 splist.append(tp)
                 
                 # 011 v 100    cyan-red
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
-                      "wid":bwid, "r1":a0, "g1":a1, "b1":a1,"r0":a1, "g0":a0, "b0":a0}
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                      "aa":aa, "r1":a0, "g1":a1, "b1":a1,"r0":a1, "g0":a0, "b0":a0}
                 splist.append(tp)
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "aa":aa,
-                      "wid":bwid, "r1":a1, "g1":a0, "b1":a0,"r0":a0, "g0":a1, "b0":a1}
+                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                      "aa":aa, "r1":a1, "g1":a0, "b1":a0,"r0":a0, "g0":a1, "b0":a1}
                 splist.append(tp)
 
 
@@ -816,7 +816,7 @@ def summarize_TBn(splist, center_responses, layer_name, txt_path, top_n=20):
 
     Parameters
     ----------
-    splist           - the bar stimulus parameter list.\n
+    splist           - the stimulus parameter list.\n
     center_responses - the responses of center unit in [stim_i, unit_i] format.\n 
     model_name       - name of the model. Used for file naming.\n
     layer_name       - name of the layer. Used as file entries/primary key.\n
@@ -837,7 +837,8 @@ def summarize_TBn(splist, center_responses, layer_name, txt_path, top_n=20):
             for i in range(top_n):
                 top_i = isort[-i-1]
                 bot_i = isort[i]
-            
+
+                # Equally weighted sum for avg coordinates of stimuli.
                 top_avg_x += splist[top_i]['x0']/top_n
                 top_avg_y += splist[top_i]['y0']/top_n
                 bot_avg_x += splist[bot_i]['x0']/top_n
@@ -854,11 +855,47 @@ def summarize_TBn(splist, center_responses, layer_name, txt_path, top_n=20):
 #                                                                             #
 ###############################################################################
 def record_bar_counts(txt_path, layer_name, unit_i, num_max_bars, num_min_bars):
-    """
-    Write the numbers of bars used in the top and bottom maps.
-    """
+    """Write the numbers of bars used in the top and bottom maps."""
     with open(txt_path, 'a') as f:
         f.write(f"{layer_name} {unit_i} {num_max_bars} {num_min_bars}\n")
+
+
+#######################################.#######################################
+#                                                                             #
+#                               RECORD_SPLIST                                 #
+#                                                                             #
+###############################################################################
+def record_splist(txt_path, splist):
+    """Write the contents of splist into a text file."""
+    with open(txt_path, 'a') as f:
+        for stimulus_idx, params in enumerate(splist):
+            f.write(f"{stimulus_idx}")
+            for val in params.values():
+                f.write(f" {val}")
+            f.write('\n')
+
+
+#######################################.#######################################
+#                                                                             #
+#                           RECORD_CENTER_RESPONSES                           #
+#                                                                             #
+###############################################################################
+def record_center_responses(txt_path, center_responses, top_n, is_top):
+    """
+    Write the indicies and responses of the top- and bottom-N into a text file.
+    """
+    num_units = center_responses.shape[1]  # in dimension: [stimulus, unit]
+    center_responses_sorti = np.argsort(center_responses, axis=0)
+    if is_top:
+        center_responses_sorti = np.flip(center_responses_sorti, 0)
+    with open(txt_path, 'a') as f:
+        for unit_i in range(num_units):
+            for i, stimulus_idx in enumerate(center_responses_sorti[:, unit_i]):
+                if i >= top_n:
+                    break
+                f.write(f"{unit_i} {i} {stimulus_idx} ")
+                f.write(f"{center_responses[stimulus_idx, unit_i]:.4f}\n")
+                # Format: unit_i, rank, stimulus_index, response_value
 
 
 #######################################.#######################################
@@ -953,7 +990,6 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False, batch_size=10):
         os.remove(non_overlap_counts_path)
     
     for conv_i in range(len(layer_indices)):
-        if conv_i < 16: continue
         layer_name = f"conv{conv_i + 1}"
         print(f"\n{layer_name}\n")
         # Get layer-specific info
@@ -1014,6 +1050,23 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False, batch_size=10):
         np.save(weighted_min_maps_path, weighted_min_maps)
         np.save(non_overlap_max_maps_path, non_overlap_max_maps)
         np.save(non_overlap_min_maps_path, non_overlap_min_maps)
+        
+        # Save the splist in a text file.
+        splist_path = os.path.join(result_dir, f"{layer_name}_splist.txt")
+        if os.path.exists(splist_path):
+            os.remove(splist_path)
+        record_splist(splist_path, splist)
+        
+        # Save the indicies and responses of top and bottom 5000 stimuli.
+        top_n = min(5000, len(splist)//2)
+        max_center_reponses_path = os.path.join(result_dir, f"{layer_name}_top{top_n}_responses.txt")
+        min_center_reponses_path = os.path.join(result_dir, f"{layer_name}_bot{top_n}_responses.txt")
+        if os.path.exists(max_center_reponses_path):
+            os.remove(max_center_reponses_path)
+        if os.path.exists(min_center_reponses_path):
+            os.remove(min_center_reponses_path)
+        record_center_responses(max_center_reponses_path, center_responses, top_n, is_top=True)
+        record_center_responses(min_center_reponses_path, center_responses, top_n, is_top=False)
 
         # Make pdf for the layer.
         weighted_pdf_path = os.path.join(result_dir, f"{layer_name}_weighted_barmaps.pdf")
@@ -1053,7 +1106,7 @@ def rfmp4c7o_run_01(model, model_name, result_dir, _debug=False, batch_size=100)
     tb100_path = os.path.join(result_dir, f"{model_name}_rfmp4c7o_tb100.txt")
     weighted_counts_path = os.path.join(result_dir, f"{model_name}_rfmp4c7o_weighted_counts.txt")
     non_overlap_counts_path = os.path.join(result_dir, f"{model_name}_rfmp4c7o_non_overlap_counts.txt")
-    
+
     # Delete previous files
     delete_all_npy_files(result_dir)
     if os.path.exists(tb1_path):
@@ -1129,6 +1182,27 @@ def rfmp4c7o_run_01(model, model_name, result_dir, _debug=False, batch_size=100)
         np.save(non_overlap_max_maps_path, non_overlap_max_maps)
         np.save(non_overlap_min_maps_path, non_overlap_min_maps)
 
+        # Save the splist in a text file.
+        splist_path = os.path.join(result_dir, f"{layer_name}_splist.txt")
+        if os.path.exists(splist_path):
+            os.remove(splist_path)
+        record_splist(splist_path, splist)
+        
+        # Save the indicies and responses of top and bottom 5000 stimuli.
+        # Note: the splist and center responses are recorded as text files
+        #       because we are interested in reducing the number of bar
+        #       stimuli. We intend to drop the small bars if they are not
+        #       commonly found as the top and bottom N bars.
+        top_n = min(5000, len(splist)//2)
+        max_center_reponses_path = os.path.join(result_dir, f"{layer_name}_top{top_n}_responses.txt")
+        min_center_reponses_path = os.path.join(result_dir, f"{layer_name}_bot{top_n}_responses.txt")
+        if os.path.exists(max_center_reponses_path):
+            os.remove(max_center_reponses_path)
+        if os.path.exists(min_center_reponses_path):
+            os.remove(min_center_reponses_path)
+        record_center_responses(max_center_reponses_path, center_responses, top_n, is_top=True)
+        record_center_responses(min_center_reponses_path, center_responses, top_n, is_top=False)
+        
         # Make pdf for the layer.
         weighted_pdf_path = os.path.join(result_dir, f"{layer_name}_weighted_barmaps.pdf")
         make_map_pdf(np.transpose(weighted_max_maps, (0,2,3,1)),
