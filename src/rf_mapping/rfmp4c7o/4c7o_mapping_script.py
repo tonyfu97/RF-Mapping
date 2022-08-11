@@ -25,7 +25,7 @@ model_name = 'alexnet'
 # model_name = 'vgg16'
 # model = models.resnet18(pretrained=True).to(c.DEVICE)
 # model_name = "resnet18"
-this_is_a_test_run = True
+this_is_a_test_run = False
 batch_size = 100
 
 # Please double-check the directories:
