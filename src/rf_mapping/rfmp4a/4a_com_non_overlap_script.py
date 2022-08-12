@@ -27,10 +27,10 @@ import src.rf_mapping.constants as c
 # Please specify some details here:
 # model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)  # repeat for correct bar_count
 # model_name = 'alexnet'
-# # model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
-# # model_name = 'vgg16'
-model = models.resnet18(pretrained=True)
-model_name = 'resnet18'
+model = models.vgg16(pretrained=True).to(c.DEVICE)
+model_name = 'vgg16'
+# model = models.resnet18(pretrained=True)
+# model_name = 'resnet18'
 image_shape = (227, 227)
 this_is_a_test_run = False
 
@@ -120,8 +120,8 @@ def write_pdf(pdf, layer_name, unit_i, top_map, bot_map,
 
 # Find the center of mass coordinates and radius of RF.
 for conv_i in range(len(layer_indices)):
-    if model_name == 'vgg16' and conv_i < 4:
-        continue
+    # if model_name == 'vgg16' and conv_i < 4:
+    #     continue
     # Get layer-specific info
     layer_name = f"conv{conv_i + 1}"
     rf_size = rf_sizes[conv_i][0]

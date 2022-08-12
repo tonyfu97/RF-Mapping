@@ -24,32 +24,46 @@ from src.rf_mapping.result_txt_format import (GtGaussian as GT,
                                               Rfmp4aWeighted as W)
 
 # Please specify the model
-# model = models.alexnet()
-# model_name = 'alexnet'
+model = models.alexnet()
+model_name = 'alexnet'
 # model = models.vgg16()
 # model_name = 'vgg16'
-model = models.resnet18()
-model_name = 'resnet18'
+# model = models.resnet18()
+# model_name = 'resnet18'
+
+is_rfmp4a = False
 
 # Source directories
 gt_dir             = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'gaussian_fit')
-rfmp4a_mapping_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping')
-rfmp4a_fit_dir     = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'gaussian_fit')
+if is_rfmp4a:
+    rfmp4_mapping_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping')
+    rfmp4_fit_dir     = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'gaussian_fit')
+else:
+    rfmp4_mapping_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4c7o', 'mapping')
+    rfmp4_fit_dir     = os.path.join(c.REPO_DIR, 'results', 'rfmp4c7o', 'gaussian_fit')
 
 # Result directories
-result_dir = os.path.join(c.REPO_DIR, 'results', 'compare')
+if is_rfmp4a:
+    result_dir = os.path.join(c.REPO_DIR, 'results', 'compare')
+else:
+    result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'color')
 
 ###############################################################################
 
 # Load the source files into pandas DFs.
 gt_top_path = os.path.join(gt_dir, model_name, 'abs', f"{model_name}_gt_gaussian_top.txt")
 gt_bot_path = os.path.join(gt_dir, model_name, 'abs', f"{model_name}_gt_gaussian_bot.txt")
-tb1_path   = os.path.join(rfmp4a_mapping_dir, model_name, f"{model_name}_rfmp4a_tb1.txt")
-tb20_path  = os.path.join(rfmp4a_mapping_dir, model_name, f"{model_name}_rfmp4a_tb20.txt")
-tb100_path = os.path.join(rfmp4a_mapping_dir, model_name, f"{model_name}_rfmp4a_tb100.txt")
-no_path  = os.path.join(rfmp4a_fit_dir, model_name, f"non_overlap.txt")
-w_t_path = os.path.join(rfmp4a_fit_dir, model_name, f"weighted_top.txt")
-w_b_path = os.path.join(rfmp4a_fit_dir, model_name, f"weighted_bot.txt")
+no_path  = os.path.join(rfmp4_fit_dir, model_name, f"non_overlap.txt")
+w_t_path = os.path.join(rfmp4_fit_dir, model_name, f"weighted_top.txt")
+w_b_path = os.path.join(rfmp4_fit_dir, model_name, f"weighted_bot.txt")
+if is_rfmp4a:
+    tb1_path   = os.path.join(rfmp4_mapping_dir, model_name, f"{model_name}_rfmp4a_tb1.txt")
+    tb20_path  = os.path.join(rfmp4_mapping_dir, model_name, f"{model_name}_rfmp4a_tb20.txt")
+    tb100_path = os.path.join(rfmp4_mapping_dir, model_name, f"{model_name}_rfmp4a_tb100.txt")
+else:
+    tb1_path   = os.path.join(rfmp4_mapping_dir, model_name, f"{model_name}_rfmp4c7o_tb1.txt")
+    tb20_path  = os.path.join(rfmp4_mapping_dir, model_name, f"{model_name}_rfmp4c7o_tb20.txt")
+    tb100_path = os.path.join(rfmp4_mapping_dir, model_name, f"{model_name}_rfmp4c7o_tb100.txt")
 
                                                            # Data source                Abbreviation(s)
                                                            # -----------------------    ---------------
