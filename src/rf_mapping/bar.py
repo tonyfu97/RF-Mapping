@@ -918,8 +918,8 @@ def make_map_pdf(max_maps, min_maps, pdf_path):
     with PdfPages(pdf_path) as pdf:
         fig, (ax1, ax2) = plt.subplots(1, 2)
         fig.set_size_inches(10, 5)
-        im1 = ax1.imshow(np.zeros((yn, xn, 3)), vmax=1, vmin=0) #, cmap='gray')
-        im2 = ax2.imshow(np.zeros((yn, xn, 3)), vmax=1, vmin=0) #, cmap='gray')
+        im1 = ax1.imshow(np.zeros((yn, xn, 3)), vmax=1, vmin=0, cmap='gray')
+        im2 = ax2.imshow(np.zeros((yn, xn, 3)), vmax=1, vmin=0, cmap='gray')
         for unit_i, (max_map, min_map) in enumerate(zip(max_maps, min_maps)):
             print_progress(f"Making pdf for unit {unit_i}...")
             fig.suptitle(f"no.{unit_i}", fontsize=20)

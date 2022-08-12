@@ -34,12 +34,12 @@ from src.rf_mapping.result_txt_format import (Rfmp4aTB1 as TB1,
                                               CenterReponses as CR,)
 
 # Please specify the model
-# model = models.alexnet()
-# model_name = 'alexnet'
+model = models.alexnet()
+model_name = 'alexnet'
 # model = models.vgg16()
 # model_name = 'vgg16'
-model = models.resnet18()
-model_name = 'resnet18'
+# model = models.resnet18()
+# model_name = 'resnet18'
 
 # Source directories
 rfmp4a_mapping_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping')
