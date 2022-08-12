@@ -1,6 +1,6 @@
 """
 Classes used to describe the columns of the result txt files. Helps with
-extracting information from the txt files.
+extracting information from the txt files and put them into pandas dataframes.
 
 Tony Fu, July 27, 2022
 """
@@ -76,3 +76,42 @@ class Rfmp4aWeighted(Enum):
     OFFSET = 8  # addivitve offset of Gaussian
     FXVAR  = 9  # fraction of explained variance
     NUM_BARS = 10  # number of bars included in the map
+
+
+class Rfmp4aSplist(Enum):
+    STIM_I = 0  # counting from 0
+    XN     = 1
+    YN     = 2
+    X0     = 3
+    Y0     = 4
+    THETA  = 5
+    LEN    = 6
+    WID    = 7
+    AA     = 8
+    FGVAL  = 9
+    BGVAL  = 10
+
+
+class Rfmp4c7oSplist(Enum):
+    STIM_I = 0  # counting from 0
+    XN     = 1
+    YN     = 2
+    X0     = 3
+    Y0     = 4
+    THETA  = 5
+    LEN    = 6
+    WID    = 7
+    AA     = 8  # anti-alias 'thickness'
+    R1     = 9  # red foreground
+    G1     = 10
+    B1     = 11
+    R0     = 12  # red background
+    G0     = 13
+    B0     = 14
+
+
+class CenterReponses(Enum):
+    UNIT   = 0
+    RANK   = 1  # top 0, 1, 2, ... and bottom 0, 1, 2, ...
+    STIM_I = 2  # index of the stimulus in splist
+    R      = 3  # response value (rounded to 4 decimal places)

@@ -1,7 +1,11 @@
+"""
+To visualize the difference between ground truth and bar mapping methods.
+
+Tony Fu, July 27th, 2022
+"""
 import os
 import sys
 import math
-from enum import Enum
 
 import numpy as np
 import pandas as pd
@@ -90,7 +94,7 @@ layer_indices, rf_sizes = get_rf_sizes(model, (227, 227))
 num_layers = len(rf_sizes)
 fxvar_thres = 0.8
 
-######################################.#######################################
+#######################################.#######################################
 #                                                                             #
 #                              PDF NO.0 FXVAR                                 #
 #                                                                             #
@@ -459,10 +463,10 @@ if __name__ == '__main__':
 #                                                                             #
 ###############################################################################
 def eccentricity(sd1, sd2):
-    a = np.minimum(sd1, sd2)
-    b = np.maximum(sd1, sd2)
-    # ecc = np.sqrt(1 - np.power(a, 2)/np.power(b, 2))
-    ecc = b/a
+    short = np.minimum(sd1, sd2)
+    long  = np.maximum(sd1, sd2)
+    # ecc = np.sqrt(1 - np.power(short, 2)/np.power(long, 2))
+    ecc = long/short
     return ecc
 
 def make_ori_pdf():

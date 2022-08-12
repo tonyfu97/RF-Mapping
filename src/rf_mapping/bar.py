@@ -1194,8 +1194,8 @@ def rfmp4c7o_run_01(model, model_name, result_dir, _debug=False, batch_size=100)
         #       stimuli. We intend to drop the small bars if they are not
         #       commonly found as the top and bottom N bars.
         top_n = min(5000, len(splist)//2)
-        max_center_reponses_path = os.path.join(result_dir, f"{layer_name}_top{top_n}_responses.txt")
-        min_center_reponses_path = os.path.join(result_dir, f"{layer_name}_bot{top_n}_responses.txt")
+        max_center_reponses_path = os.path.join(result_dir, f"{layer_name}_top5000_responses.txt")
+        min_center_reponses_path = os.path.join(result_dir, f"{layer_name}_bot5000_responses.txt")
         if os.path.exists(max_center_reponses_path):
             os.remove(max_center_reponses_path)
         if os.path.exists(min_center_reponses_path):
