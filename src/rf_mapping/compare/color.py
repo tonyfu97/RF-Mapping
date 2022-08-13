@@ -395,10 +395,10 @@ def make_error_coords_pdf():
 
             plt.figure(figsize=(25,20))
             plt.suptitle(f"RF center coordinates ({model_name} {layer_name}, n = {num_units_total})", fontsize=18)
-            
+
             # if sum(np.isfinite(xddata)) == 0:
             #     continue  # Skip this layer if no data
-            
+
             plt.subplot(4,5,1)
             config_plot(limits)
             a_data = a_tb1_df.loc[(a_tb1_df.LAYER == layer_name), 'TOP_X']
@@ -623,8 +623,170 @@ def make_error_coords_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_error_coords_pdf()
+    # make_error_coords_pdf()
     pass
+
+
+#######################################.#######################################
+#                                                                             #
+#                PDF NO.4 COMPARING RADII OF RFMP4a and RFMP4c7o              #
+#                                                                             #
+###############################################################################
+def config_plot(limits):
+    line = np.linspace(min(limits), max(limits), 100)
+    plt.plot(line, line, 'k', alpha=0.4)
+    plt.xlim(limits)
+    plt.ylim(limits)
+    ax = plt.gca()
+    ax.set_aspect('equal')
+
+def geo_mean(sd1, sd2):
+    return np.sqrt(np.power(sd1, 2) + np.power(sd2, 2))
+
+def make_radius_color_pdf():
+    pdf_path = os.path.join(result_dir, f"{model_name}_radius_color.pdf")
+    with PdfPages(pdf_path) as pdf:
+        for conv_i, rf_size in enumerate(rf_sizes):
+            # Get some layer-specific information.
+            layer_name = f'conv{conv_i+1}'
+            num_units_total = len(a_tb100_df.loc[(a_tb100_df.LAYER == layer_name)])
+            limits = (0, 70)
+
+            plt.figure(figsize=(20,10))
+            plt.suptitle(f"RF Radii ({model_name} {layer_name}, n = {num_units_total}, ERF = {rf_size[0]})", fontsize=24)
+
+            a_radius = a_no_df.loc[(a_no_df.LAYER == layer_name) & (a_no_df.TOP_RAD_10 != -1) & (c_no_df.TOP_RAD_10 != -1), 'TOP_RAD_10']
+            c_radius = c_no_df.loc[(c_no_df.LAYER == layer_name) & (a_no_df.TOP_RAD_10 != -1) & (c_no_df.TOP_RAD_10 != -1), 'TOP_RAD_10']
+            if sum(np.isfinite(a_radius)) == 0: 
+                continue  # Skip this layer if no data
+            plt.subplot(2,4,1)
+            config_plot(limits)
+            plt.scatter(a_radius, c_radius, alpha=0.4)
+            plt.xlabel('RFMP4a radius')
+            plt.ylabel('RFMP4c7o radius')
+            try:
+                r_val, p_val = pearsonr(a_radius, c_radius)
+            except:
+                r_val = np.NaN
+            plt.title(f'Non-overlap (top 10% mass, n={len(a_radius)}, r={r_val:.2f})')
+
+            a_radius = a_no_df.loc[(a_no_df.LAYER == layer_name) & (a_no_df.TOP_RAD_50 != -1) & (c_no_df.TOP_RAD_50 != -1), 'TOP_RAD_50']
+            c_radius = c_no_df.loc[(c_no_df.LAYER == layer_name) & (a_no_df.TOP_RAD_50 != -1) & (c_no_df.TOP_RAD_50 != -1), 'TOP_RAD_50']
+            if sum(np.isfinite(a_radius)) == 0: 
+                continue  # Skip this layer if no data
+            plt.subplot(2,4,2)
+            config_plot(limits)
+            plt.scatter(a_radius, c_radius, alpha=0.4)
+            plt.xlabel('RFMP4a radius')
+            plt.ylabel('RFMP4c7o radius')
+            try:
+                r_val, p_val = pearsonr(a_radius, c_radius)
+            except:
+                r_val = np.NaN
+            plt.title(f'Non-overlap (top 50% mass, n={len(a_radius)}, r={r_val:.2f})')
+
+            a_radius = a_no_df.loc[(a_no_df.LAYER == layer_name) & (a_no_df.TOP_RAD_90 != -1) & (c_no_df.TOP_RAD_90 != -1), 'TOP_RAD_90']
+            c_radius = c_no_df.loc[(c_no_df.LAYER == layer_name) & (a_no_df.TOP_RAD_90 != -1) & (c_no_df.TOP_RAD_90 != -1), 'TOP_RAD_90']
+            if sum(np.isfinite(a_radius)) == 0: 
+                continue  # Skip this layer if no data
+            plt.subplot(2,4,3)
+            config_plot(limits)
+            plt.scatter(a_radius, c_radius, alpha=0.4)
+            plt.xlabel('RFMP4a radius')
+            plt.ylabel('RFMP4c7o radius')
+            try:
+                r_val, p_val = pearsonr(a_radius, c_radius)
+            except:
+                r_val = np.NaN
+            plt.title(f'Non-overlap (top 90% mass, n={len(a_radius)}, r={r_val:.2f})')
+
+            a_sd1 = a_w_t_df.loc[(a_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres), 'SD1']
+            a_sd2 = a_w_t_df.loc[(a_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres), 'SD2']
+            a_radius = geo_mean(a_sd1, a_sd2)
+            c_sd1 = c_w_t_df.loc[(c_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres), 'SD1']
+            c_sd2 = c_w_t_df.loc[(c_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres), 'SD2']
+            c_radius = geo_mean(c_sd1, c_sd2)
+            plt.subplot(2,4,4)
+            config_plot(limits)
+            plt.scatter(a_radius, c_radius, alpha=0.4)
+            plt.xlabel('RFMP4a $\sqrt{sd_1^2+sd_2^2}$')
+            plt.ylabel('RFMP4c7o $\sqrt{sd_1^2+sd_2^2}$')
+            try:
+                r_val, p_val = pearsonr(a_radius, c_radius)
+            except:
+                r_val = np.NaN
+            plt.title(f'Weighted (top, n={len(a_radius)}, r={r_val:.2f})')
+
+            a_radius = a_no_df.loc[(a_no_df.LAYER == layer_name) & (a_no_df.BOT_RAD_10 != -1) & (c_no_df.BOT_RAD_10 != -1), 'BOT_RAD_10']
+            c_radius = c_no_df.loc[(c_no_df.LAYER == layer_name) & (a_no_df.BOT_RAD_10 != -1) & (c_no_df.BOT_RAD_10 != -1), 'BOT_RAD_10']
+            if sum(np.isfinite(a_radius)) == 0: 
+                continue  # Skip this layer if no data
+            plt.subplot(2,4,5)
+            config_plot(limits)
+            plt.scatter(a_radius, c_radius, alpha=0.4)
+            plt.xlabel('RFMP4a radius')
+            plt.ylabel('RFMP4c7o radius')
+            try:
+                r_val, p_val = pearsonr(a_radius, c_radius)
+            except:
+                r_val = np.NaN
+            plt.title(f'Non-overlap (bottom 10% mass, n={len(a_radius)}, r={r_val:.2f})')
+
+            a_radius = a_no_df.loc[(a_no_df.LAYER == layer_name) & (a_no_df.BOT_RAD_50 != -1) & (c_no_df.BOT_RAD_50 != -1), 'BOT_RAD_50']
+            c_radius = c_no_df.loc[(c_no_df.LAYER == layer_name) & (a_no_df.BOT_RAD_50 != -1) & (c_no_df.BOT_RAD_50 != -1), 'BOT_RAD_50']
+            if sum(np.isfinite(a_radius)) == 0: 
+                continue  # Skip this layer if no data
+            plt.subplot(2,4,6)
+            config_plot(limits)
+            plt.scatter(a_radius, c_radius, alpha=0.4)
+            plt.xlabel('RFMP4a radius')
+            plt.ylabel('RFMP4c7o radius')
+            try:
+                r_val, p_val = pearsonr(a_radius, c_radius)
+            except:
+                r_val = np.NaN
+            plt.title(f'Non-overlap (bottom 50% mass, n={len(a_radius)}, r={r_val:.2f})')
+
+            a_radius = a_no_df.loc[(a_no_df.LAYER == layer_name) & (a_no_df.BOT_RAD_90 != -1) & (c_no_df.BOT_RAD_90 != -1), 'BOT_RAD_90']
+            c_radius = c_no_df.loc[(c_no_df.LAYER == layer_name) & (a_no_df.BOT_RAD_90 != -1) & (c_no_df.BOT_RAD_90 != -1), 'BOT_RAD_90']
+            if sum(np.isfinite(a_radius)) == 0: 
+                continue  # Skip this layer if no data
+            plt.subplot(2,4,7)
+            config_plot(limits)
+            plt.scatter(a_radius, c_radius, alpha=0.4)
+            plt.xlabel('RFMP4a radius')
+            plt.ylabel('RFMP4c7o radius')
+            try:
+                r_val, p_val = pearsonr(a_radius, c_radius)
+            except:
+                r_val = np.NaN
+            plt.title(f'Non-overlap (bottom 90% mass, n={len(a_radius)}, r={r_val:.2f})')
+
+            a_sd1 = a_w_b_df.loc[(a_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres), 'SD1']
+            a_sd2 = a_w_b_df.loc[(a_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres), 'SD2']
+            a_radius = geo_mean(a_sd1, a_sd2)
+            c_sd1 = c_w_b_df.loc[(c_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres), 'SD1']
+            c_sd2 = c_w_b_df.loc[(c_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres), 'SD2']
+            c_radius = geo_mean(c_sd1, c_sd2)
+            plt.subplot(2,4,8)
+            config_plot(limits)
+            plt.scatter(a_radius, c_radius, alpha=0.4)
+            plt.xlabel('RFMP4a $\sqrt{sd_1^2+sd_2^2}$')
+            plt.ylabel('RFMP4c7o $\sqrt{sd_1^2+sd_2^2}$')
+            try:
+                r_val, p_val = pearsonr(a_radius, c_radius)
+            except:
+                r_val = np.NaN
+            plt.title(f'Weighted (bottom, n={len(a_radius)}, r={r_val:.2f})')
+
+            pdf.savefig()
+            plt.close()
+
+if __name__ == '__main__':
+    make_radius_color_pdf()
+    pass
+
+
 
 
 
