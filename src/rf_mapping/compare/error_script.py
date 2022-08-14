@@ -873,8 +873,8 @@ def make_error_radius_pdf():
                 r_val = np.NaN
             plt.title(f'GT vs. non-overlap (top, n={num_top_units}, r={r_val:.2f})')
 
-            sd1 = w_t_df.loc[(w_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (gt_t_df.FXVAR > fxvar_thres), 'SD1']
-            sd2 = w_t_df.loc[(w_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (gt_t_df.FXVAR > fxvar_thres), 'SD2']
+            sd1 = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres) & (gt_t_df.FXVAR > fxvar_thres), 'SD1']
+            sd2 = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres) & (gt_t_df.FXVAR > fxvar_thres), 'SD2']
             radius = geo_mean(sd1, sd2)
             plt.subplot(2,4,4)
             config_plot(limits)
@@ -942,7 +942,7 @@ def make_error_radius_pdf():
 
 if __name__ == '__main__':
     make_error_radius_pdf()
-    pass    
+    pass
 
 
 #######################################.#######################################
