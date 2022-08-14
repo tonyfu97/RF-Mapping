@@ -136,3 +136,8 @@ dmypy.json
 *.pdf
 *.icloud
 *.mp4
+results/
+
+# Device-specific information:
+constants.py
+nohup.out
