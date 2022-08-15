@@ -19,10 +19,10 @@ from src.rf_mapping.bar import rfmp4c7o_run_01
 import src.rf_mapping.constants as c
 
 # Please specify some details here:
-model = models.alexnet(pretrained=True).to(c.DEVICE)
-model_name = 'alexnet'
-# model = models.vgg16(pretrained=True).to(c.DEVICE)
-# model_name = 'vgg16'
+# model = models.alexnet(pretrained=True).to(c.DEVICE)
+# model_name = 'alexnet'
+model = models.vgg16(pretrained=True).to(c.DEVICE)
+model_name = 'vgg16'
 # model = models.resnet18(pretrained=True).to(c.DEVICE)
 # model_name = "resnet18"
 this_is_a_test_run = False
@@ -45,8 +45,9 @@ else:
 #     else:
 #         raise KeyboardInterrupt("Interrupted by user")
 
-rfmp4c7o_run_01(model, model_name, result_dir, _debug=this_is_a_test_run,
-                batch_size=batch_size)
+if __name__ == '__main__':
+    rfmp4c7o_run_01(model, model_name, result_dir, _debug=this_is_a_test_run,
+                    batch_size=batch_size)
 
 """
 Tony - Below is the old way of running the rfmp4a. This old way uses the full
