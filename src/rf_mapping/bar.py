@@ -1083,8 +1083,6 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False, batch_size=10):
 
 ###############################################################################
 def multiprocess_mapping(unit_i, splist, center_responses,
-                         weighted_max_maps, weighted_min_maps,
-                         non_overlap_max_maps, non_overlap_min_maps,
                          _debug, padding, max_rf, layer_name,
                          weighted_counts_path, non_overlap_counts_path):
     # print_progress(f"Making maps for unit {unit_i}...")
@@ -1096,17 +1094,15 @@ def multiprocess_mapping(unit_i, splist, center_responses,
                                                 response_thr=0.1, stim_thr=0.2,
                                                 _debug=_debug, has_color=True)
     print(f"{unit_i} done.")
-    # Crop and save maps to layer-level array
-    weighted_max_maps[unit_i] = weighted_max_map[:,padding:padding+max_rf, padding:padding+max_rf]
-    weighted_min_maps[unit_i] = weighted_min_map[:,padding:padding+max_rf, padding:padding+max_rf]
-    non_overlap_max_maps[unit_i] = non_overlap_max_map[:,padding:padding+max_rf, padding:padding+max_rf]
-    non_overlap_min_maps[unit_i] = non_overlap_min_map[:,padding:padding+max_rf, padding:padding+max_rf]
 
     # Record the number of bars used in each map (append to txt files).
     record_bar_counts(weighted_counts_path, layer_name, unit_i,
                         num_weighted_max_bars, num_weighted_min_bars)
     record_bar_counts(non_overlap_counts_path, layer_name, unit_i,
                         num_non_overlap_max_bars, num_non_overlap_min_bars)
+    
+    return  weighted_max_map, weighted_min_map,\
+            non_overlap_max_map, non_overlap_min_map
 
 #######################################.#######################################
 #                                                                             #
@@ -1181,28 +1177,33 @@ def rfmp4c7o_run_01(model, model_name, result_dir, _debug=False, batch_size=100)
         summarize_TBn(splist, center_responses, layer_name, tb20_path, top_n=20)
         summarize_TBn(splist, center_responses, layer_name, tb100_path, top_n=100)
 
-        batch_size = min(num_units, os.cpu_count() * 4)  # os.cpu_count() * 4
+        batch_size = os.cpu_count() * 2 #num_units//2 # os.cpu_count() * 4
         unit_i = 0
         while (unit_i < num_units):
             if _debug and unit_i > 20:
                 break
 
             real_batch_size = min(batch_size, num_units - unit_i)
-            with concurrent.futures.ThreadPoolExecutor() as executor:
+            # with concurrent.futures.ThreadPoolExecutor() as executor:
+            with concurrent.futures.ProcessPoolExecutor() as executor:
                 results = executor.map(multiprocess_mapping,
                              [i for i in np.arange(unit_i, unit_i + real_batch_size)],
                              [splist for _ in range(real_batch_size)],
                              [center_responses for _ in range(real_batch_size)],
-                             [weighted_max_maps for _ in range(real_batch_size)],
-                             [weighted_min_maps for _ in range(real_batch_size)],
-                             [non_overlap_max_maps for _ in range(real_batch_size)],
-                             [non_overlap_min_maps for _ in range(real_batch_size)],
                              [_debug for _ in range(real_batch_size)],
                              [padding for _ in range(real_batch_size)],
                              [max_rf for _ in range(real_batch_size)],
                              [layer_name for _ in range(real_batch_size)],
                              [weighted_counts_path for _ in range(real_batch_size)],
                              [non_overlap_counts_path for _ in range(real_batch_size)])
+            
+            # Crop and save maps to layer-level array
+            for result_i, result in enumerate(results):
+                weighted_max_maps[unit_i + result_i] = result[0][:,padding:padding+max_rf, padding:padding+max_rf]
+                weighted_min_maps[unit_i + result_i] = result[1][:,padding:padding+max_rf, padding:padding+max_rf]
+                non_overlap_max_maps[unit_i + result_i] = result[2][:,padding:padding+max_rf, padding:padding+max_rf]
+                non_overlap_min_maps[unit_i + result_i] = result[3][:,padding:padding+max_rf, padding:padding+max_rf]
+            
             unit_i += real_batch_size
             print(unit_i)
         

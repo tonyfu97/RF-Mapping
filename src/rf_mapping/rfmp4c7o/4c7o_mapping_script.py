@@ -32,6 +32,7 @@ batch_size = 100
 if this_is_a_test_run:
     result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4c7o', 'mapping', 'test')
 else:
+    # result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4c7o', 'mapping', model_name)
     result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4c7o', 'mapping', model_name)
 
 ###############################################################################
