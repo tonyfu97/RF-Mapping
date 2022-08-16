@@ -18,16 +18,16 @@ from src.rf_mapping.occluder_discrepancy import (get_occluder_params,
 
 
 # Please specify some details here:
-# model = models.alexnet(pretrained=True).to(c.DEVICE)
-# model_name = "alexnet"
+model = models.alexnet(pretrained=True).to(c.DEVICE)
+model_name = "alexnet"
 # model = models.vgg16(pretrained=True).to(c.DEVICE)
 # model_name = "vgg16"
-model = models.resnet18(pretrained=True).to(c.DEVICE)
-model_name = "resnet18"
+# model = models.resnet18(pretrained=True).to(c.DEVICE)
+# model_name = "resnet18"
 top_n = 5
 image_size = (227, 227)
-this_is_a_test_run = False
-batch_size = 10
+this_is_a_test_run = True
+batch_size = 100
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR
@@ -58,8 +58,6 @@ layer_indices, rf_sizes = get_rf_sizes(model, image_size)
 
 if __name__ == "__main__":
     for conv_i, layer_idx in enumerate(layer_indices):
-        if conv_i < 3:
-            continue
         truncated_model = get_truncated_model(model, layer_idx)
         layer_name = f"conv{conv_i + 1}"
         index_path = os.path.join(index_dir, f"{layer_name}.npy")
@@ -111,10 +109,11 @@ if __name__ == "__main__":
                     occluder_params = get_occluder_params(box, rf_size, image_size)
                     discrepancy_map = get_discrepancy_map(img, occluder_params, 
                                                           truncated_model, rf_size,
-                                                          max_patch_idx, unit_i, batch_size=batch_size, _debug=this_is_a_test_run, image_size=image_size)
+                                                          max_patch_idx, unit_i, box,
+                                                          batch_size=batch_size, _debug=this_is_a_test_run, image_size=image_size)
                     im_handles[i].set_data(discrepancy_map/discrepancy_map.max())
                     ax_handles[i].set_title(f"top {i+1} image")
-                    max_discrepancy_maps[i] = discrepancy_map
+                    max_discrepancy_maps[i][unit_i] = discrepancy_map
 
                 # Bottom N images and gradient patches:
                 for i, (min_img_idx, min_patch_idx) in enumerate(zip(min_n_img_indices,
@@ -125,10 +124,11 @@ if __name__ == "__main__":
                     occluder_params = get_occluder_params(box, rf_size, image_size)
                     discrepancy_map = get_discrepancy_map(img, occluder_params, 
                                                           truncated_model, rf_size,
-                                                          min_patch_idx, unit_i, batch_size=batch_size, _debug=this_is_a_test_run, image_size=image_size)
+                                                          min_patch_idx, unit_i, box,
+                                                          batch_size=batch_size, _debug=this_is_a_test_run, image_size=image_size)
                     im_handles[i+top_n].set_data(discrepancy_map/discrepancy_map.max())
                     ax_handles[i+top_n].set_title(f"bottom {i+1} image")
-                    min_discrepancy_maps[i] = discrepancy_map
+                    min_discrepancy_maps[i][unit_i] = discrepancy_map
 
                 plt.show()
                 pdf.savefig(fig)

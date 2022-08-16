@@ -213,7 +213,7 @@ def add_discrepancy_maps(response_diff, occluder_params, discrepancy_maps, box,
 #                                                                             #
 ###############################################################################
 def get_discrepancy_map(img, occluder_params, truncated_model, rf_size,
-            spatial_index, unit_i, batch_size=100, _debug=False, image_size=(227,227)):
+            spatial_index, unit_i, box, batch_size=100, _debug=False, image_size=(227,227)):
     """
     Presents the occluded image and returns the discrepency maps (one for
     each unit in the final layer of the truncated model).

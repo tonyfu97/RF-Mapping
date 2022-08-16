@@ -44,9 +44,9 @@ else:
 
 # Result directories
 if is_rfmp4a:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'compare')
+    result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'gt_vs_rfmp4a', model_name)
 else:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'color')
+    result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'gt_vs_rfmp4c7o', model_name)
 
 ###############################################################################
 
