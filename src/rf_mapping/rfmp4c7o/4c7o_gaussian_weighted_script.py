@@ -26,10 +26,10 @@ import src.rf_mapping.constants as c
 
 
 # Please specify some details here:
-model = models.alexnet(pretrained=True)
-model_name = 'alexnet'
-# model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
-# model_name = 'vgg16'
+# model = models.alexnet(pretrained=True)
+# model_name = 'alexnet'
+model = models.vgg16(pretrained=True).to(c.DEVICE)
+model_name = 'vgg16'
 # model = models.resnet18(pretrained=True).to(c.DEVICE)
 # model_name = "resnet18"
 image_shape = (227, 227)
@@ -100,7 +100,7 @@ def write_txt(f, layer_name, unit_i, raw_params, fxvar, map_size, num_bars):
 
 
 for conv_i in range(len(layer_indices)):
-    if model_name == 'vgg16' and conv_i < 4:
+    if model_name == 'vgg16' and conv_i < 1:
         continue
     layer_name = f"conv{conv_i + 1}"
     rf_size = rf_sizes[conv_i][0]

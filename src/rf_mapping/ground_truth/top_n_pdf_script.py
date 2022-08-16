@@ -23,10 +23,10 @@ import src.rf_mapping.constants as c
 # Please specify some details here:
 # model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1).to(c.DEVICE)
 # # model_name = "alexnet"
-# model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
-# model_name = "vgg16"
-model = models.resnet18(pretrained=True).to(c.DEVICE)
-model_name = "resnet18"
+model = models.vgg16(pretrained=True).to(c.DEVICE)
+model_name = "vgg16"
+# model = models.resnet18(pretrained=True).to(c.DEVICE)
+# model_name = "resnet18"
 top_n = 5
 image_size = (227, 227)
 

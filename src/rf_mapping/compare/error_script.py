@@ -24,10 +24,10 @@ from src.rf_mapping.result_txt_format import (GtGaussian as GT,
                                               Rfmp4aWeighted as W)
 
 # Please specify the model
-model = models.alexnet()
-model_name = 'alexnet'
-# model = models.vgg16()
-# model_name = 'vgg16'
+# model = models.alexnet()
+# model_name = 'alexnet'
+model = models.vgg16()
+model_name = 'vgg16'
 # model = models.resnet18()
 # model_name = 'resnet18'
 
@@ -195,7 +195,7 @@ def make_fxvar_pdf():
         plt.close()
 
 if __name__ == '__main__':
-    make_fxvar_pdf()
+    # make_fxvar_pdf()
     pass
 
 
@@ -362,7 +362,7 @@ def make_coords_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_coords_pdf()
+    # make_coords_pdf()
     pass
 
 
@@ -467,7 +467,7 @@ def make_radius_pdf():
 
 
 if __name__ == '__main__':
-    make_radius_pdf()
+    # make_radius_pdf()
     pass
 
 
@@ -539,7 +539,7 @@ def make_ori_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_ori_pdf()
+    # make_ori_pdf()
     pass
 
 
@@ -574,7 +574,7 @@ def make_error_coords_pdf():
             gb_ydata = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'MUY']
 
             plt.figure(figsize=(25,20))
-            plt.suptitle(f"Comparing of {model_name} {layer_name} RF center coordinates of different techniques (n = {num_units_total})", fontsize=24)
+            plt.suptitle(f"Comparing RF center coordinates of different techniques of {model_name} {layer_name} (n = {num_units_total})", fontsize=24)
 
             xdata = tb1_df.loc[(tb1_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_X']
             num_units_included = len(xdata)
@@ -833,7 +833,7 @@ def make_error_radius_pdf():
             num_bot_units = len(gb_radius)
 
             plt.figure(figsize=(20,10))
-            plt.suptitle(f"Comparing of {model_name} {layer_name} RF radii of different techniques (n = {num_units_total}, ERF = {rf_size[0]})", fontsize=24)
+            plt.suptitle(f"Comparing RF radii of different techniques of {model_name} {layer_name} (n = {num_units_total}, ERF = {rf_size[0]})", fontsize=24)
 
             radius = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_RAD_10']
             if sum(np.isfinite(radius)) == 0: 
@@ -941,7 +941,7 @@ def make_error_radius_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_error_radius_pdf()
+    # make_error_radius_pdf()
     pass
 
 

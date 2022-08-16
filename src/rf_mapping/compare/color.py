@@ -25,7 +25,8 @@ sys.path.append('../../..')
 import src.rf_mapping.constants as c
 from src.rf_mapping.hook import ConvUnitCounter
 from src.rf_mapping.spatial import get_rf_sizes
-from src.rf_mapping.result_txt_format import (Rfmp4aTB1 as TB1,
+from src.rf_mapping.result_txt_format import (GtGaussian as GT,
+                                              Rfmp4aTB1 as TB1,
                                               Rfmp4aTBn as TBn,
                                               Rfmp4aNonOverlap as NO,
                                               Rfmp4aWeighted as W,
@@ -34,10 +35,10 @@ from src.rf_mapping.result_txt_format import (Rfmp4aTB1 as TB1,
                                               CenterReponses as CR,)
 
 # Please specify the model
-model = models.alexnet()
-model_name = 'alexnet'
-# model = models.vgg16()
-# model_name = 'vgg16'
+# model = models.alexnet()
+# model_name = 'alexnet'
+model = models.vgg16()
+model_name = 'vgg16'
 # model = models.resnet18()
 # model_name = 'resnet18'
 top_n = 1000
@@ -106,6 +107,30 @@ set_column_names(c_tb100_df, TBn)
 set_column_names(c_no_df, NO)
 set_column_names(c_w_t_df, W)
 set_column_names(c_w_b_df, W)
+
+# Pad the missing layers with NAN because not all layers are mapped.
+gt_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'gaussian_fit')
+gt_top_path = os.path.join(gt_dir, model_name, 'abs', f"{model_name}_gt_gaussian_top.txt")
+gt_t_df  = pd.read_csv(gt_top_path, sep=" ", header=None)
+set_column_names(gt_t_df, GT)
+gt_no_data = gt_t_df[['LAYER', 'UNIT']].copy()  # template df used for padding
+def pad_missing_layers(df):
+    return pd.merge(gt_no_data, df, how='left')
+
+a_tb1_df   = pad_missing_layers(a_tb1_df)
+a_tb20_df  = pad_missing_layers(a_tb20_df)
+a_tb100_df = pad_missing_layers(a_tb100_df)
+a_no_df  = pad_missing_layers(a_no_df)
+a_w_t_df = pad_missing_layers(a_w_t_df)
+a_w_b_df = pad_missing_layers(a_w_b_df)
+
+c_tb1_df   = pad_missing_layers(c_tb1_df)
+c_tb20_df  = pad_missing_layers(c_tb20_df)
+c_tb100_df = pad_missing_layers(c_tb100_df)
+c_no_df  = pad_missing_layers(c_no_df)
+c_w_t_df = pad_missing_layers(c_w_t_df)
+c_w_b_df = pad_missing_layers(c_w_b_df)
+
 
 # Get/set some model-specific information.
 layer_indices, rf_sizes = get_rf_sizes(model, (227, 227))
@@ -293,7 +318,7 @@ def make_blen_color_pdf():
                 plt.close()
 
 if __name__ == "__main__":
-    # make_blen_color_pdf()
+    make_blen_color_pdf()
     pass
 
 
@@ -366,7 +391,7 @@ def make_tb1_r_color_pdf():
         plt.close()
 
 if __name__ == "__main__":
-    # make_tb1_r_color_pdf()
+    make_tb1_r_color_pdf()
     pass
 
 
@@ -623,7 +648,7 @@ def make_error_coords_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_error_coords_pdf()
+    make_error_coords_pdf()
     pass
 
 
