@@ -50,7 +50,7 @@ rfmp4c7o_mapping_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4c7o', 'mapping'
 rfmp4c7o_fit_dir     = os.path.join(c.REPO_DIR, 'results', 'rfmp4c7o', 'gaussian_fit')
 
 # Result directories
-result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'color')
+result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'rfmp4a_vs_rfmp4c7o', model_name)
 
 ###############################################################################
 
