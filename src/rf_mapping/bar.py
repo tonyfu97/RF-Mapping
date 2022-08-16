@@ -8,10 +8,10 @@ July 15, 2022
 import os
 import sys
 import math
+import warnings
 
 import concurrent.futures
 import numpy as np
-from numba import njit
 import torch
 import torch.nn as nn
 from torchvision import models
@@ -28,6 +28,28 @@ from src.rf_mapping.spatial import (xn_to_center_rf,
                                     get_rf_sizes,)
 from src.rf_mapping.net import get_truncated_model
 import src.rf_mapping.constants as c
+
+
+#######################################.#######################################
+#                                                                             #
+#                                  IMPORT NJIT                                #
+#                                                                             #
+#  Numba may not work with the lastest version of NumPy. In that case, a      #
+#  do-nothing decorator also named njit is used.
+#                                                                             #
+###############################################################################
+try:
+    from numba import njit
+except:
+    warnings.warn("bar.py cannot import Numba. Bars are generated without njit.")
+    def njit(func):
+        """
+        A do-nothing decorator in place of the actual njit in case that Python
+        cannot import Numba.
+        """
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
 
 
 #######################################.#######################################
