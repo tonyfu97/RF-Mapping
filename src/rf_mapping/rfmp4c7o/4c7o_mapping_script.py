@@ -23,8 +23,8 @@ import src.rf_mapping.constants as c
 # model_name = 'alexnet'
 # model = models.vgg16(pretrained=True).to(c.DEVICE)
 # model_name = 'vgg16'
-model = models.resnet18(pretrained=True).to(c.DEVICE)
-model_name = "resnet18"
+# model = models.resnet18(pretrained=True).to(c.DEVICE)
+# model_name = "resnet18"
 this_is_a_test_run = False
 batch_size = 10
 

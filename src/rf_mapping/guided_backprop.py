@@ -85,8 +85,9 @@ class GuidedBackprop:
                 # because the network calculates the residual path first, then
                 # calculates the shortcut path. So, even though the backprop
                 # did not require the residual path, its ReLU is calculated and
-                # appended to the self.forward_relu_outputs list nonetheless.
+                # appended to the self.forward_relu_outputs list.
                 del self.forward_relu_outputs[-1]
+
                 corresponding_forward_output = self.forward_relu_outputs[-1]
                 corresponding_forward_output[corresponding_forward_output > 0] = 1
                 # Rectification (see Springenberg et al. 2015 Figure 1).

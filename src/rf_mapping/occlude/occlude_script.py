@@ -22,11 +22,11 @@ from src.rf_mapping.occluder_discrepancy import (get_occluder_params,
 # model_name = "alexnet"
 # model = models.vgg16(pretrained=True).to(c.DEVICE)
 # model_name = "vgg16"
-model = models.resnet18(pretrained=True).to(c.DEVICE)
-model_name = "resnet18"
+# model = models.resnet18(pretrained=True).to(c.DEVICE)
+# model_name = "resnet18"
 top_n = 5
 image_size = (227, 227)
-this_is_a_test_run = False
+this_is_a_test_run = True
 batch_size = 10
 
 # Please double-check the directories:
@@ -113,7 +113,7 @@ if __name__ == "__main__":
                                                           batch_size=batch_size, _debug=this_is_a_test_run, image_size=image_size)
                     im_handles[i].set_data(discrepancy_map/discrepancy_map.max())
                     ax_handles[i].set_title(f"top {i+1} image")
-                    max_discrepancy_maps[i][unit_i] = discrepancy_map
+                    max_discrepancy_maps[i][unit_i] = discrepancy_map.copy()
 
                 # Bottom N images and gradient patches:
                 for i, (min_img_idx, min_patch_idx) in enumerate(zip(min_n_img_indices,
@@ -128,7 +128,7 @@ if __name__ == "__main__":
                                                           batch_size=batch_size, _debug=this_is_a_test_run, image_size=image_size)
                     im_handles[i+top_n].set_data(discrepancy_map/discrepancy_map.max())
                     ax_handles[i+top_n].set_title(f"bottom {i+1} image")
-                    min_discrepancy_maps[i][unit_i] = discrepancy_map
+                    min_discrepancy_maps[i][unit_i] = discrepancy_map.copy()
 
                 plt.show()
                 pdf.savefig(fig)

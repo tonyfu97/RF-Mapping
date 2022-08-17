@@ -26,14 +26,13 @@ import src.rf_mapping.constants as c
 
 
 # Please specify some details here:
-model = models.alexnet(pretrained=True)
-model_name = 'alexnet'
+# model = models.alexnet(pretrained=True)
+# model_name = 'alexnet'
 # model = models.vgg16(pretrained=True).to(c.DEVICE)
 # model_name = "vgg16"
 # model = models.resnet18(pretrained=True).to(c.DEVICE)
 # model_name = "resnet18"
 this_is_a_test_run = False
-
 # Please double-check the directories:
 map_dir = os.path.join(c.REPO_DIR, 'results', 'occlude', 'mapping', model_name)
 
@@ -104,10 +103,10 @@ for conv_i in range(len(layer_indices)):
     # Load backprop sums:
     max_file_path = os.path.join(map_dir, f"{layer_name}_max.npy")
     min_file_path = os.path.join(map_dir, f"{layer_name}_min.npy")
-    max_maps = np.load(max_file_path)  # [unit, y, x]
-    min_maps = np.load(min_file_path)  # [unit, y, x]
+    max_maps = np.load(max_file_path)  # [top_n, unit, y, x]
+    min_maps = np.load(min_file_path)  # [top_n, unit, y, x]
 
-    # Average the RGB channels:
+    # Average across the top-N maps.
     max_maps = np.mean(max_maps, axis=0)
     min_maps = np.mean(min_maps, axis=0)
 

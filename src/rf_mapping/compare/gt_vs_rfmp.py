@@ -548,7 +548,6 @@ if __name__ == '__main__':
 #                             PDF NO.4 ERROR COORDS                           #
 #                                                                             #
 ###############################################################################
-
 def config_plot(limits):
     line = np.linspace(min(limits), max(limits), 100)
     plt.plot(line, line, 'k', alpha=0.4)
