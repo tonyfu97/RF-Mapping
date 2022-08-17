@@ -26,10 +26,10 @@ import src.rf_mapping.constants as c
 
 
 # Please specify some details here:
-# model = models.alexnet(pretrained=True)
-# model_name = 'alexnet'
-model = models.vgg16(pretrained=True).to(c.DEVICE)
-model_name = "vgg16"
+model = models.alexnet(pretrained=True)
+model_name = 'alexnet'
+# model = models.vgg16(pretrained=True).to(c.DEVICE)
+# model_name = "vgg16"
 # model = models.resnet18(pretrained=True).to(c.DEVICE)
 # model_name = "resnet18"
 this_is_a_test_run = False
@@ -108,8 +108,8 @@ for conv_i in range(len(layer_indices)):
     min_maps = np.load(min_file_path)  # [unit, y, x]
 
     # Average the RGB channels:
-    max_maps = np.mean(max_maps, axis=1)
-    min_maps = np.mean(min_maps, axis=1)
+    max_maps = np.mean(max_maps, axis=0)
+    min_maps = np.mean(min_maps, axis=0)
 
     # Initialize arrays for parameters and standard error (SEM) values:
     num_units = nums_units[conv_i]

@@ -18,16 +18,16 @@ from src.rf_mapping.occluder_discrepancy import (get_occluder_params,
 
 
 # Please specify some details here:
-model = models.alexnet(pretrained=True).to(c.DEVICE)
-model_name = "alexnet"
+# model = models.alexnet(pretrained=True).to(c.DEVICE)
+# model_name = "alexnet"
 # model = models.vgg16(pretrained=True).to(c.DEVICE)
 # model_name = "vgg16"
-# model = models.resnet18(pretrained=True).to(c.DEVICE)
-# model_name = "resnet18"
+model = models.resnet18(pretrained=True).to(c.DEVICE)
+model_name = "resnet18"
 top_n = 5
 image_size = (227, 227)
-this_is_a_test_run = True
-batch_size = 100
+this_is_a_test_run = False
+batch_size = 10
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR
@@ -39,7 +39,7 @@ else:
 
 ###############################################################################
 
-# # Script guard
+# Script guard
 # if __name__ == "__main__":
 #     print("Look for a prompt.")
 #     user_input = input("This code may take hours to run. Are you sure? [y/n] ")
