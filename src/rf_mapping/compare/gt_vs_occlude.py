@@ -20,12 +20,12 @@ from src.rf_mapping.spatial import get_rf_sizes
 from src.rf_mapping.result_txt_format import GtGaussian as GT
 
 # Please specify the model
-# model = models.alexnet()
-# model_name = 'alexnet'
+model = models.alexnet()
+model_name = 'alexnet'
 # model = models.vgg16()
 # model_name = 'vgg16'
-model = models.resnet18()
-model_name = 'resnet18'
+# model = models.resnet18()
+# model_name = 'resnet18'
 this_is_a_test_run = False
 
 
@@ -556,4 +556,80 @@ if __name__ == '__main__':
     pass
 
 
+######################################.#######################################
+#                                                                            #
+#                         PDF NO.6 ERROR ORIENTATION                         #
+#                                                                            #
+##############################################################################
+def config_plot():
+    plt.xlim([-5, 95])
+    # plt.ylim([0.75, 4])
+    plt.xlabel('$\Delta \Theta $ (°)')
+
+def delta_ori(ori_1, ori_2):
+    # Note: this function assumes 0 <= ori < 180.
+    theta_small = np.minimum(ori_1, ori_2)
+    theta_large = np.maximum(ori_1, ori_2)
+    # Because angles wraps around 0 and 180 deg, we need to consider two cases:
+    delta_theta_a = theta_large - theta_small
+    delta_theta_b = (theta_small + 180) - theta_large
+    return np.minimum(delta_theta_a, delta_theta_b)
+
+def make_error_ori_pdf():
+    pdf_path = os.path.join(result_dir, f"{model_name}_error_ori.pdf")
+    with PdfPages(pdf_path) as pdf:
+        for conv_i, rf_size in enumerate(rf_sizes):
+            # Get some layer-specific information.
+            layer_name = f'conv{conv_i+1}'
+            num_units_total = len(gt_t_df.loc[(gt_t_df.LAYER == layer_name)])
+            
+            # Get ground truth data (top and bottom)
+            gt_data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres)]
+            gt_ecc = eccentricity(gt_data['SD1'], gt_data['SD2'])
+            gt_ori = gt_data['ORI']
+            gb_data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres) & (oc_b_df.FXVAR > fxvar_thres)]
+            gb_ecc = eccentricity(gb_data['SD1'], gb_data['SD2'])
+            gb_ori = gb_data['ORI']
+            
+            # Get weighted maps data (top and bottom)
+            oc_t_data = oc_t_df.loc[(oc_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres)]
+            oc_t_ecc = eccentricity(oc_t_data['SD1'], oc_t_data['SD2'])
+            oc_t_ori = oc_t_data['ORI']
+            oc_b_data = oc_b_df.loc[(oc_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres) & (oc_b_df.FXVAR > fxvar_thres)]
+            oc_b_ecc = eccentricity(oc_b_data['SD1'], oc_b_data['SD2'])
+            oc_b_ori = oc_b_data['ORI']
+
+            plt.figure(figsize=(10,11))
+            plt.suptitle(f"Comparing {model_name} {layer_name} RF orientations of different techniques\n(n = {num_units_total})", fontsize=16)
+
+            plt.subplot(2,2,1)
+            plt.scatter(delta_ori(gt_ori, oc_t_ori), gt_ecc, alpha=0.4)
+            config_plot()
+            plt.ylabel('GT eccentricity')
+            plt.title(f'GT vs. Occluder (top, n = {len(gt_ori)})')
+            
+            plt.subplot(2,2,2)
+            plt.scatter(delta_ori(gt_ori, oc_t_ori), oc_t_ecc, alpha=0.4)
+            config_plot()
+            plt.ylabel('Occluder eccentricity')
+            plt.title(f'GT vs. Occluder (top, n = {len(gt_ori)})')
+            
+            plt.subplot(2,2,3)
+            plt.scatter(delta_ori(gb_ori, oc_b_ori), gb_ecc, alpha=0.4)
+            config_plot()
+            plt.ylabel('GT eccentricity')
+            plt.title(f'GT vs. Occluder (bottom, n = {len(gb_ori)})')
+            
+            plt.subplot(2,2,4)
+            plt.scatter(delta_ori(gb_ori, oc_b_ori), oc_b_ecc, alpha=0.4)
+            config_plot()
+            plt.ylabel('Occluder eccentricity')
+            plt.title(f'GT vs. Occluder (bottom, n = {len(gb_ori)})')
+
+            pdf.savefig()
+            plt.close()
+
+if __name__ == '__main__':
+    # make_error_ori_pdf()
+    pass
 

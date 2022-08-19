@@ -88,10 +88,10 @@ if __name__ == "__main__":
             for unit_i in tqdm(range(num_units)):
                 if this_is_a_test_run and unit_i > 2:
                     continue
-                sys.stdout.write('\r')
-                sys.stdout.write(f"Making pdf for {layer_name} no.{unit_i}...")
-                sys.stdout.flush()
-                print()
+                # sys.stdout.write('\r')
+                # sys.stdout.write(f"Making pdf for {layer_name} no.{unit_i}...")
+                # sys.stdout.flush()
+                # print()
 
                 fig.suptitle(f"{layer_name} unit no.{unit_i}", fontsize=20)
                 # Get top and bottom image indices and patch spatial indices

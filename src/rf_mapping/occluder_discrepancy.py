@@ -251,9 +251,9 @@ def get_discrepancy_map(img, occluder_params, truncated_model, rf_size,
     discrepancy_map = np.zeros((rf_size, rf_size))
 
     while (occluder_i < num_stim):
-        sys.stdout.write('\r')
-        sys.stdout.write(f"Presenting {occluder_i}/{num_stim} stimuli...")
-        sys.stdout.flush()
+        # sys.stdout.write('\r')
+        # sys.stdout.write(f"Presenting {occluder_i}/{num_stim} stimuli...")
+        # sys.stdout.flush()
 
         real_batch_size = min(batch_size, num_stim-occluder_i)
         occluder_batch = torch.zeros((real_batch_size, 3, *image_size)).to(c.DEVICE)

@@ -14,12 +14,14 @@ import os
 import sys
 import math
 
+import concurrent.futures
 import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr
 import torchvision.models as models
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+from tqdm import tqdm
 
 sys.path.append('../../..')
 import src.rf_mapping.constants as c
@@ -35,13 +37,14 @@ from src.rf_mapping.result_txt_format import (GtGaussian as GT,
                                               CenterReponses as CR,)
 
 # Please specify the model
-# model = models.alexnet()
-# model_name = 'alexnet'
-model = models.vgg16()
-model_name = 'vgg16'
+model = models.alexnet()
+model_name = 'alexnet'
+# model = models.vgg16()
+# model_name = 'vgg16'
 # model = models.resnet18()
 # model_name = 'resnet18'
 top_n = 1000
+this_is_a_test_run = True
 
 # Source directories
 rfmp4a_mapping_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping')
@@ -50,7 +53,10 @@ rfmp4c7o_mapping_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4c7o', 'mapping'
 rfmp4c7o_fit_dir     = os.path.join(c.REPO_DIR, 'results', 'rfmp4c7o', 'gaussian_fit')
 
 # Result directories
-result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'rfmp4a_vs_rfmp4c7o', model_name)
+if this_is_a_test_run:
+    result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'rfmp4a_vs_rfmp4c7o', 'test')
+else:
+    result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'rfmp4a_vs_rfmp4c7o', model_name)
 
 ###############################################################################
 
@@ -141,190 +147,383 @@ fxvar_thres = 0.8
 
 #######################################.#######################################
 #                                                                             #
-#            PDF NO.1 DISTRIBUTIONO OF BAR_LENGTH IN TOP/BOTTOM MAPS          #
+#            PDF NO.1 DISTRIBUTION OF BAR LENGTH IN TOP/BOTTOM MAPS           #
 #                                                                             #
 #  To see if it is possible to reduce the number of bars by eliminating the   #
 #  the small bars.                                                            #
 #                                                                             #
 ###############################################################################
-def make_blen_color_pdf():
-    for conv_i in range(num_layers):
-        layer_name = f"conv{conv_i+1}"
-        num_units = nums_units[conv_i]
+def make_blen_color_pdf(conv_i):
+    layer_name = f"conv{conv_i+1}"
+    num_units = nums_units[conv_i]
 
-        # Load layer-specific RFMP4a (Achromatic) data that couldn't be loaded earlier.
-        a_splist_path = os.path.join(rfmp4a_mapping_dir, model_name, f"{layer_name}_splist.txt")
-        a_t5000_path = os.path.join(rfmp4a_mapping_dir, model_name, f"{layer_name}_top5000_responses.txt")
-        a_b5000_path = os.path.join(rfmp4a_mapping_dir, model_name, f"{layer_name}_bot5000_responses.txt")
-        
-        if os.path.exists(a_splist_path):
-            a_splist_df = pd.read_csv(a_splist_path, sep=" ", header=None)
-        else:
-            break  # In case this layer was not mapped.
-        if os.path.exists(a_t5000_path):
-            a_t5000_df = pd.read_csv(a_t5000_path, sep=" ", header=None)
-        if os.path.exists(a_b5000_path):
-            a_b5000_df = pd.read_csv(a_b5000_path, sep=" ", header=None)
-        
-        # Give the dataframes meaningful headers.
-        set_column_names(a_splist_df, aSP)
-        set_column_names(a_t5000_df, CR)
-        set_column_names(a_b5000_df, CR)
-        
-        
-        # Load layer-specific RFMP4c7o (Chromatic) data that couldn't be loaded earlier.
-        c_splist_path = os.path.join(rfmp4c7o_mapping_dir, model_name, f"{layer_name}_splist.txt")
-        c_t5000_path = os.path.join(rfmp4c7o_mapping_dir, model_name, f"{layer_name}_top5000_responses.txt")
-        c_b5000_path = os.path.join(rfmp4c7o_mapping_dir, model_name, f"{layer_name}_bot5000_responses.txt")
+    # Load layer-specific RFMP4a (Achromatic) data that couldn't be loaded earlier.
+    a_splist_path = os.path.join(rfmp4a_mapping_dir, model_name, f"{layer_name}_splist.txt")
+    a_t5000_path = os.path.join(rfmp4a_mapping_dir, model_name, f"{layer_name}_top5000_responses.txt")
+    a_b5000_path = os.path.join(rfmp4a_mapping_dir, model_name, f"{layer_name}_bot5000_responses.txt")
+    
+    if os.path.exists(a_splist_path):
+        a_splist_df = pd.read_csv(a_splist_path, sep=" ", header=None)
+    else:
+        return  # In case this layer was not mapped.
+    if os.path.exists(a_t5000_path):
+        a_t5000_df = pd.read_csv(a_t5000_path, sep=" ", header=None)
+    if os.path.exists(a_b5000_path):
+        a_b5000_df = pd.read_csv(a_b5000_path, sep=" ", header=None)
+    
+    # Give the dataframes meaningful headers.
+    set_column_names(a_splist_df, aSP)
+    set_column_names(a_t5000_df, CR)
+    set_column_names(a_b5000_df, CR)
+    
+    # Load layer-specific RFMP4c7o (Chromatic) data that couldn't be loaded earlier.
+    c_splist_path = os.path.join(rfmp4c7o_mapping_dir, model_name, f"{layer_name}_splist.txt")
+    c_t5000_path = os.path.join(rfmp4c7o_mapping_dir, model_name, f"{layer_name}_top5000_responses.txt")
+    c_b5000_path = os.path.join(rfmp4c7o_mapping_dir, model_name, f"{layer_name}_bot5000_responses.txt")
 
-        if os.path.exists(c_splist_path):
-            c_splist_df = pd.read_csv(c_splist_path, sep=" ", header=None)
-        else:
-            break  # In case this layer was not mapped.
-        if os.path.exists(c_t5000_path):
-            c_t5000_df = pd.read_csv(c_t5000_path, sep=" ", header=None)
-        if os.path.exists(c_b5000_path):
-            c_b5000_df = pd.read_csv(c_b5000_path, sep=" ", header=None)
-        
-        # Give the dataframes meaningful headers.
-        set_column_names(c_splist_df, cSP)
-        set_column_names(c_t5000_df, CR)
-        set_column_names(c_b5000_df, CR)
+    if os.path.exists(c_splist_path):
+        c_splist_df = pd.read_csv(c_splist_path, sep=" ", header=None)
+    else:
+        return  # In case this layer was not mapped.
+    if os.path.exists(c_t5000_path):
+        c_t5000_df = pd.read_csv(c_t5000_path, sep=" ", header=None)
+    if os.path.exists(c_b5000_path):
+        c_b5000_df = pd.read_csv(c_b5000_path, sep=" ", header=None)
+    
+    # Give the dataframes meaningful headers.
+    set_column_names(c_splist_df, cSP)
+    set_column_names(c_t5000_df, CR)
+    set_column_names(c_b5000_df, CR)
 
-        pdf_path = os.path.join(result_dir, f"{model_name}_{layer_name}_blen_color.pdf")
-        with PdfPages(pdf_path) as pdf:
-            for unit_i in range(num_units):
-                plt.figure(figsize=(24,12))
-                plt.suptitle(f"Distribution of Bar Lengths of Top and Bottom {top_n} Bars ({model_name} {layer_name} no.{unit_i})", fontsize=18)
+    pdf_path = os.path.join(result_dir, f"{model_name}_{layer_name}_blen_color.pdf")
+    with PdfPages(pdf_path) as pdf:
+        for unit_i in range(num_units):
+            plt.figure(figsize=(24,12))
+            plt.suptitle(f"Distribution of Bar Lengths of Top and Bottom {top_n} Bars ({model_name} {layer_name} no.{unit_i})", fontsize=18)
 
-                plt.subplot(2,4,1)
-                plt.grid()
-                blens = sorted(a_splist_df.LEN.unique())
-                xlim = [min(blens)-2, max(blens)+2]
-                response_avg = []
-                yerror = []
-                for blen in blens:
-                    stim_i = a_splist_df.loc[a_splist_df.LEN == blen, 'STIM_I']
-                    responses_of_this_blen = a_t5000_df.loc[(a_t5000_df.UNIT == unit_i) & (a_t5000_df.STIM_I.isin(stim_i)) & (a_t5000_df.RANK < top_n), 'R']
-                    response_avg.append(np.mean(responses_of_this_blen))
-                    if len(responses_of_this_blen) == 0:
-                        yerror.append(0)
-                    else:
-                        yerror.append(np.std(responses_of_this_blen)/math.sqrt(len(responses_of_this_blen)))
-                plt.errorbar(blens, response_avg, yerr=yerror, ecolor='black')
-                plt.xlabel('bar length (pix)', fontsize=12)
-                plt.ylabel('avg response', fontsize=12)
-                plt.xlim(xlim)
-                plt.title(f"RFMP4a top", fontsize=18)
+            plt.subplot(2,4,1)
+            plt.grid()
+            blens = sorted(a_splist_df.LEN.unique())
+            xlim = [min(blens)-2, max(blens)+2]
+            response_avg = []
+            yerror = []
+            for blen in blens:
+                stim_i = a_splist_df.loc[a_splist_df.LEN == blen, 'STIM_I']
+                responses_of_this_blen = a_t5000_df.loc[(a_t5000_df.UNIT == unit_i) & (a_t5000_df.STIM_I.isin(stim_i)) & (a_t5000_df.RANK < top_n), 'R']
+                response_avg.append(np.mean(responses_of_this_blen))
+                if len(responses_of_this_blen) == 0:
+                    yerror.append(0)
+                else:
+                    yerror.append(np.std(responses_of_this_blen)/math.sqrt(len(responses_of_this_blen)))
+            plt.errorbar(blens, response_avg, yerr=yerror, ecolor='black')
+            plt.xlabel('bar length (pix)', fontsize=12)
+            plt.ylabel('avg response', fontsize=12)
+            plt.xlim(xlim)
+            plt.title(f"RFMP4a top", fontsize=18)
 
-                plt.subplot(2,4,2)
-                plt.grid()
-                stim_i = a_t5000_df.loc[(a_t5000_df.UNIT == unit_i) & (a_t5000_df.RANK < top_n), 'STIM_I']
-                all_blens = a_splist_df.loc[a_splist_df.STIM_I.isin(stim_i), 'LEN']
-                plt.hist(all_blens)
-                plt.xlabel('bar length (pix)', fontsize=12)
-                plt.ylabel('counts', fontsize=12)
-                plt.xlim(xlim)
-                plt.title(f"RFMP4a top", fontsize=18)
+            plt.subplot(2,4,2)
+            plt.grid()
+            stim_i = a_t5000_df.loc[(a_t5000_df.UNIT == unit_i) & (a_t5000_df.RANK < top_n), 'STIM_I']
+            all_blens = a_splist_df.loc[a_splist_df.STIM_I.isin(stim_i), 'LEN']
+            plt.hist(all_blens)
+            plt.xlabel('bar length (pix)', fontsize=12)
+            plt.ylabel('counts', fontsize=12)
+            plt.xlim(xlim)
+            plt.title(f"RFMP4a top", fontsize=18)
 
-                plt.subplot(2,4,3)
-                plt.grid()
-                blens = sorted(c_splist_df.LEN.unique())
-                response_avg = []
-                yerror = []
-                for blen in blens:
-                    stim_i = c_splist_df.loc[c_splist_df.LEN == blen, 'STIM_I']
-                    responses_of_this_blen = c_t5000_df.loc[(c_t5000_df.UNIT == unit_i) & (c_t5000_df.STIM_I.isin(stim_i)) & (c_t5000_df.RANK < top_n), 'R']
-                    response_avg.append(np.mean(responses_of_this_blen))
-                    if len(responses_of_this_blen) == 0:
-                        yerror.append(0)
-                    else:
-                        yerror.append(np.std(responses_of_this_blen)/math.sqrt(len(responses_of_this_blen)))
-                plt.errorbar(blens, response_avg, yerr=yerror, ecolor='black')
-                plt.xlabel('bar length (pix)', fontsize=12)
-                plt.ylabel('avg response', fontsize=12)
-                plt.xlim(xlim)
-                plt.title(f"RFMP4c7o top", fontsize=18)
+            plt.subplot(2,4,3)
+            plt.grid()
+            blens = sorted(c_splist_df.LEN.unique())
+            response_avg = []
+            yerror = []
+            for blen in blens:
+                stim_i = c_splist_df.loc[c_splist_df.LEN == blen, 'STIM_I']
+                responses_of_this_blen = c_t5000_df.loc[(c_t5000_df.UNIT == unit_i) & (c_t5000_df.STIM_I.isin(stim_i)) & (c_t5000_df.RANK < top_n), 'R']
+                response_avg.append(np.mean(responses_of_this_blen))
+                if len(responses_of_this_blen) == 0:
+                    yerror.append(0)
+                else:
+                    yerror.append(np.std(responses_of_this_blen)/math.sqrt(len(responses_of_this_blen)))
+            plt.errorbar(blens, response_avg, yerr=yerror, ecolor='black')
+            plt.xlabel('bar length (pix)', fontsize=12)
+            plt.ylabel('avg response', fontsize=12)
+            plt.xlim(xlim)
+            plt.title(f"RFMP4c7o top", fontsize=18)
 
-                plt.subplot(2,4,4)
-                plt.grid()
-                stim_i = c_t5000_df.loc[(c_t5000_df.UNIT == unit_i) & (c_t5000_df.RANK < top_n), 'STIM_I']
-                all_blens = c_splist_df.loc[c_splist_df.STIM_I.isin(stim_i), 'LEN']
-                plt.hist(all_blens)
-                plt.xlabel('bar length (pix)', fontsize=12)
-                plt.ylabel('counts', fontsize=12)
-                plt.xlim(xlim)
-                plt.title(f"RFMP4c7o top", fontsize=18)
+            plt.subplot(2,4,4)
+            plt.grid()
+            stim_i = c_t5000_df.loc[(c_t5000_df.UNIT == unit_i) & (c_t5000_df.RANK < top_n), 'STIM_I']
+            all_blens = c_splist_df.loc[c_splist_df.STIM_I.isin(stim_i), 'LEN']
+            plt.hist(all_blens)
+            plt.xlabel('bar length (pix)', fontsize=12)
+            plt.ylabel('counts', fontsize=12)
+            plt.xlim(xlim)
+            plt.title(f"RFMP4c7o top", fontsize=18)
 
-                plt.subplot(2,4,5)
-                plt.grid()
-                blens = sorted(a_splist_df.LEN.unique())
-                response_avg = []
-                yerror = []
-                for blen in blens:
-                    stim_i = a_splist_df.loc[a_splist_df.LEN == blen, 'STIM_I']
-                    responses_of_this_blen = a_b5000_df.loc[(a_b5000_df.UNIT == unit_i) & (a_b5000_df.STIM_I.isin(stim_i)) & (a_b5000_df.RANK < top_n), 'R']
-                    response_avg.append(np.mean(responses_of_this_blen))
-                    if len(responses_of_this_blen) == 0:
-                        yerror.append(0)
-                    else:
-                        yerror.append(np.std(responses_of_this_blen)/math.sqrt(len(responses_of_this_blen)))
-                plt.errorbar(blens, response_avg, yerr=yerror, ecolor='black')
-                plt.xlabel('bar length (pix)', fontsize=12)
-                plt.ylabel('avg response', fontsize=12)
-                plt.xlim(xlim)
-                plt.title(f"RFMP4a bottom", fontsize=18)
+            plt.subplot(2,4,5)
+            plt.grid()
+            blens = sorted(a_splist_df.LEN.unique())
+            response_avg = []
+            yerror = []
+            for blen in blens:
+                stim_i = a_splist_df.loc[a_splist_df.LEN == blen, 'STIM_I']
+                responses_of_this_blen = a_b5000_df.loc[(a_b5000_df.UNIT == unit_i) & (a_b5000_df.STIM_I.isin(stim_i)) & (a_b5000_df.RANK < top_n), 'R']
+                response_avg.append(np.mean(responses_of_this_blen))
+                if len(responses_of_this_blen) == 0:
+                    yerror.append(0)
+                else:
+                    yerror.append(np.std(responses_of_this_blen)/math.sqrt(len(responses_of_this_blen)))
+            plt.errorbar(blens, response_avg, yerr=yerror, ecolor='black')
+            plt.xlabel('bar length (pix)', fontsize=12)
+            plt.ylabel('avg response', fontsize=12)
+            plt.xlim(xlim)
+            plt.title(f"RFMP4a bottom", fontsize=18)
 
-                plt.subplot(2,4,6)
-                plt.grid()
-                stim_i = a_b5000_df.loc[(a_b5000_df.UNIT == unit_i) & (a_b5000_df.RANK < top_n), 'STIM_I']
-                all_blens = a_splist_df.loc[a_splist_df.STIM_I.isin(stim_i), 'LEN']
-                plt.hist(all_blens)
-                plt.xlabel('bar length (pix)', fontsize=12)
-                plt.ylabel('counts', fontsize=12)
-                plt.xlim(xlim)
-                plt.title(f"RFMP4a bottom", fontsize=18)
+            plt.subplot(2,4,6)
+            plt.grid()
+            stim_i = a_b5000_df.loc[(a_b5000_df.UNIT == unit_i) & (a_b5000_df.RANK < top_n), 'STIM_I']
+            all_blens = a_splist_df.loc[a_splist_df.STIM_I.isin(stim_i), 'LEN']
+            plt.hist(all_blens)
+            plt.xlabel('bar length (pix)', fontsize=12)
+            plt.ylabel('counts', fontsize=12)
+            plt.xlim(xlim)
+            plt.title(f"RFMP4a bottom", fontsize=18)
 
-                plt.subplot(2,4,7)
-                plt.grid()
-                blens = sorted(c_splist_df.LEN.unique())
-                response_avg = []
-                yerror = []
-                for blen in blens:
-                    stim_i = c_splist_df.loc[c_splist_df.LEN == blen, 'STIM_I']
-                    responses_of_this_blen = c_b5000_df.loc[(c_b5000_df.UNIT == unit_i) & (c_b5000_df.STIM_I.isin(stim_i)) & (c_b5000_df.RANK < top_n), 'R']
-                    response_avg.append(np.mean(responses_of_this_blen))
-                    if len(responses_of_this_blen) == 0:
-                        yerror.append(0)
-                    else:
-                        yerror.append(np.std(responses_of_this_blen)/math.sqrt(len(responses_of_this_blen)))
-                plt.errorbar(blens, response_avg, yerr=yerror, ecolor='black')
-                plt.xlabel('bar length (pix)', fontsize=12)
-                plt.ylabel('avg response', fontsize=12)
-                plt.xlim(xlim)
-                plt.title(f"RFMP4c7o bottom", fontsize=18)
+            plt.subplot(2,4,7)
+            plt.grid()
+            blens = sorted(c_splist_df.LEN.unique())
+            response_avg = []
+            yerror = []
+            for blen in blens:
+                stim_i = c_splist_df.loc[c_splist_df.LEN == blen, 'STIM_I']
+                responses_of_this_blen = c_b5000_df.loc[(c_b5000_df.UNIT == unit_i) & (c_b5000_df.STIM_I.isin(stim_i)) & (c_b5000_df.RANK < top_n), 'R']
+                response_avg.append(np.mean(responses_of_this_blen))
+                if len(responses_of_this_blen) == 0:
+                    yerror.append(0)
+                else:
+                    yerror.append(np.std(responses_of_this_blen)/math.sqrt(len(responses_of_this_blen)))
+            plt.errorbar(blens, response_avg, yerr=yerror, ecolor='black')
+            plt.xlabel('bar length (pix)', fontsize=12)
+            plt.ylabel('avg response', fontsize=12)
+            plt.xlim(xlim)
+            plt.title(f"RFMP4c7o bottom", fontsize=18)
 
-                plt.subplot(2,4,8)
-                plt.grid()
-                stim_i = c_b5000_df.loc[(c_b5000_df.UNIT == unit_i) & (c_b5000_df.RANK < top_n), 'STIM_I']
-                all_blens = c_splist_df.loc[c_splist_df.STIM_I.isin(stim_i), 'LEN']
-                plt.hist(all_blens)
-                plt.xlabel('bar length (pix)', fontsize=12)
-                plt.ylabel('counts', fontsize=12)
-                plt.xlim(xlim)
-                plt.title(f"RFMP4c7o bottom", fontsize=18)
+            plt.subplot(2,4,8)
+            plt.grid()
+            stim_i = c_b5000_df.loc[(c_b5000_df.UNIT == unit_i) & (c_b5000_df.RANK < top_n), 'STIM_I']
+            all_blens = c_splist_df.loc[c_splist_df.STIM_I.isin(stim_i), 'LEN']
+            plt.hist(all_blens)
+            plt.xlabel('bar length (pix)', fontsize=12)
+            plt.ylabel('counts', fontsize=12)
+            plt.xlim(xlim)
+            plt.title(f"RFMP4c7o bottom", fontsize=18)
 
-                pdf.savefig()
-                plt.close()
+            pdf.savefig()
+            plt.close()
+    print(f"{pdf_path} done.")
 
 if __name__ == "__main__":
-    make_blen_color_pdf()
+    # batch_size = 5
+    # conv_i = 0
+    # while (conv_i < num_layers):
+    #     real_batch_size = min(batch_size, num_layers - conv_i)
+    #     with concurrent.futures.ProcessPoolExecutor() as executor:
+    #         executor.map(make_blen_color_pdf, [i for i in range(conv_i, conv_i + real_batch_size)])
+    #     conv_i += real_batch_size
     pass
 
 
 #######################################.#######################################
 #                                                                             #
-#       PDF NO.2 COMPARING MAX and MIN ACTIVATION OF RFMP4a and RFMP4c7o      #
+#            PDF NO.2 DISTRIBUTION OF BAR WIDTH IN TOP/BOTTOM MAPS            #
+#                                                                             #
+#  To see if it is possible to reduce the number of bars by eliminating the   #
+#  the some aspect ratios.                                                    #
+#                                                                             #
+###############################################################################
+def make_bwid_color_pdf(conv_i):
+    layer_name = f"conv{conv_i+1}"
+    num_units = nums_units[conv_i]
+
+    # Load layer-specific RFMP4a (Achromatic) data that couldn't be loaded earlier.
+    a_splist_path = os.path.join(rfmp4a_mapping_dir, model_name, f"{layer_name}_splist.txt")
+    a_t5000_path = os.path.join(rfmp4a_mapping_dir, model_name, f"{layer_name}_top5000_responses.txt")
+    a_b5000_path = os.path.join(rfmp4a_mapping_dir, model_name, f"{layer_name}_bot5000_responses.txt")
+    
+    if os.path.exists(a_splist_path):
+        a_splist_df = pd.read_csv(a_splist_path, sep=" ", header=None)
+    else:
+        return  # In case this layer was not mapped.
+    if os.path.exists(a_t5000_path):
+        a_t5000_df = pd.read_csv(a_t5000_path, sep=" ", header=None)
+    if os.path.exists(a_b5000_path):
+        a_b5000_df = pd.read_csv(a_b5000_path, sep=" ", header=None)
+    
+    # Give the dataframes meaningful headers.
+    set_column_names(a_splist_df, aSP)
+    set_column_names(a_t5000_df, CR)
+    set_column_names(a_b5000_df, CR)
+    
+    # Load layer-specific RFMP4c7o (Chromatic) data that couldn't be loaded earlier.
+    c_splist_path = os.path.join(rfmp4c7o_mapping_dir, model_name, f"{layer_name}_splist.txt")
+    c_t5000_path = os.path.join(rfmp4c7o_mapping_dir, model_name, f"{layer_name}_top5000_responses.txt")
+    c_b5000_path = os.path.join(rfmp4c7o_mapping_dir, model_name, f"{layer_name}_bot5000_responses.txt")
+
+    if os.path.exists(c_splist_path):
+        c_splist_df = pd.read_csv(c_splist_path, sep=" ", header=None)
+    else:
+        return  # In case this layer was not mapped.
+    if os.path.exists(c_t5000_path):
+        c_t5000_df = pd.read_csv(c_t5000_path, sep=" ", header=None)
+    if os.path.exists(c_b5000_path):
+        c_b5000_df = pd.read_csv(c_b5000_path, sep=" ", header=None)
+    
+    # Give the dataframes meaningful headers.
+    set_column_names(c_splist_df, cSP)
+    set_column_names(c_t5000_df, CR)
+    set_column_names(c_b5000_df, CR)
+
+    pdf_path = os.path.join(result_dir, f"{model_name}_{layer_name}_bwid_color.pdf")
+    with PdfPages(pdf_path) as pdf:
+        for unit_i in range(num_units):
+            plt.figure(figsize=(24,12))
+            plt.suptitle(f"Distribution of Bar Widths of Top and Bottom {top_n} Bars ({model_name} {layer_name} no.{unit_i})", fontsize=18)
+
+            plt.subplot(2,4,1)
+            plt.grid()
+            bwids = sorted(a_splist_df.WID.unique())
+            xlim = [min(bwids)-2, max(bwids)+2]
+            response_avg = []
+            yerror = []
+            for bwid in bwids:
+                stim_i = a_splist_df.loc[a_splist_df.WID == bwid, 'STIM_I']
+                responses_of_this_bwid = a_t5000_df.loc[(a_t5000_df.UNIT == unit_i) & (a_t5000_df.STIM_I.isin(stim_i)) & (a_t5000_df.RANK < top_n), 'R']
+                response_avg.append(np.mean(responses_of_this_bwid))
+                if len(responses_of_this_bwid) == 0:
+                    yerror.append(0)
+                else:
+                    yerror.append(np.std(responses_of_this_bwid)/math.sqrt(len(responses_of_this_bwid)))
+            plt.errorbar(bwids, response_avg, yerr=yerror, ecolor='black')
+            plt.xlabel('bar width (pix)', fontsize=12)
+            plt.ylabel('avg response', fontsize=12)
+            plt.xlim(xlim)
+            plt.title(f"RFMP4a top", fontsize=18)
+
+            plt.subplot(2,4,2)
+            plt.grid()
+            stim_i = a_t5000_df.loc[(a_t5000_df.UNIT == unit_i) & (a_t5000_df.RANK < top_n), 'STIM_I']
+            all_bwids = a_splist_df.loc[a_splist_df.STIM_I.isin(stim_i), 'WID']
+            plt.hist(all_bwids)
+            plt.xlabel('bar width (pix)', fontsize=12)
+            plt.ylabel('counts', fontsize=12)
+            plt.xlim(xlim)
+            plt.title(f"RFMP4a top", fontsize=18)
+
+            plt.subplot(2,4,3)
+            plt.grid()
+            bwids = sorted(c_splist_df.WID.unique())
+            response_avg = []
+            yerror = []
+            for bwid in bwids:
+                stim_i = c_splist_df.loc[c_splist_df.WID == bwid, 'STIM_I']
+                responses_of_this_bwid = c_t5000_df.loc[(c_t5000_df.UNIT == unit_i) & (c_t5000_df.STIM_I.isin(stim_i)) & (c_t5000_df.RANK < top_n), 'R']
+                response_avg.append(np.mean(responses_of_this_bwid))
+                if len(responses_of_this_bwid) == 0:
+                    yerror.append(0)
+                else:
+                    yerror.append(np.std(responses_of_this_bwid)/math.sqrt(len(responses_of_this_bwid)))
+            plt.errorbar(bwids, response_avg, yerr=yerror, ecolor='black')
+            plt.xlabel('bar width (pix)', fontsize=12)
+            plt.ylabel('avg response', fontsize=12)
+            plt.xlim(xlim)
+            plt.title(f"RFMP4c7o top", fontsize=18)
+
+            plt.subplot(2,4,4)
+            plt.grid()
+            stim_i = c_t5000_df.loc[(c_t5000_df.UNIT == unit_i) & (c_t5000_df.RANK < top_n), 'STIM_I']
+            all_bwids = c_splist_df.loc[c_splist_df.STIM_I.isin(stim_i), 'WID']
+            plt.hist(all_bwids)
+            plt.xlabel('bar width (pix)', fontsize=12)
+            plt.ylabel('counts', fontsize=12)
+            plt.xlim(xlim)
+            plt.title(f"RFMP4c7o top", fontsize=18)
+
+            plt.subplot(2,4,5)
+            plt.grid()
+            bwids = sorted(a_splist_df.WID.unique())
+            response_avg = []
+            yerror = []
+            for bwid in bwids:
+                stim_i = a_splist_df.loc[a_splist_df.WID == bwid, 'STIM_I']
+                responses_of_this_bwid = a_b5000_df.loc[(a_b5000_df.UNIT == unit_i) & (a_b5000_df.STIM_I.isin(stim_i)) & (a_b5000_df.RANK < top_n), 'R']
+                response_avg.append(np.mean(responses_of_this_bwid))
+                if len(responses_of_this_bwid) == 0:
+                    yerror.append(0)
+                else:
+                    yerror.append(np.std(responses_of_this_bwid)/math.sqrt(len(responses_of_this_bwid)))
+            plt.errorbar(bwids, response_avg, yerr=yerror, ecolor='black')
+            plt.xlabel('bar width (pix)', fontsize=12)
+            plt.ylabel('avg response', fontsize=12)
+            plt.xlim(xlim)
+            plt.title(f"RFMP4a bottom", fontsize=18)
+
+            plt.subplot(2,4,6)
+            plt.grid()
+            stim_i = a_b5000_df.loc[(a_b5000_df.UNIT == unit_i) & (a_b5000_df.RANK < top_n), 'STIM_I']
+            all_bwids = a_splist_df.loc[a_splist_df.STIM_I.isin(stim_i), 'WID']
+            plt.hist(all_bwids)
+            plt.xlabel('bar width (pix)', fontsize=12)
+            plt.ylabel('counts', fontsize=12)
+            plt.xlim(xlim)
+            plt.title(f"RFMP4a bottom", fontsize=18)
+
+            plt.subplot(2,4,7)
+            plt.grid()
+            bwids = sorted(c_splist_df.WID.unique())
+            response_avg = []
+            yerror = []
+            for bwid in bwids:
+                stim_i = c_splist_df.loc[c_splist_df.WID == bwid, 'STIM_I']
+                responses_of_this_bwid = c_b5000_df.loc[(c_b5000_df.UNIT == unit_i) & (c_b5000_df.STIM_I.isin(stim_i)) & (c_b5000_df.RANK < top_n), 'R']
+                response_avg.append(np.mean(responses_of_this_bwid))
+                if len(responses_of_this_bwid) == 0:
+                    yerror.append(0)
+                else:
+                    yerror.append(np.std(responses_of_this_bwid)/math.sqrt(len(responses_of_this_bwid)))
+            plt.errorbar(bwids, response_avg, yerr=yerror, ecolor='black')
+            plt.xlabel('bar width (pix)', fontsize=12)
+            plt.ylabel('avg response', fontsize=12)
+            plt.xlim(xlim)
+            plt.title(f"RFMP4c7o bottom", fontsize=18)
+
+            plt.subplot(2,4,8)
+            plt.grid()
+            stim_i = c_b5000_df.loc[(c_b5000_df.UNIT == unit_i) & (c_b5000_df.RANK < top_n), 'STIM_I']
+            all_bwids = c_splist_df.loc[c_splist_df.STIM_I.isin(stim_i), 'WID']
+            plt.hist(all_bwids)
+            plt.xlabel('bar width (pix)', fontsize=12)
+            plt.ylabel('counts', fontsize=12)
+            plt.xlim(xlim)
+            plt.title(f"RFMP4c7o bottom", fontsize=18)
+
+            pdf.savefig()
+            plt.close()
+    print(f"{pdf_path} done.")
+
+if __name__ == "__main__":
+    batch_size = 5
+    conv_i = 0
+    while (conv_i < num_layers):
+        real_batch_size = min(batch_size, num_layers - conv_i)
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            executor.map(make_bwid_color_pdf, [i for i in range(conv_i, conv_i + real_batch_size)])
+        conv_i += real_batch_size
+    pass
+
+
+#######################################.#######################################
+#                                                                             #
+#       PDF NO.3 COMPARING MAX and MIN ACTIVATION OF RFMP4a and RFMP4c7o      #
 #                                                                             #
 #  To see how important colors are.                                           #
 #                                                                             #
@@ -391,13 +590,13 @@ def make_tb1_r_color_pdf():
         plt.close()
 
 if __name__ == "__main__":
-    make_tb1_r_color_pdf()
+    # make_tb1_r_color_pdf()
     pass
 
 
 #######################################.#######################################
 #                                                                             #
-#             PDF NO.3 COMPARING COORINATES OF RFMP4a and RFMP4c7o            #
+#             PDF NO.4 COMPARING COORINATES OF RFMP4a and RFMP4c7o            #
 #                                                                             #
 ###############################################################################
 def config_plot(limits):
@@ -648,13 +847,13 @@ def make_error_coords_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_error_coords_pdf()
+    # make_error_coords_pdf()
     pass
 
 
 #######################################.#######################################
 #                                                                             #
-#                PDF NO.4 COMPARING RADII OF RFMP4a and RFMP4c7o              #
+#                PDF NO.5 COMPARING RADII OF RFMP4a and RFMP4c7o              #
 #                                                                             #
 ###############################################################################
 def config_plot(limits):
@@ -808,10 +1007,109 @@ def make_radius_color_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_radius_color_pdf()
+    # make_radius_color_pdf()
     pass
 
 
+######################################.#######################################
+#                                                                            #
+#                         PDF NO.6 ERROR ORIENTATION                         #
+#                                                                            #
+##############################################################################
+def eccentricity(sd1, sd2):
+    short = np.minimum(sd1, sd2)
+    long  = np.maximum(sd1, sd2)
+    # ecc = np.sqrt(1 - np.power(short, 2)/np.power(long, 2))
+    ecc = long/short
+    return ecc
+
+def config_plot():
+    plt.xlim([-5, 95])
+    # plt.ylim([0, 7])
+    plt.xlabel('$\Delta \Theta $ (°)')
+
+def delta_ori(ori_1, ori_2):
+    # Note: this function assumes 0 <= ori < 180.
+    theta_small = np.minimum(ori_1, ori_2)
+    theta_large = np.maximum(ori_1, ori_2)
+    # Because angles wraps around 0 and 180 deg, we need to consider two cases:
+    delta_theta_a = theta_large - theta_small
+    delta_theta_b = (theta_small + 180) - theta_large
+    return np.minimum(delta_theta_a, delta_theta_b)
+
+annotate_eccentricity_threshold = 3
+def annotate_eccentricity(angle_diff, a_w_t_ecc):
+    # Display unid indices for those that have large eccentricity values.
+    ax = plt.gca()
+    for unit_i, (angle, ecc) in enumerate(zip(angle_diff, a_w_t_ecc)):
+        if ecc > annotate_eccentricity_threshold:
+            ax.annotate(unit_i, (angle, ecc), fontsize=5)
+
+def make_error_ori_pdf():
+    pdf_path = os.path.join(result_dir, f"{model_name}_error_ori.pdf")
+    with PdfPages(pdf_path) as pdf:
+        for conv_i, rf_size in enumerate(rf_sizes):
+            # Get some layer-specific information.
+            layer_name = f'conv{conv_i+1}'
+            num_units_total = len(gt_t_df.loc[(gt_t_df.LAYER == layer_name)])
+            
+            # Get RFMP4a (Achromatic) data (top and bottom)
+            a_w_t_data = a_w_t_df.loc[(a_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres)]
+            a_w_t_ecc = eccentricity(a_w_t_data['SD1'], a_w_t_data['SD2'])
+            a_w_t_ori = a_w_t_data['ORI']
+            a_w_b_data = a_w_b_df.loc[(a_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres)]
+            a_w_b_ecc = eccentricity(a_w_b_data['SD1'], a_w_b_data['SD2'])
+            a_w_b_ori = a_w_b_data['ORI']
+            
+            # Get RFMP4c7o (Chromatic) data (top and bottom)
+            c_w_t_data = c_w_t_df.loc[(c_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres)]
+            c_w_t_ecc = eccentricity(c_w_t_data['SD1'], c_w_t_data['SD2'])
+            c_w_t_ori = c_w_t_data['ORI']
+            c_w_b_data = c_w_b_df.loc[(c_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres)]
+            c_w_b_ecc = eccentricity(c_w_b_data['SD1'], c_w_b_data['SD2'])
+            c_w_b_ori = c_w_b_data['ORI']
+
+            plt.figure(figsize=(10,11))
+            plt.suptitle(f"{model_name} {layer_name} RF orientations: RFMP4a vs. RFMP4c7o\n(n = {num_units_total})", fontsize=16)
+
+            plt.subplot(2,2,1)
+            angle_diff = delta_ori(a_w_t_ori, c_w_t_ori)
+            plt.scatter(angle_diff , a_w_t_ecc, alpha=0.4)
+            config_plot()
+            annotate_eccentricity(angle_diff, a_w_t_ecc)
+            plt.ylabel('RFMP4a eccentricity')
+            plt.title(f'top, n = {len(a_w_t_ori)}')
+
+            plt.subplot(2,2,2)
+            angle_diff = delta_ori(a_w_t_ori, c_w_t_ori)
+            plt.scatter(angle_diff, c_w_t_ecc, alpha=0.4)
+            config_plot()
+            annotate_eccentricity(angle_diff, c_w_t_ecc)
+            plt.ylabel('RFMP4c7o eccentricity')
+            plt.title(f'top, n = {len(a_w_t_ori)}')
+            
+            plt.subplot(2,2,3)
+            angle_diff = delta_ori(a_w_b_ori, c_w_b_ori)
+            plt.scatter(angle_diff, a_w_b_ecc, alpha=0.4)
+            config_plot()
+            annotate_eccentricity(angle_diff, a_w_b_ecc)
+            plt.ylabel('RFMP4a eccentricity')
+            plt.title(f'bottom, n = {len(a_w_b_ori)}')
+
+            plt.subplot(2,2,4)
+            angle_diff = delta_ori(a_w_b_ori, c_w_b_ori)
+            plt.scatter(angle_diff, c_w_b_ecc, alpha=0.4)
+            config_plot()
+            annotate_eccentricity(angle_diff, c_w_b_ecc)
+            plt.ylabel('RFMPc7o eccentricity')
+            plt.title(f'bottom, n = {len(a_w_b_ori)}')
+
+            pdf.savefig()
+            plt.close()
+
+if __name__ == '__main__':
+    # make_error_ori_pdf()
+    pass
 
 
 

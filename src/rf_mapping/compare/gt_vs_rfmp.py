@@ -24,14 +24,14 @@ from src.rf_mapping.result_txt_format import (GtGaussian as GT,
                                               Rfmp4aWeighted as W)
 
 # Please specify the model
-# model = models.alexnet()
-# model_name = 'alexnet'
-model = models.vgg16()
-model_name = 'vgg16'
+model = models.alexnet()
+model_name = 'alexnet'
+# model = models.vgg16()
+# model_name = 'vgg16'
 # model = models.resnet18()
 # model_name = 'resnet18'
 
-is_rfmp4a = False
+is_rfmp4a = True
 
 # Source directories
 gt_dir             = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'gaussian_fit')
@@ -646,7 +646,10 @@ def make_error_coords_pdf():
             plt.scatter(gt_xdata.loc[no_df.TOP_RAD_10 != -1], xdata, alpha=0.4)
             plt.xlabel('GT x')
             plt.ylabel('top non overlap x')
-            r_val, p_val = pearsonr(gt_xdata.loc[no_df.TOP_RAD_10 != -1], xdata)
+            try:
+                r_val, p_val = pearsonr(gt_xdata.loc[no_df.TOP_RAD_10 != -1], xdata)
+            except:
+                r_val = -1
             plt.title(f'GT vs. top non-overlap (n={num_units_included}, r={r_val:.2f})')
 
             ydata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_Y']
@@ -656,7 +659,10 @@ def make_error_coords_pdf():
             plt.scatter(gt_ydata.loc[no_df.TOP_RAD_10 != -1], ydata, alpha=0.4)
             plt.xlabel('GT y')
             plt.ylabel('top non overlap y')
-            r_val, p_val = pearsonr(gt_ydata.loc[no_df.TOP_RAD_10 != -1], ydata)
+            try:
+                r_val, p_val = pearsonr(gt_ydata.loc[no_df.TOP_RAD_10 != -1], ydata)
+            except:
+                r_val = -1
             plt.title(f'GT vs. top non-overlap (n={num_units_included}, r={r_val:.2f})')
 
             xdata = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres) & (gt_t_df.FXVAR > fxvar_thres), 'MUX']
@@ -666,7 +672,10 @@ def make_error_coords_pdf():
             plt.scatter(gt_xdata.loc[w_t_df.FXVAR > fxvar_thres], xdata, alpha=0.4)
             plt.xlabel('GT x')
             plt.ylabel('top weighted x')
-            r_val, p_val = pearsonr(gt_xdata.loc[w_t_df.FXVAR > fxvar_thres], xdata)
+            try:
+                r_val, p_val = pearsonr(gt_xdata.loc[w_t_df.FXVAR > fxvar_thres], xdata)
+            except:
+                r_val = -1
             plt.title(f'GT vs. top weighted (n={num_units_included}, r={r_val:.2f})')
 
             ydata = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres) & (gt_t_df.FXVAR > fxvar_thres), 'MUY']
@@ -676,7 +685,10 @@ def make_error_coords_pdf():
             plt.scatter(gt_ydata.loc[w_t_df.FXVAR > fxvar_thres], ydata, alpha=0.4)
             plt.xlabel('GT y')
             plt.ylabel('top weighted y')
-            r_val, p_val = pearsonr(gt_ydata.loc[w_t_df.FXVAR > fxvar_thres], ydata)
+            try:
+                r_val, p_val = pearsonr(gt_ydata.loc[w_t_df.FXVAR > fxvar_thres], ydata)
+            except:
+                r_val = -1
             plt.title(f'GT vs. top weighted (n={num_units_included}, r={r_val:.2f})')
 
             xdata = tb1_df.loc[(tb1_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_X']
@@ -795,7 +807,7 @@ def make_error_coords_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_error_coords_pdf()
+    # make_error_coords_pdf()
     pass
 
 
@@ -944,86 +956,79 @@ if __name__ == '__main__':
     pass
 
 
-#######################################.#######################################
-#                                                                             #
-#                          PDF NO.6 ERROR ORIENTATION                         #
-#                                                                             #
-###############################################################################
-# def config_plot(limits):
-#     line = np.linspace(min(limits), max(limits), 100)
-#     plt.plot(line, line, 'k', alpha=0.4)
-#     plt.xlim(limits)
-#     plt.ylim(limits)
-#     ax = plt.gca()
-#     ax.set_aspect('equal')
+######################################.#######################################
+#                                                                            #
+#                         PDF NO.6 ERROR ORIENTATION                         #
+#                                                                            #
+##############################################################################
+def config_plot():
+    plt.xlim([-5, 95])
+    # plt.ylim([0, 7])
+    plt.xlabel('$\Delta \Theta $ (°)')
 
-# def delta_ori(ori_1, ori_2):
-#     # Note: this function assumes 0 <= ori < 180.
-#     theta_small = np.minimum(ori_1, ori_2)
-#     theta_large = np.maximum(ori_1, ori_2)
-#     # Because angles wraps around 0 and 180 deg, we need to consider two cases:
-#     delta_theta_a = theta_large - theta_small
-#     delta_theta_b = (theta_small + 180) - theta_large
-#     return np.minimum(delta_theta_a, delta_theta_b)
+def delta_ori(ori_1, ori_2):
+    # Note: this function assumes 0 <= ori < 180.
+    theta_small = np.minimum(ori_1, ori_2)
+    theta_large = np.maximum(ori_1, ori_2)
+    # Because angles wraps around 0 and 180 deg, we need to consider two cases:
+    delta_theta_a = theta_large - theta_small
+    delta_theta_b = (theta_small + 180) - theta_large
+    return np.minimum(delta_theta_a, delta_theta_b)
 
-# def make_error_ori_pdf():
-#     pdf_path = os.path.join(result_dir, f"{model_name}_error_ori.pdf")
-#     with PdfPages(pdf_path) as pdf:
-#         for conv_i, rf_size in enumerate(rf_sizes):
-#             # Get some layer-specific information.
-#             layer_name = f'conv{conv_i+1}'
-#             num_units_total = len(gt_t_df.loc[(gt_t_df.LAYER == layer_name)])
+def make_error_ori_pdf():
+    pdf_path = os.path.join(result_dir, f"{model_name}_error_ori.pdf")
+    with PdfPages(pdf_path) as pdf:
+        for conv_i, rf_size in enumerate(rf_sizes):
+            # Get some layer-specific information.
+            layer_name = f'conv{conv_i+1}'
+            num_units_total = len(gt_t_df.loc[(gt_t_df.LAYER == layer_name)])
             
-#             # Get ground truth data (top and bottom)
-#             gt_data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres)]
-#             gt_ecc = eccentricity(gt_data['SD1'], gt_data['SD2'])
-#             gt_ori = gt_data['ORI']
-#             gb_data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres)]
-#             gb_ecc = eccentricity(gb_data['SD1'], gb_data['SD2'])
-#             gb_ori = gb_data['ORI']
+            # Get ground truth data (top and bottom)
+            gt_data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (w_t_df.FXVAR > fxvar_thres)]
+            gt_ecc = eccentricity(gt_data['SD1'], gt_data['SD2'])
+            gt_ori = gt_data['ORI']
+            gb_data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres) & (w_b_df.FXVAR > fxvar_thres)]
+            gb_ecc = eccentricity(gb_data['SD1'], gb_data['SD2'])
+            gb_ori = gb_data['ORI']
+            
+            # Get weighted maps data (top and bottom)
+            w_t_data = w_t_df.loc[(w_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (w_t_df.FXVAR > fxvar_thres)]
+            w_t_ecc = eccentricity(w_t_data['SD1'], w_t_data['SD2'])
+            w_t_ori = w_t_data['ORI']
+            w_b_data = w_b_df.loc[(w_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres) & (w_b_df.FXVAR > fxvar_thres)]
+            w_b_ecc = eccentricity(w_b_data['SD1'], w_b_data['SD2'])
+            w_b_ori = w_b_data['ORI']
 
-#             plt.figure(figsize=(10,11))
-#             plt.suptitle(f"Comparing {model_name} {layer_name} RF orientations of different techniques\n(n = {num_units_total})", fontsize=16)
+            plt.figure(figsize=(10,11))
+            plt.suptitle(f"Comparing {model_name} {layer_name} RF orientations of different techniques\n(n = {num_units_total})", fontsize=16)
 
-#             layer_data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres)]
-#             num_units_included = len(layer_data)
-#             ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
-#             ax = plt.subplot(221, projection='polar')
-#             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
-#             plt.ylim([0, 1])
-#             plt.title(f'ground truth top (n = {num_units_included})')
-#             plt.text(5, 0.2, 'eccentricity')
+            plt.subplot(2,2,1)
+            plt.scatter(delta_ori(gt_ori, w_t_ori), gt_ecc, alpha=0.4)
+            config_plot()
+            plt.ylabel('GT eccentricity')
+            plt.title(f'GT vs. Weighted (top, n = {len(gt_ori)})')
+            
+            plt.subplot(2,2,2)
+            plt.scatter(delta_ori(gt_ori, w_t_ori), w_t_ecc, alpha=0.4)
+            config_plot()
+            plt.ylabel('Weighted eccentricity')
+            plt.title(f'GT vs. Weighted (top, n = {len(gt_ori)})')
+            
+            plt.subplot(2,2,3)
+            plt.scatter(delta_ori(gb_ori, w_b_ori), gb_ecc, alpha=0.4)
+            config_plot()
+            plt.ylabel('GT eccentricity')
+            plt.title(f'GT vs. Weighted (bottom, n = {len(gb_ori)})')
+            
+            plt.subplot(2,2,4)
+            plt.scatter(delta_ori(gb_ori, w_b_ori), w_b_ecc, alpha=0.4)
+            config_plot()
+            plt.ylabel('Weighted eccentricity')
+            plt.title(f'GT vs. Weighted (bottom, n = {len(gb_ori)})')
 
-#             layer_data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres)]
-#             num_units_included = len(layer_data)
-#             ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
-#             ax = plt.subplot(223, projection='polar')
-#             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
-#             plt.ylim([0, 1])
-#             plt.title(f'ground truth bottom (n = {num_units_included})')
-#             plt.text(5, 0.2, 'eccentricity')
+            pdf.savefig()
+            plt.close()
 
-#             layer_data = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres)]
-#             num_units_included = len(layer_data)
-#             ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
-#             ax = plt.subplot(222, projection='polar')
-#             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
-#             plt.ylim([0, 1])
-#             plt.title(f'weighted map (top, n = {num_units_included})')
-#             plt.text(5, 0.2, 'eccentricity')
-
-#             layer_data = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres)]
-#             num_units_included = len(layer_data)
-#             ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
-#             ax = plt.subplot(224, projection='polar')
-#             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
-#             plt.ylim([0, 1])
-#             plt.title(f'weighted map (bottom, n = {num_units_included})')
-#             plt.text(5, 0.2, 'eccentricity')
-
-#             pdf.savefig()
-#             plt.close()
-
-# if __name__ == '__main__':
-#     # make_error_ori_pdf()
-#     pass
+if __name__ == '__main__':
+    # make_error_ori_pdf()
+    pass
