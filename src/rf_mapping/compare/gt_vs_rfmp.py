@@ -824,6 +824,15 @@ def config_plot(limits):
     ax = plt.gca()
     ax.set_aspect('equal')
 
+def del_outliers(radius_1, radius_2, rf_size):
+    new_radius_1 = []
+    new_radius_2 = []
+    for i in range(len(radius_1)):
+        if radius_1.iloc[i] < rf_size and radius_2.iloc[i] < rf_size:
+            new_radius_1.append(radius_1.iloc[i])
+            new_radius_2.append(radius_2.iloc[i])
+    return np.array(new_radius_1), np.array(new_radius_2)
+
 def make_error_radius_pdf():
     pdf_path = os.path.join(result_dir, f"{model_name}_error_radius.pdf")
     with PdfPages(pdf_path) as pdf:
@@ -832,19 +841,18 @@ def make_error_radius_pdf():
             layer_name = f'conv{conv_i+1}'
             num_units_total = len(gt_t_df.loc[(gt_t_df.LAYER == layer_name)])
             limits = (0, 70)
+            rf_size = rf_size[0]
 
             gt_sd1 = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'SD1']
             gt_sd2 = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'SD2']
             gt_radius = geo_mean(gt_sd1, gt_sd2)
-            num_top_units = len(gt_radius)
             
             gb_sd1 = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'SD1']
             gb_sd2 = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'SD2']
             gb_radius = geo_mean(gb_sd1, gb_sd2)
-            num_bot_units = len(gb_radius)
 
             plt.figure(figsize=(20,10))
-            plt.suptitle(f"Comparing RF radii of different techniques of {model_name} {layer_name} (n = {num_units_total}, ERF = {rf_size[0]})", fontsize=24)
+            plt.suptitle(f"Comparing RF radii of different techniques of {model_name} {layer_name} (n = {num_units_total}, ERF = {rf_size})", fontsize=24)
 
             radius = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_RAD_10']
             if sum(np.isfinite(radius)) == 0: 
@@ -858,7 +866,7 @@ def make_error_radius_pdf():
                 r_val, p_val = pearsonr(gt_radius.loc[no_df.TOP_RAD_10 != -1], radius)
             except:
                 r_val = np.NaN
-            plt.title(f'GT vs. non-overlap (top, n={num_top_units}, r={r_val:.2f})')
+            plt.title(f'GT vs. non-overlap (top, n={len(radius)}, r={r_val:.2f})')
 
             radius = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_50 != -1) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_RAD_50']
             plt.subplot(2,4,2)
@@ -870,7 +878,7 @@ def make_error_radius_pdf():
                 r_val, p_val = pearsonr(gt_radius.loc[no_df.TOP_RAD_50 != -1], radius)
             except:
                 r_val = np.NaN
-            plt.title(f'GT vs. non-overlap (top, n={num_top_units}, r={r_val:.2f})')
+            plt.title(f'GT vs. non-overlap (top, n={len(radius)}, r={r_val:.2f})')
 
             radius = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_90 != -1) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_RAD_90']
             plt.subplot(2,4,3)
@@ -882,21 +890,23 @@ def make_error_radius_pdf():
                 r_val, p_val = pearsonr(gt_radius.loc[no_df.TOP_RAD_90 != -1], radius)
             except:
                 r_val = np.NaN
-            plt.title(f'GT vs. non-overlap (top, n={num_top_units}, r={r_val:.2f})')
+            plt.title(f'GT vs. non-overlap (top, n={len(radius)}, r={r_val:.2f})')
 
             sd1 = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres) & (gt_t_df.FXVAR > fxvar_thres), 'SD1']
             sd2 = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres) & (gt_t_df.FXVAR > fxvar_thres), 'SD2']
             radius = geo_mean(sd1, sd2)
+            tmp_gt_radius = gt_radius.loc[w_t_df.FXVAR > fxvar_thres]
+            tmp_gt_radius, radius = del_outliers(tmp_gt_radius, radius, rf_size)
             plt.subplot(2,4,4)
             config_plot(limits)
-            plt.scatter(gt_radius.loc[gt_t_df.FXVAR > fxvar_thres], radius, alpha=0.4)
+            plt.scatter(tmp_gt_radius, radius, alpha=0.4)
             plt.xlabel('GT $\sqrt{sd_1^2+sd_2^2}$')
             plt.ylabel('weighted $\sqrt{sd_1^2+sd_2^2}$')
             try:
-                r_val, p_val = pearsonr(gt_radius.loc[gt_t_df.FXVAR > fxvar_thres], radius)
+                r_val, p_val = pearsonr(tmp_gt_radius, radius)
             except:
                 r_val = np.NaN
-            plt.title(f'GT vs. weighted (top, n={num_top_units}, r={r_val:.2f})')
+            plt.title(f'GT vs. weighted (top, n={len(radius)}, r={r_val:.2f})')
             
             radius = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_10 != -1) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_RAD_10']
             plt.subplot(2,4,5)
@@ -908,7 +918,7 @@ def make_error_radius_pdf():
                 r_val, p_val = pearsonr(gb_radius.loc[no_df.BOT_RAD_10 != -1], radius)
             except:
                 r_val = np.NaN
-            plt.title(f'GT vs. non-overlap (bottom, n={num_bot_units}, r={r_val:.2f})')
+            plt.title(f'GT vs. non-overlap (bottom, n={len(radius)}, r={r_val:.2f})')
 
             radius = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_50 != -1) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_RAD_50']
             plt.subplot(2,4,6)
@@ -920,7 +930,7 @@ def make_error_radius_pdf():
                 r_val, p_val = pearsonr(gb_radius.loc[no_df.BOT_RAD_50 != -1], radius)
             except:
                 r_val = np.NaN
-            plt.title(f'GT vs. non-overlap (bottom, n={num_bot_units}, r={r_val:.2f})')
+            plt.title(f'GT vs. non-overlap (bottom, n={len(radius)}, r={r_val:.2f})')
             
             radius = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_90 != -1) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_RAD_90']
             plt.subplot(2,4,7)
@@ -932,27 +942,29 @@ def make_error_radius_pdf():
                 r_val, p_val = pearsonr(gb_radius.loc[no_df.BOT_RAD_90 != -1], radius)
             except:
                 r_val = np.NaN
-            plt.title(f'GT vs. non-overlap (bottom, n={num_bot_units}, r={r_val:.2f})')
+            plt.title(f'GT vs. non-overlap (bottom, n={len(radius)}, r={r_val:.2f})')
             
             sd1 = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres) & (gt_b_df.FXVAR > fxvar_thres), 'SD1']
             sd2 = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres) & (gt_b_df.FXVAR > fxvar_thres), 'SD2']
             radius = geo_mean(sd1, sd2)
+            tmp_gb_radius = gb_radius.loc[w_b_df.FXVAR > fxvar_thres]
+            tmp_gb_radius, radius = del_outliers(tmp_gb_radius, radius, rf_size)
             plt.subplot(2,4,8)
             config_plot(limits)
-            plt.scatter(gb_radius.loc[w_b_df.FXVAR > fxvar_thres], radius, alpha=0.4)
+            plt.scatter(tmp_gb_radius, radius, alpha=0.4)
             plt.xlabel('GT $\sqrt{sd_1^2+sd_2^2}$')
             plt.ylabel('weighted $\sqrt{sd_1^2+sd_2^2}$')
             try:
-                r_val, p_val = pearsonr(gb_radius.loc[w_b_df.FXVAR > fxvar_thres], radius)
+                r_val, p_val = pearsonr(tmp_gb_radius, radius)
             except:
                 r_val = np.NaN
-            plt.title(f'GT vs. weighted (bottom, n={num_bot_units}, r={r_val:.2f})')
+            plt.title(f'GT vs. weighted (bottom, n={len(radius)}, r={r_val:.2f})')
 
             pdf.savefig()
             plt.close()
 
 if __name__ == '__main__':
-    # make_error_radius_pdf()
+    make_error_radius_pdf()
     pass
 
 

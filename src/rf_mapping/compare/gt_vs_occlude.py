@@ -20,10 +20,10 @@ from src.rf_mapping.spatial import get_rf_sizes
 from src.rf_mapping.result_txt_format import GtGaussian as GT
 
 # Please specify the model
-model = models.alexnet()
-model_name = 'alexnet'
-# model = models.vgg16()
-# model_name = 'vgg16'
+# model = models.alexnet()
+# model_name = 'alexnet'
+model = models.vgg16()
+model_name = 'vgg16'
 # model = models.resnet18()
 # model_name = 'resnet18'
 this_is_a_test_run = False
@@ -166,7 +166,7 @@ def make_fxvar_pdf():
         plt.close()
 
 if __name__ == '__main__':
-    # make_fxvar_pdf()
+    make_fxvar_pdf()
     pass
 
 
@@ -247,7 +247,7 @@ def make_coords_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_coords_pdf()
+    make_coords_pdf()
     pass
 
 
@@ -323,7 +323,7 @@ def make_radius_pdf():
 
 
 if __name__ == '__main__':
-    # make_radius_pdf()
+    make_radius_pdf()
     pass
 
 
@@ -395,7 +395,7 @@ def make_ori_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_ori_pdf()
+    make_ori_pdf()
     pass
 
 
@@ -478,7 +478,7 @@ def make_error_coords_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_error_coords_pdf()
+    make_error_coords_pdf()
     pass
 
 
@@ -502,7 +502,7 @@ def make_error_radius_pdf():
             # Get some layer-specific information.
             layer_name = f'conv{conv_i+1}'
             num_units_total = len(gt_t_df.loc[(gt_t_df.LAYER == layer_name)])
-            limits = (0, 150)
+            limits = (0, 60)
 
             plt.figure(figsize=(10,5))
             plt.suptitle(f"Comparing RF radii of different techniques of {model_name} {layer_name} (n = {num_units_total}, ERF = {rf_size[0]})", fontsize=16)
@@ -552,7 +552,7 @@ def make_error_radius_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_error_radius_pdf()
+    make_error_radius_pdf()
     pass
 
 
@@ -630,6 +630,6 @@ def make_error_ori_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_error_ori_pdf()
+    make_error_ori_pdf()
     pass
 

@@ -100,8 +100,6 @@ def write_txt(f, layer_name, unit_i, raw_params, fxvar, map_size, num_bars):
 
 
 for conv_i in range(len(layer_indices)):
-    if model_name == 'vgg16' and conv_i < 4:
-        continue
     layer_name = f"conv{conv_i + 1}"
     rf_size = rf_sizes[conv_i][0]
     

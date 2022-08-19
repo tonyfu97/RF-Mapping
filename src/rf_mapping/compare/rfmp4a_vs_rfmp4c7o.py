@@ -37,14 +37,14 @@ from src.rf_mapping.result_txt_format import (GtGaussian as GT,
                                               CenterReponses as CR,)
 
 # Please specify the model
-model = models.alexnet()
-model_name = 'alexnet'
-# model = models.vgg16()
-# model_name = 'vgg16'
+# model = models.alexnet()
+# model_name = 'alexnet'
+model = models.vgg16()
+model_name = 'vgg16'
 # model = models.resnet18()
 # model_name = 'resnet18'
 top_n = 1000
-this_is_a_test_run = True
+this_is_a_test_run = False
 
 # Source directories
 rfmp4a_mapping_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping')
@@ -511,13 +511,13 @@ def make_bwid_color_pdf(conv_i):
     print(f"{pdf_path} done.")
 
 if __name__ == "__main__":
-    batch_size = 5
-    conv_i = 0
-    while (conv_i < num_layers):
-        real_batch_size = min(batch_size, num_layers - conv_i)
-        with concurrent.futures.ProcessPoolExecutor() as executor:
-            executor.map(make_bwid_color_pdf, [i for i in range(conv_i, conv_i + real_batch_size)])
-        conv_i += real_batch_size
+    # batch_size = 5
+    # conv_i = 0
+    # while (conv_i < num_layers):
+    #     real_batch_size = min(batch_size, num_layers - conv_i)
+    #     with concurrent.futures.ProcessPoolExecutor() as executor:
+    #         executor.map(make_bwid_color_pdf, [i for i in range(conv_i, conv_i + real_batch_size)])
+    #     conv_i += real_batch_size
     pass
 
 
@@ -529,7 +529,13 @@ if __name__ == "__main__":
 #                                                                             #
 ###############################################################################
 annotate_threshold = 20  # Display unit number if (Chromatic_r / Achromatic_r)
-                         # is greater than this threshold.
+                         # is greater than this threshold.        
+def annotate_cr_ar_ratio(a_r, c_r):
+    # Display unit idx if c_top_r/a_top_r > annotate_threshold.
+    ax = plt.gca()
+    for unit_i, (ar, cr) in enumerate(zip(a_r, c_r)):
+        if cr/ar > annotate_threshold:
+            ax.annotate(unit_i, (ar, cr))
 
 def config_plot(limits):
     plt.axhline(0, color=(0, 0, 0, 0.5))
@@ -565,11 +571,7 @@ def make_tb1_r_color_pdf():
             except:
                 r_val = np.NaN
             plt.title(f"{layer_name} (top, r = {r_val:.2f})", fontsize=16)
-            # Display unit idx if c_top_r/a_top_r > annotate_threshold.
-            ax = plt.gca()
-            for unit_i, (ar, cr) in enumerate(zip(a_top_r, c_top_r)):
-                if cr/ar > annotate_threshold:
-                    ax.annotate(unit_i, (ar, cr))
+            annotate_cr_ar_ratio(a_top_r, c_top_r)
 
             plt.subplot(2,num_layers,conv_i+num_layers+1)
             plt.scatter(a_bot_r, c_bot_r, alpha=0.4)
@@ -580,11 +582,7 @@ def make_tb1_r_color_pdf():
             except:
                 r_val = np.NaN
             plt.title(f"{layer_name} (bottom, r = {r_val:.2f})", fontsize=16)
-            # Display unit idx if c_top_r/a_top_r > annotate_threshold.
-            ax = plt.gca()
-            for unit_i, (ar, cr) in enumerate(zip(a_bot_r, c_bot_r)):
-                if cr/ar > annotate_threshold:
-                    ax.annotate(unit_i, (ar, cr))
+            annotate_cr_ar_ratio(a_bot_r, c_bot_r)
 
         pdf.savefig()
         plt.close()
@@ -697,7 +695,10 @@ def make_error_coords_pdf():
             plt.scatter(a_data, c_data, alpha=0.4)
             plt.xlabel('RFMP4a top x')
             plt.ylabel('RFMP4c7o top x')
-            r_val, p_val = pearsonr(a_data, c_data)
+            try:
+                r_val, p_val = pearsonr(a_data, c_data)
+            except:
+                r_val = 0
             plt.title(f'top non-overlap x-coord (n={num_units_included}, r={r_val:.2f})')
 
             a_data = a_no_df.loc[(a_no_df.LAYER == layer_name) & (a_no_df.TOP_RAD_10 != -1) &  (c_no_df.TOP_RAD_10 != -1), 'TOP_Y']
@@ -708,7 +709,10 @@ def make_error_coords_pdf():
             plt.scatter(a_data, c_data, alpha=0.4)
             plt.xlabel('RFMP4a top y')
             plt.ylabel('RFMP4c7o top y')
-            r_val, p_val = pearsonr(a_data, c_data)
+            try:
+                r_val, p_val = pearsonr(a_data, c_data)
+            except:
+                r_val = 0
             plt.title(f'top non-overlap y-coord (n={num_units_included}, r={r_val:.2f})')
 
             a_data = a_w_t_df.loc[(a_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres), 'MUX']
@@ -719,7 +723,10 @@ def make_error_coords_pdf():
             plt.scatter(a_data, c_data, alpha=0.4)
             plt.xlabel('RFMP4a top x')
             plt.ylabel('RFMP4c7o top x')
-            r_val, p_val = pearsonr(a_data, c_data)
+            try:
+                r_val, p_val = pearsonr(a_data, c_data)
+            except:
+                r_val = 0
             plt.title(f'top weighted x-coord (n={num_units_included}, r={r_val:.2f})')
 
             a_data = a_w_t_df.loc[(a_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres), 'MUY']
@@ -730,7 +737,10 @@ def make_error_coords_pdf():
             plt.scatter(a_data, c_data, alpha=0.4)
             plt.xlabel('RFMP4a top y')
             plt.ylabel('RFMP4c7o top y')
-            r_val, p_val = pearsonr(a_data, c_data)
+            try:
+                r_val, p_val = pearsonr(a_data, c_data)
+            except:
+                r_val = 0
             plt.title(f'top weighted y-coord (n={num_units_included}, r={r_val:.2f})')
 
             plt.subplot(4,5,11)
@@ -807,7 +817,10 @@ def make_error_coords_pdf():
             plt.scatter(a_data, c_data, alpha=0.4)
             plt.xlabel('RFMP4a bot x')
             plt.ylabel('RFMP4c7o bot x')
-            r_val, p_val = pearsonr(a_data, c_data)
+            try:
+                r_val, p_val = pearsonr(a_data, c_data)
+            except:
+                r_val = 0
             plt.title(f'bottom non-overlap x-coord (n={num_units_included}, r={r_val:.2f})')
 
             a_data = a_no_df.loc[(a_no_df.LAYER == layer_name) & (a_no_df.TOP_RAD_10 != -1) &  (c_no_df.TOP_RAD_10 != -1), 'BOT_Y']
@@ -818,7 +831,10 @@ def make_error_coords_pdf():
             plt.scatter(a_data, c_data, alpha=0.4)
             plt.xlabel('RFMP4a bot y')
             plt.ylabel('RFMP4c7o bot y')
-            r_val, p_val = pearsonr(a_data, c_data)
+            try:
+                r_val, p_val = pearsonr(a_data, c_data)
+            except:
+                r_val = 0
             plt.title(f'bottom non-overlap y-coord (n={num_units_included}, r={r_val:.2f})')
 
             a_data = a_w_b_df.loc[(a_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres), 'MUX']
@@ -829,7 +845,10 @@ def make_error_coords_pdf():
             plt.scatter(a_data, c_data, alpha=0.4)
             plt.xlabel('RFMP4a bot x')
             plt.ylabel('RFMP4c7o bot x')
-            r_val, p_val = pearsonr(a_data, c_data)
+            try:
+                r_val, p_val = pearsonr(a_data, c_data)
+            except:
+                r_val = 0
             plt.title(f'bottom weighted x-coord (n={num_units_included}, r={r_val:.2f})')
 
             a_data = a_w_b_df.loc[(a_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres), 'MUY']
@@ -840,7 +859,10 @@ def make_error_coords_pdf():
             plt.scatter(a_data, c_data, alpha=0.4)
             plt.xlabel('RFMP4a bot y')
             plt.ylabel('RFMP4c7o bot y')
-            r_val, p_val = pearsonr(a_data, c_data)
+            try:
+                r_val, p_val = pearsonr(a_data, c_data)
+            except:
+                r_val = 0
             plt.title(f'bottom weighted y-coord (n={num_units_included}, r={r_val:.2f})')
 
             pdf.savefig()
@@ -867,6 +889,15 @@ def config_plot(limits):
 def geo_mean(sd1, sd2):
     return np.sqrt(np.power(sd1, 2) + np.power(sd2, 2))
 
+def del_outliers(radius_1, radius_2, rf_size):
+    new_radius_1 = []
+    new_radius_2 = []
+    for i in range(len(radius_1)):
+        if radius_1.iloc[i] < rf_size and radius_2.iloc[i] < rf_size:
+            new_radius_1.append(radius_1.iloc[i])
+            new_radius_2.append(radius_2.iloc[i])
+    return np.array(new_radius_1), np.array(new_radius_2)
+
 def make_radius_color_pdf():
     pdf_path = os.path.join(result_dir, f"{model_name}_radius_color.pdf")
     with PdfPages(pdf_path) as pdf:
@@ -874,10 +905,11 @@ def make_radius_color_pdf():
             # Get some layer-specific information.
             layer_name = f'conv{conv_i+1}'
             num_units_total = len(a_tb100_df.loc[(a_tb100_df.LAYER == layer_name)])
-            limits = (0, 70)
+            limits = (0, 150)
+            rf_size = rf_size[0]
 
             plt.figure(figsize=(20,10))
-            plt.suptitle(f"RF Radii ({model_name} {layer_name}, n = {num_units_total}, ERF = {rf_size[0]})", fontsize=24)
+            plt.suptitle(f"RF Radii ({model_name} {layer_name}, n = {num_units_total}, ERF = {rf_size})", fontsize=24)
 
             a_radius = a_no_df.loc[(a_no_df.LAYER == layer_name) & (a_no_df.TOP_RAD_10 != -1) & (c_no_df.TOP_RAD_10 != -1), 'TOP_RAD_10']
             c_radius = c_no_df.loc[(c_no_df.LAYER == layer_name) & (a_no_df.TOP_RAD_10 != -1) & (c_no_df.TOP_RAD_10 != -1), 'TOP_RAD_10']
@@ -930,6 +962,7 @@ def make_radius_color_pdf():
             c_sd1 = c_w_t_df.loc[(c_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres), 'SD1']
             c_sd2 = c_w_t_df.loc[(c_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres), 'SD2']
             c_radius = geo_mean(c_sd1, c_sd2)
+            a_radius, c_radius = del_outliers(a_radius, c_radius, rf_size)
             plt.subplot(2,4,4)
             config_plot(limits)
             plt.scatter(a_radius, c_radius, alpha=0.4)
@@ -992,6 +1025,8 @@ def make_radius_color_pdf():
             c_sd1 = c_w_b_df.loc[(c_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres), 'SD1']
             c_sd2 = c_w_b_df.loc[(c_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres), 'SD2']
             c_radius = geo_mean(c_sd1, c_sd2)
+            # Eliminate outliers (too big)
+            a_radius, c_radius = del_outliers(a_radius, c_radius, rf_size)
             plt.subplot(2,4,8)
             config_plot(limits)
             plt.scatter(a_radius, c_radius, alpha=0.4)
@@ -1007,7 +1042,7 @@ def make_radius_color_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_radius_color_pdf()
+    make_radius_color_pdf()
     pass
 
 
@@ -1038,10 +1073,10 @@ def delta_ori(ori_1, ori_2):
     return np.minimum(delta_theta_a, delta_theta_b)
 
 annotate_eccentricity_threshold = 3
-def annotate_eccentricity(angle_diff, a_w_t_ecc):
+def annotate_eccentricity(units, angle_diff, eccentricities):
     # Display unid indices for those that have large eccentricity values.
     ax = plt.gca()
-    for unit_i, (angle, ecc) in enumerate(zip(angle_diff, a_w_t_ecc)):
+    for unit_i, angle, ecc in zip(units, angle_diff, eccentricities):
         if ecc > annotate_eccentricity_threshold:
             ax.annotate(unit_i, (angle, ecc), fontsize=5)
 
@@ -1076,7 +1111,7 @@ def make_error_ori_pdf():
             angle_diff = delta_ori(a_w_t_ori, c_w_t_ori)
             plt.scatter(angle_diff , a_w_t_ecc, alpha=0.4)
             config_plot()
-            annotate_eccentricity(angle_diff, a_w_t_ecc)
+            annotate_eccentricity(a_w_t_data['UNIT'], angle_diff, a_w_t_ecc)
             plt.ylabel('RFMP4a eccentricity')
             plt.title(f'top, n = {len(a_w_t_ori)}')
 
@@ -1084,7 +1119,7 @@ def make_error_ori_pdf():
             angle_diff = delta_ori(a_w_t_ori, c_w_t_ori)
             plt.scatter(angle_diff, c_w_t_ecc, alpha=0.4)
             config_plot()
-            annotate_eccentricity(angle_diff, c_w_t_ecc)
+            annotate_eccentricity(a_w_t_data['UNIT'], angle_diff, c_w_t_ecc)
             plt.ylabel('RFMP4c7o eccentricity')
             plt.title(f'top, n = {len(a_w_t_ori)}')
             
@@ -1092,7 +1127,7 @@ def make_error_ori_pdf():
             angle_diff = delta_ori(a_w_b_ori, c_w_b_ori)
             plt.scatter(angle_diff, a_w_b_ecc, alpha=0.4)
             config_plot()
-            annotate_eccentricity(angle_diff, a_w_b_ecc)
+            annotate_eccentricity(a_w_b_data['UNIT'], angle_diff, a_w_b_ecc)
             plt.ylabel('RFMP4a eccentricity')
             plt.title(f'bottom, n = {len(a_w_b_ori)}')
 
@@ -1100,7 +1135,7 @@ def make_error_ori_pdf():
             angle_diff = delta_ori(a_w_b_ori, c_w_b_ori)
             plt.scatter(angle_diff, c_w_b_ecc, alpha=0.4)
             config_plot()
-            annotate_eccentricity(angle_diff, c_w_b_ecc)
+            annotate_eccentricity(a_w_b_data['UNIT'], angle_diff, c_w_b_ecc)
             plt.ylabel('RFMPc7o eccentricity')
             plt.title(f'bottom, n = {len(a_w_b_ori)}')
 
@@ -1110,6 +1145,3 @@ def make_error_ori_pdf():
 if __name__ == '__main__':
     # make_error_ori_pdf()
     pass
-
-
-
