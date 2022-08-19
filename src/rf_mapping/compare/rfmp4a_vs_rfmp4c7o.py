@@ -37,10 +37,10 @@ from src.rf_mapping.result_txt_format import (GtGaussian as GT,
                                               CenterReponses as CR,)
 
 # Please specify the model
-# model = models.alexnet()
-# model_name = 'alexnet'
-model = models.vgg16()
-model_name = 'vgg16'
+model = models.alexnet()
+model_name = 'alexnet'
+# model = models.vgg16()
+# model_name = 'vgg16'
 # model = models.resnet18()
 # model_name = 'resnet18'
 top_n = 1000

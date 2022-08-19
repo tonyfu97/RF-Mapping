@@ -24,12 +24,12 @@ from src.rf_mapping.result_txt_format import (GtGaussian as GT,
                                               Rfmp4aWeighted as W)
 
 # Please specify the model
-model = models.alexnet()
-model_name = 'alexnet'
+# model = models.alexnet()
+# model_name = 'alexnet'
 # model = models.vgg16()
 # model_name = 'vgg16'
-# model = models.resnet18()
-# model_name = 'resnet18'
+model = models.resnet18()
+model_name = 'resnet18'
 
 is_rfmp4a = True
 

@@ -22,10 +22,10 @@ from src.rf_mapping.result_txt_format import GtGaussian as GT
 # Please specify the model
 # model = models.alexnet()
 # model_name = 'alexnet'
-model = models.vgg16()
-model_name = 'vgg16'
-# model = models.resnet18()
-# model_name = 'resnet18'
+# model = models.vgg16()
+# model_name = 'vgg16'
+model = models.resnet18()
+model_name = 'resnet18'
 this_is_a_test_run = False
 
 
@@ -495,6 +495,15 @@ def config_plot(limits):
     ax = plt.gca()
     ax.set_aspect('equal')
 
+def del_outliers(radius_1, radius_2, rf_size):
+    new_radius_1 = []
+    new_radius_2 = []
+    for i in range(len(radius_1)):
+        if radius_1.iloc[i] < rf_size and radius_2.iloc[i] < rf_size:
+            new_radius_1.append(radius_1.iloc[i])
+            new_radius_2.append(radius_2.iloc[i])
+    return np.array(new_radius_1), np.array(new_radius_2)
+
 def make_error_radius_pdf():
     pdf_path = os.path.join(result_dir, f"{model_name}_error_radius.pdf")
     with PdfPages(pdf_path) as pdf:
@@ -502,10 +511,11 @@ def make_error_radius_pdf():
             # Get some layer-specific information.
             layer_name = f'conv{conv_i+1}'
             num_units_total = len(gt_t_df.loc[(gt_t_df.LAYER == layer_name)])
-            limits = (0, 60)
+            limits = (0, 120)
+            rf_size = rf_size[0]
 
             plt.figure(figsize=(10,5))
-            plt.suptitle(f"Comparing RF radii of different techniques of {model_name} {layer_name} (n = {num_units_total}, ERF = {rf_size[0]})", fontsize=16)
+            plt.suptitle(f"Comparing RF radii of different techniques of {model_name} {layer_name} (n = {num_units_total}, ERF = {rf_size})", fontsize=16)
             
             gt_sd1 = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres), 'SD1']
             gt_sd2 = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres), 'SD2']
@@ -517,7 +527,8 @@ def make_error_radius_pdf():
 
             if sum(np.isfinite(gt_radius)) == 0: 
                 continue  # Skip this layer if no data
-
+            gt_radius, ot_radius = del_outliers(gt_radius, ot_radius, rf_size)
+            
             plt.subplot(1,2,1)
             config_plot(limits)
             plt.scatter(gt_radius, ot_radius, alpha=0.4)
@@ -537,6 +548,7 @@ def make_error_radius_pdf():
             ob_sd2 = oc_b_df.loc[(oc_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres) & (oc_b_df.FXVAR > fxvar_thres), 'SD2']
             ob_radius = geo_mean(ob_sd1, ob_sd2)
             num_bot_units = len(gb_radius)
+            gb_radius, ob_radius = del_outliers(gb_radius, ob_radius, rf_size)
             plt.subplot(1,2,2)
             config_plot(limits)
             plt.scatter(gb_radius, ob_radius, alpha=0.4)
