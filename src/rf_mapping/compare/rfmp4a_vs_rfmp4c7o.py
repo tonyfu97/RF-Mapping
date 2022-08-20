@@ -195,7 +195,7 @@ def make_blen_color_pdf(conv_i):
     set_column_names(c_t5000_df, CR)
     set_column_names(c_b5000_df, CR)
 
-    pdf_path = os.path.join(result_dir, f"{model_name}_{layer_name}_blen_color.pdf")
+    pdf_path = os.path.join(result_dir, f"{model_name}_{layer_name}_rfmp4a_rfmp4c7o_blen_color.pdf")
     with PdfPages(pdf_path) as pdf:
         for unit_i in range(num_units):
             plt.figure(figsize=(24,12))
@@ -330,6 +330,8 @@ if __name__ == "__main__":
     #     with concurrent.futures.ProcessPoolExecutor() as executor:
     #         executor.map(make_blen_color_pdf, [i for i in range(conv_i, conv_i + real_batch_size)])
     #     conv_i += real_batch_size
+    for conv_i in range(num_layers):
+        make_blen_color_pdf(conv_i)
     pass
 
 
@@ -383,7 +385,7 @@ def make_bwid_color_pdf(conv_i):
     set_column_names(c_t5000_df, CR)
     set_column_names(c_b5000_df, CR)
 
-    pdf_path = os.path.join(result_dir, f"{model_name}_{layer_name}_bwid_color.pdf")
+    pdf_path = os.path.join(result_dir, f"{model_name}_{layer_name}_rfmp4a_rfmp4c7o_bwid_color.pdf")
     with PdfPages(pdf_path) as pdf:
         for unit_i in range(num_units):
             plt.figure(figsize=(24,12))
@@ -518,6 +520,8 @@ if __name__ == "__main__":
     #     with concurrent.futures.ProcessPoolExecutor() as executor:
     #         executor.map(make_bwid_color_pdf, [i for i in range(conv_i, conv_i + real_batch_size)])
     #     conv_i += real_batch_size
+    for conv_i in range(num_layers):
+        make_bwid_color_pdf(conv_i)
     pass
 
 
@@ -535,7 +539,7 @@ def annotate_cr_ar_ratio(a_r, c_r):
     ax = plt.gca()
     for unit_i, (ar, cr) in enumerate(zip(a_r, c_r)):
         if cr/ar > annotate_threshold:
-            ax.annotate(unit_i, (ar, cr))
+            ax.annotate(unit_i, (ar, cr), fontsize=5)
 
 def config_plot(limits):
     plt.axhline(0, color=(0, 0, 0, 0.5))
@@ -549,7 +553,7 @@ def config_plot(limits):
     ax.set_aspect('equal')
 
 def make_tb1_r_color_pdf():
-    pdf_path = os.path.join(result_dir, f"{model_name}_tb1_r_color.pdf")
+    pdf_path = os.path.join(result_dir, f"{model_name}_rfmp4a_vs_rfmp4c7o_tb1_r.pdf")
     with PdfPages(pdf_path) as pdf:
         plt.figure(figsize=(5*num_layers,10))
         plt.suptitle(f"Top and bottom 5000 Responses ({model_name})", fontsize=18)
@@ -607,13 +611,13 @@ def config_plot(limits):
     ax.set_aspect('equal')
 
 def make_error_coords_pdf():
-    pdf_path = os.path.join(result_dir, f"{model_name}_coords_color.pdf")
+    pdf_path = os.path.join(result_dir, f"{model_name}_rfmp4a_vs_rfmp4c7o_coords.pdf")
     with PdfPages(pdf_path) as pdf:
         for conv_i, rf_size in enumerate(rf_sizes):
             # Get some layer-specific information.
             layer_name = f'conv{conv_i+1}'
             num_units_total = len(a_tb100_df.loc[(a_tb100_df.LAYER == layer_name)])
-            limits = (-200, 200)
+            limits = (-100, 100)
 
             plt.figure(figsize=(25,20))
             plt.suptitle(f"RF center coordinates ({model_name} {layer_name}, n = {num_units_total})", fontsize=18)
@@ -869,7 +873,7 @@ def make_error_coords_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_error_coords_pdf()
+    make_error_coords_pdf()
     pass
 
 
@@ -899,7 +903,7 @@ def del_outliers(radius_1, radius_2, rf_size):
     return np.array(new_radius_1), np.array(new_radius_2)
 
 def make_radius_color_pdf():
-    pdf_path = os.path.join(result_dir, f"{model_name}_radius_color.pdf")
+    pdf_path = os.path.join(result_dir, f"{model_name}_rfmp4a_vs_rfmp4c7o_radius.pdf")
     with PdfPages(pdf_path) as pdf:
         for conv_i, rf_size in enumerate(rf_sizes):
             # Get some layer-specific information.
@@ -1081,7 +1085,7 @@ def annotate_eccentricity(units, angle_diff, eccentricities):
             ax.annotate(unit_i, (angle, ecc), fontsize=5)
 
 def make_error_ori_pdf():
-    pdf_path = os.path.join(result_dir, f"{model_name}_error_ori.pdf")
+    pdf_path = os.path.join(result_dir, f"{model_name}_rfmp4a_vs_rfmp4c7o_ori.pdf")
     with PdfPages(pdf_path) as pdf:
         for conv_i, rf_size in enumerate(rf_sizes):
             # Get some layer-specific information.
@@ -1143,5 +1147,5 @@ def make_error_ori_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_error_ori_pdf()
+    make_error_ori_pdf()
     pass

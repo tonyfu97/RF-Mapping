@@ -20,12 +20,12 @@ from src.rf_mapping.spatial import get_rf_sizes
 from src.rf_mapping.result_txt_format import GtGaussian as GT
 
 # Please specify the model
-# model = models.alexnet()
-# model_name = 'alexnet'
+model = models.alexnet()
+model_name = 'alexnet'
 # model = models.vgg16()
 # model_name = 'vgg16'
-model = models.resnet18()
-model_name = 'resnet18'
+# model = models.resnet18()
+# model_name = 'resnet18'
 this_is_a_test_run = False
 
 
@@ -126,7 +126,7 @@ def make_fxvar_pdf():
         oc_b_fxvar.append(oc_b_data)
         oc_b_labels.append(f"{layer_name}\n(n={oc_b_num_units},mu={oc_b_mean:.2f})")
 
-    pdf_path = os.path.join(result_dir, f"{model_name}_fxvar.pdf")
+    pdf_path = os.path.join(result_dir, f"{model_name}_gt_vs_occlude_fxvar.pdf")
     with PdfPages(pdf_path) as pdf:
         plt.figure(figsize=(num_layers*2,20))
         plt.suptitle(f"Fractions of explained variance of ground truth of {model_name}", fontsize=18)
@@ -184,7 +184,7 @@ def config_plot(limits):
     ax.set_aspect('equal')
 
 def make_coords_pdf():
-    pdf_path = os.path.join(result_dir, f"{model_name}_coords.pdf")
+    pdf_path = os.path.join(result_dir, f"{model_name}_gt_occlude_coords.pdf")
     with PdfPages(pdf_path) as pdf:
         for conv_i, rf_size in enumerate(rf_sizes):
             # Get some layer-specific information.
@@ -195,7 +195,7 @@ def make_coords_pdf():
             limits = (-20, 20)
 
             plt.figure(figsize=(10,10))
-            plt.suptitle(f"Estimations of {model_name} {layer_name} RF center coordinates using different techniques (n = {num_units_total})", fontsize=14)
+            plt.suptitle(f"{model_name} {layer_name} RF center coordinates of gt and occlude (n = {num_units_total})", fontsize=14)
 
             xdata = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'MUX']
             ydata = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'MUY']
@@ -260,7 +260,7 @@ def geo_mean(sd1, sd2):
     return np.sqrt(np.power(sd1, 2) + np.power(sd2, 2))
 
 def make_radius_pdf():
-    pdf_path = os.path.join(result_dir, f"{model_name}_radius.pdf")
+    pdf_path = os.path.join(result_dir, f"{model_name}_gt_occlude_radius.pdf")
     with PdfPages(pdf_path) as pdf:
         for conv_i, rf_size in enumerate(rf_sizes):
             # Get some layer-specific information.
@@ -272,7 +272,7 @@ def make_radius_pdf():
             bins = np.linspace(*xlim, 30)
 
             plt.figure(figsize=(10,10))
-            plt.suptitle(f"Estimations of {model_name} {layer_name} RF radii using different techniques (n = {num_units_total}, ERF = {rf_size})", fontsize=14)
+            plt.suptitle(f"{model_name} {layer_name} RF radii of gt and occlude (n = {num_units_total}, ERF = {rf_size})", fontsize=14)
 
             sd1data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'SD1']
             sd2data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'SD2']
@@ -340,7 +340,7 @@ def eccentricity(sd1, sd2):
     return ecc
 
 def make_ori_pdf():
-    pdf_path = os.path.join(result_dir, f"{model_name}_ori.pdf")
+    pdf_path = os.path.join(result_dir, f"{model_name}_gt_occlude_ori.pdf")
     with PdfPages(pdf_path) as pdf:
         for conv_i, rf_size in enumerate(rf_sizes):
             # Get some layer-specific information.
@@ -349,7 +349,7 @@ def make_ori_pdf():
             ylim = (0, 3)
 
             plt.figure(figsize=(10,11))
-            plt.suptitle(f"Estimations of {model_name} {layer_name} RF orientation using different techniques\n(n = {num_units_total})", fontsize=12)
+            plt.suptitle(f"{model_name} {layer_name} RF orientation of gt and occlude\n(n = {num_units_total})", fontsize=12)
 
             layer_data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres)]
             num_units_included = len(layer_data)
@@ -415,7 +415,7 @@ def config_plot(limits):
     ax.set_aspect('equal')
 
 def make_error_coords_pdf():
-    pdf_path = os.path.join(result_dir, f"{model_name}_error_coords.pdf")
+    pdf_path = os.path.join(result_dir, f"{model_name}_gt_vs_occlude_coords.pdf")
     with PdfPages(pdf_path) as pdf:
         for conv_i, rf_size in enumerate(rf_sizes):
             # Get some layer-specific information.
@@ -424,7 +424,7 @@ def make_error_coords_pdf():
             limits = (-20, 20)
             
             plt.figure(figsize=(10, 10))
-            plt.suptitle(f"Comparing RF center coordinates of different techniques of {model_name} {layer_name} (n = {num_units_total})", fontsize=14)
+            plt.suptitle(f"Comparing {model_name} {layer_name} RF center coordinates of gt and occlude of (n = {num_units_total})", fontsize=14)
 
             gt_xdata = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres), 'MUX']
             ot_xdata = oc_t_df.loc[(oc_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres), 'MUX']
@@ -505,17 +505,17 @@ def del_outliers(radius_1, radius_2, rf_size):
     return np.array(new_radius_1), np.array(new_radius_2)
 
 def make_error_radius_pdf():
-    pdf_path = os.path.join(result_dir, f"{model_name}_error_radius.pdf")
+    pdf_path = os.path.join(result_dir, f"{model_name}_gt_vs_occlude_radius.pdf")
     with PdfPages(pdf_path) as pdf:
         for conv_i, rf_size in enumerate(rf_sizes):
             # Get some layer-specific information.
             layer_name = f'conv{conv_i+1}'
             num_units_total = len(gt_t_df.loc[(gt_t_df.LAYER == layer_name)])
-            limits = (0, 120)
+            limits = (0, 70)
             rf_size = rf_size[0]
 
             plt.figure(figsize=(10,5))
-            plt.suptitle(f"Comparing RF radii of different techniques of {model_name} {layer_name} (n = {num_units_total}, ERF = {rf_size})", fontsize=16)
+            plt.suptitle(f"Comparing {model_name} {layer_name} RF radii of gt and occlude (n = {num_units_total}, ERF = {rf_size})", fontsize=16)
             
             gt_sd1 = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres), 'SD1']
             gt_sd2 = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres), 'SD2']
@@ -588,7 +588,7 @@ def delta_ori(ori_1, ori_2):
     return np.minimum(delta_theta_a, delta_theta_b)
 
 def make_error_ori_pdf():
-    pdf_path = os.path.join(result_dir, f"{model_name}_error_ori.pdf")
+    pdf_path = os.path.join(result_dir, f"{model_name}_gt_vs_occlude_ori.pdf")
     with PdfPages(pdf_path) as pdf:
         for conv_i, rf_size in enumerate(rf_sizes):
             # Get some layer-specific information.
@@ -612,7 +612,7 @@ def make_error_ori_pdf():
             oc_b_ori = oc_b_data['ORI']
 
             plt.figure(figsize=(10,11))
-            plt.suptitle(f"Comparing {model_name} {layer_name} RF orientations of different techniques\n(n = {num_units_total})", fontsize=16)
+            plt.suptitle(f"Comparing {model_name} {layer_name} RF orientations of gt and occlude\n(n = {num_units_total})", fontsize=16)
 
             plt.subplot(2,2,1)
             plt.scatter(delta_ori(gt_ori, oc_t_ori), gt_ecc, alpha=0.4)
