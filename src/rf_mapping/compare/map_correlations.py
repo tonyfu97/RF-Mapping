@@ -21,16 +21,17 @@ import src.rf_mapping.constants as c
 
 
 # Please specify some details here:
-# model = models.alexnet(pretrained=True)
-# model_name = 'alexnet'
+model = models.alexnet(pretrained=True)
+model_name = 'alexnet'
 # model = models.vgg16(pretrained=True).to(c.DEVICE)
 # model_name = 'vgg16'
-model = models.resnet18(pretrained=True)
-model_name = 'resnet18'
+# model = models.resnet18(pretrained=True)
+# model_name = 'resnet18'
 image_shape = (227, 227)
 this_is_a_test_run = False
 max_or_min = 'min'
 font_size = 20
+r_val_threshold = 0.7
 
 # Result paths:
 result_dir = os.path.join(c.REPO_DIR,
@@ -84,7 +85,7 @@ def load_maps(map_name, layer_name, max_or_min):
     else:
         raise KeyError(f"{map_name} does not exist.")
     
-def plot_r_val(r_val, p_val, font_size=20):
+def plot_r_val(r_val, p_val, font_size):
     plt.xticks([])
     plt.yticks([])
     plt.text(0.2, 0.7, f"r = {r_val:.4f}", fontsize=font_size)
@@ -93,6 +94,14 @@ def plot_r_val(r_val, p_val, font_size=20):
 # Make pdf:
 for conv_i in range(num_layers):
     layer_name = f"conv{conv_i+1}"
+    
+    high_r_val_counts = {'gt_vs_occlude' : 0,
+                         'gt_vs_rfmp4a' : 0,
+                         'gt_vs_rfmp4c7o' : 0,
+                         'occlude_vs_rfmp4a' : 0,
+                         'occlude_vs_rfmp4c7o' : 0,
+                         'rfmp4a_vs_rfmp4c7o' : 0}
+    
     pdf_path = os.path.join(result_dir, f"{layer_name}_{max_or_min}_map_r.pdf")
     with PdfPages(pdf_path) as pdf:
         try:
@@ -160,14 +169,20 @@ for conv_i in range(num_layers):
             plt.subplot(5, 5, 8)
             r_val, p_val = pearsonr(gt_maps[unit_i].flatten(), occlude_maps[unit_i].flatten())
             plot_r_val(r_val, p_val, font_size)
+            if r_val > r_val_threshold:
+                high_r_val_counts['gt_vs_occlude'] += 1
             
             plt.subplot(5, 5, 9)
             r_val, p_val = pearsonr(gt_maps[unit_i].flatten(), rfmp4a_maps[unit_i].flatten())
             plot_r_val(r_val, p_val, font_size)
+            if r_val > r_val_threshold:
+                high_r_val_counts['gt_vs_rfmp4a'] += 1
             
             plt.subplot(5, 5, 10)
             r_val, p_val = pearsonr(gt_maps[unit_i].flatten(), rfmp4c7o_array)
             plot_r_val(r_val, p_val, font_size)
+            if r_val > r_val_threshold:
+                high_r_val_counts['gt_vs_rfmp4c7o'] += 1
             
             plt.subplot(5, 5, 13)
             r_val, p_val = pearsonr(occlude_maps[unit_i].flatten(), occlude_maps[unit_i].flatten())
@@ -176,10 +191,14 @@ for conv_i in range(num_layers):
             plt.subplot(5, 5, 14)
             r_val, p_val = pearsonr(occlude_maps[unit_i].flatten(), rfmp4a_maps[unit_i].flatten())
             plot_r_val(r_val, p_val, font_size)
+            if r_val > r_val_threshold:
+                high_r_val_counts['occlude_vs_rfmp4a'] += 1
             
             plt.subplot(5, 5, 15)
             r_val, p_val = pearsonr(occlude_maps[unit_i].flatten(), rfmp4c7o_array)
             plot_r_val(r_val, p_val, font_size)
+            if r_val > r_val_threshold:
+                high_r_val_counts['occlude_vs_rfmp4c7o'] += 1
             
             plt.subplot(5, 5, 19)
             r_val, p_val = pearsonr(rfmp4a_maps[unit_i].flatten(), rfmp4a_maps[unit_i].flatten())
@@ -188,6 +207,8 @@ for conv_i in range(num_layers):
             plt.subplot(5, 5, 20)
             r_val, p_val = pearsonr(rfmp4a_maps[unit_i].flatten(), rfmp4c7o_array)
             plot_r_val(r_val, p_val, font_size)
+            if r_val > r_val_threshold:
+                high_r_val_counts['rfmp4a_vs_rfmp4c7o'] += 1
             
             plt.subplot(5, 5, 25)
             r_val, p_val = pearsonr(rfmp4c7o_array, rfmp4c7o_array)
@@ -195,3 +216,10 @@ for conv_i in range(num_layers):
 
             pdf.savefig()
             plt.close()
+        
+        plt.figure(figsize=(20, 10))
+        plt.bar(high_r_val_counts.keys(), high_r_val_counts.values())
+        plt.ylabel('counts', fontsize=font_size)
+        plt.title(f"Distribution of r values higher than {r_val_threshold}", fontsize=font_size)
+        pdf.savefig()
+        plt.close()
