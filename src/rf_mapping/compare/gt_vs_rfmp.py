@@ -3,11 +3,9 @@ To visualize the difference between ground truth and bar mapping methods.
 
 Tony Fu, July 27th, 2022
 """
-from operator import gt
 import os
 import sys
 import math
-from tkinter import E
 
 import numpy as np
 import pandas as pd
