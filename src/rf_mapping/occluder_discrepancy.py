@@ -121,8 +121,10 @@ def get_occluder_params(box, rf_size, image_size):
         'bottom_right' corners (inclusive, in (y, x)) format. Note: the y-axis
         points downward.
     """
-    occluder_size = max(rf_size // 10, 1)
-    occluder_stride = max(occluder_size // 3, 1)
+    # occluder_size = max(rf_size // 10, 1)
+    # occluder_stride = max(occluder_size // 3, 1)
+    occluder_size = 3
+    occluder_stride = 1
     occluder_params = []
 
     vx_min, hx_min, vx_max, hx_max = box

@@ -1,4 +1,5 @@
-# git update-index --assume-unchanged src/rf_mapping/constants.py 
+# git update-index --assume-unchanged src/rf_mapping/constants.py
+# git update-index --skip-worktree src/rf_mapping/constants.py
 import torch
 # Use 'mps' if using Apple silicon
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
