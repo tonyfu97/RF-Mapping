@@ -19,13 +19,13 @@ from src.rf_mapping.bar import rfmp4c7o_run_01
 import src.rf_mapping.constants as c
 
 # Please specify some details here:
-# model = models.alexnet(pretrained=True).to(c.DEVICE)
-# model_name = 'alexnet'
+model = models.alexnet(pretrained=True).to(c.DEVICE)
+model_name = 'alexnet'
 # model = models.vgg16(pretrained=True).to(c.DEVICE)
 # model_name = 'vgg16'
 # model = models.resnet18(pretrained=True).to(c.DEVICE)
 # model_name = "resnet18"
-this_is_a_test_run = False
+this_is_a_test_run = True
 batch_size = 10
 
 # Please double-check the directories:
