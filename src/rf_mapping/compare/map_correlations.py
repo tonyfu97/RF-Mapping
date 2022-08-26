@@ -13,6 +13,7 @@ from torchvision import models
 # from torchvision.models import AlexNet_Weights, VGG16_Weights
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+from tqdm import tqdm
 
 
 sys.path.append('../../..')
@@ -122,15 +123,16 @@ for conv_i in range(num_layers):
         num_units = gt_maps.shape[0]
 
         # Correlate the maps.
-        for unit_i in range(num_units):
+        for unit_i in tqdm(range(num_units)):
             """
-                              gt  gt(max+min) occlude  rfmp4a  rfmp4c7o         
-                               2      3         4         5       6
-                7. gt          8      9         10        11      12
-                13.gt(max+min) 14     15        16        17      18
-                19.occlude     20     21        22        23      24
-                25.rfmp4a      26     27        28        29      30
-                31.rfmp4c7o    32     33        34        35      36
+            Subplot indices:
+
+                              2.gt  3.gt(max+min) 4.occlude  5.rfmp4a  6.rfmp4c7o         
+                7. gt          8        9            10         11         12
+                13.gt(max+min)          15           16         17         18
+                19.occlude                           22         23         24
+                25.rfmp4a                                       29         30
+                31.rfmp4c7o                                                36
             """
             plt.figure(figsize=(20, 18))
             plt.suptitle(f"Correlations of different maps (no.{unit_i}, {max_or_min})", fontsize=32)
@@ -261,7 +263,7 @@ for conv_i in range(num_layers):
             pdf.savefig()
             plt.close()
         
-        plt.figure(figsize=(20, 8))
+        plt.figure(figsize=(25, 8))
         plt.bar(high_r_val_counts.keys(), high_r_val_counts.values())
         plt.ylabel('counts', fontsize=font_size)
         plt.title(f"Distribution of r values higher than {r_val_threshold}", fontsize=font_size)

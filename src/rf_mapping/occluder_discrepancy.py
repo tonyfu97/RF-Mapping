@@ -33,7 +33,15 @@ stride linearly with the RF field size according to the formula:
 This method will serve as an alternative to the guided backprop visualizations
 for the 'ground truth' RF mapping.
 
-Tony Fu, Aug 5, 2022
+Author: Tony Fu
+Date Created: Aug 5, 2022
+Last Modified: Aug 25, 2022
+
+Update: Dr. Bair has pointed out that by adding the entire occluder areas to
+the map, the algorithm has blurred the result as if it is convolved with a
+uniform kernel of the same size. In order avoid blurring, Dr. Bair suggested
+to only add the center of the occluders to the map. This change was made on
+August 25, 2022.
 """
 import sys
 
@@ -197,14 +205,20 @@ def add_discrepancy_maps(response_diff, occluder_params, discrepancy_maps, box,
         occ_vx_min, occ_hx_min = occluder_param['top_left']
         occ_vx_max, occ_hx_max = occluder_param['bottom_right']
         
-        # translate occluder params (spatial indices) to be between [0, rf_size-1].
+        # translate occluder params (spatial indices that spans the entire
+        # image) to be between [0, rf_size-1].
         occ_vx_min -= v_offset
         occ_hx_min -= h_offset
         occ_vx_max -= v_offset
         occ_hx_max -= h_offset
         
-        discrepancy_maps[occ_vx_min:occ_vx_max+1, occ_hx_min:occ_hx_max+1] +=\
-                                              np.abs(response_diff[occluder_i])
+        # discrepancy_maps[occ_vx_min:occ_vx_max+1, occ_hx_min:occ_hx_max+1] +=\
+        #                                       np.abs(response_diff[occluder_i])
+        
+        # add the center of the occluder weighted by the abs(response).
+        mid_vx = (occ_vx_max + occ_vx_min) // 2
+        mid_hx = (occ_hx_max + occ_hx_min) // 2
+        discrepancy_maps[mid_vx, mid_hx] += np.abs(response_diff[occluder_i])
 
 
 #######################################.#######################################
