@@ -22,19 +22,19 @@ from src.rf_mapping.files import delete_all_npy_files
 import src.rf_mapping.constants as c
 
 # Please specify some details here:
-model = models.alexnet(pretrained=True)
-model_name = 'alexnet'
+# model = models.alexnet(pretrained=True).to(c.DEVICE)
+# model_name = 'alexnet'
 # model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
 # model_name = "vgg16"
-# model = models.resnet18(pretrained=True).to(c.DEVICE)
-# model_name = "resnet18"
+model = models.resnet18(pretrained=True).to(c.DEVICE)
+model_name = "resnet18"
 num_images = 50000
 batch_size = 100
 top_n = 100
 yn, xn = (227, 227)
 this_is_a_test_run = False
 
-# Please double-check the directories:y
+# Please double-check the directories:
 img_dir = c.IMG_DIR
 img_names = [f"{i}.npy" for i in range(num_images)]
 if this_is_a_test_run:
@@ -44,14 +44,14 @@ else:
 
 ###############################################################################
 
-# Script guard.
-if __name__ == "__main__":
-    user_input = input("This code takes time to run. Are you sure? "\
-                       "Enter 'y' to proceed. Type any other key to stop: ")
-    if user_input == 'y':
-        pass
-    else: 
-        raise KeyboardInterrupt("Interrupted by user")
+# # Script guard.
+# if __name__ == "__main__":
+#     user_input = input("This code takes time to run. Are you sure? "\
+#                        "Enter 'y' to proceed. Type any other key to stop: ")
+#     if user_input == 'y':
+#         pass
+#     else: 
+#         raise KeyboardInterrupt("Interrupted by user")
 
 
 class ConvMaxMinInspector(HookFunctionBase):
@@ -61,6 +61,7 @@ class ConvMaxMinInspector(HookFunctionBase):
     """
     def __init__(self, model):
         super().__init__(model, nn.Conv2d)
+        self.model.eval()
         self.img_max_activations = []
         self.img_max_indices = []
         self.img_min_activations = []
@@ -137,7 +138,7 @@ for num_units in nums_units:
 
 print("Recording responses...")
 for img_i, img_name in enumerate(tqdm(img_names)):
-    if this_is_a_test_run and img_i > 100:
+    if this_is_a_test_run and img_i > 50000:
         break
 
     img_path = os.path.join(img_dir, img_name)

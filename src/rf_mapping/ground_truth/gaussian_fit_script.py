@@ -26,13 +26,13 @@ import src.rf_mapping.constants as c
 
 
 # Please specify some details here:
-# model = models.alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)
-# model_name = 'alexnet'
+model = models.alexnet(pretrained=True).to(c.DEVICE)
+model_name = 'alexnet'
 # model = models.vgg16(pretrained=True).to(c.DEVICE)
 # model_name = "vgg16"
-model = models.resnet18(pretrained=True).to(c.DEVICE)
-model_name = "resnet18"
-sum_modes = ['abs']
+# model = models.resnet18(pretrained=True).to(c.DEVICE)
+# model_name = "resnet18"
+sum_modes = ['abs', 'sqr']
 this_is_a_test_run = False
 
 # Please double-check the directories:
