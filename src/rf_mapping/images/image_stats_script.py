@@ -38,7 +38,7 @@ num_images = 50000
 batch_size = 100
 top_n = 100
 yn, xn = (227, 227)
-this_is_a_test_run = True
+this_is_a_test_run = False
 
 # Please double-check the directories:y
 img_dir = c.IMG_DIR
@@ -58,7 +58,7 @@ image_summary_txt_path = os.path.join(result_dir, f"image_summary.txt")
 if os.path.exists(image_summary_txt_path):
     os.remove(image_summary_txt_path)
 
-for img_i in range(num_images):
+for img_i in tqdm(range(num_images)):
     if this_is_a_test_run and img_i > 1000:
         break
 
@@ -86,49 +86,44 @@ for img_i in range(num_images):
 
 image_summary_pdf_path = os.path.join(result_dir, f"image_summary.pdf")
 fontsize = 14
+num_bins = 40
 with PdfPages(image_summary_pdf_path) as pdf:
     plt.figure(figsize=(20, 10))
-    plt.suptitle(f"Statistics of 50,000 ImageNet Images: Before vs. After Normalization", fontsize=fontsize)
+    plt.suptitle(f"Statistics of 50,000 ImageNet Images: Before vs. After Normalization", fontsize=26)
     
     plt.subplot(2,4,1)
-    plt.hist(img_means[:,0])
+    plt.hist(img_means[:,0], bins=num_bins)
     plt.xlabel("mean", fontsize=fontsize)
-    plt.title("Mean before", fontsize=fontsize)
+    plt.ylabel("Before")
     
     plt.subplot(2,4,2)
-    plt.hist(img_stds[:,0])
+    plt.hist(img_stds[:,0], bins=num_bins)
     plt.xlabel("std", fontsize=fontsize)
-    plt.title("Std before", fontsize=fontsize)
     
     plt.subplot(2,4,3)
-    plt.hist(img_maxs[:,0])
+    plt.hist(img_maxs[:,0], bins=num_bins)
     plt.xlabel("max", fontsize=fontsize)
-    plt.title("Max before", fontsize=fontsize)
     
     plt.subplot(2,4,4)
-    plt.hist(img_mins[:,0])
+    plt.hist(img_mins[:,0], bins=num_bins)
     plt.xlabel("min", fontsize=fontsize)
-    plt.title("Min before", fontsize=fontsize)
     
     plt.subplot(2,4,5)
-    plt.hist(img_means[:,1])
+    plt.hist(img_means[:,1], bins=num_bins)
     plt.xlabel("mean", fontsize=fontsize)
-    plt.title("Mean after", fontsize=fontsize)
+    plt.ylabel("After")
     
     plt.subplot(2,4,6)
-    plt.hist(img_stds[:,1])
+    plt.hist(img_stds[:,1], bins=num_bins)
     plt.xlabel("std", fontsize=fontsize)
-    plt.title("Std after", fontsize=fontsize)
     
     plt.subplot(2,4,7)
-    plt.hist(img_maxs[:,1])
+    plt.hist(img_maxs[:,1], bins=num_bins)
     plt.xlabel("max", fontsize=fontsize)
-    plt.title("Max after", fontsize=fontsize)
     
     plt.subplot(2,4,8)
-    plt.hist(img_mins[:,1])
+    plt.hist(img_mins[:,1], bins=num_bins)
     plt.xlabel("min", fontsize=fontsize)
-    plt.title("Min after", fontsize=fontsize)
     
     pdf.savefig()
     plt.close()

@@ -12,13 +12,14 @@ import torch.nn as nn
 # from torchvision.models import VGG16_Weights
 from torchvision import models
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
 sys.path.append('../../..')
 from src.rf_mapping.image import preprocess_img_to_tensor
 from src.rf_mapping.hook import HookFunctionBase, ConvUnitCounter
 from src.rf_mapping.files import delete_all_npy_files
 import src.rf_mapping.constants as c
-from src.rf_mapping.net import get_truncated_model
 
 # Please specify some details here:
 model = models.alexnet(pretrained=True)
@@ -31,11 +32,15 @@ num_images = 50000
 batch_size = 100
 top_n = 100
 yn, xn = (227, 227)
+this_is_a_test_run = False
 
 # Please double-check the directories:y
 img_dir = c.IMG_DIR
 img_names = [f"{i}.npy" for i in range(num_images)]
-result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n', model_name)
+if this_is_a_test_run:
+    result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n', 'test')
+else:
+    result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n', model_name)
 
 ###############################################################################
 
@@ -132,6 +137,9 @@ for num_units in nums_units:
 
 print("Recording responses...")
 for img_i, img_name in enumerate(tqdm(img_names)):
+    if this_is_a_test_run and img_i > 100:
+        break
+
     img_path = os.path.join(img_dir, img_name)
     img = np.load(img_path)
     img_max_activations, img_min_activations, img_max_indices, img_min_indices =\
@@ -179,3 +187,22 @@ for layer_i in tqdm(range(num_layers)):
     result_path = os.path.join(result_dir, f"conv{layer_i+1}.npy")
     print(result_path)
     np.save(result_path, sorted_activations[layer_i])
+
+
+num_bins = 40
+pdf_path = os.path.join(result_dir, f"{model_name}_summary.pdf")
+with PdfPages(pdf_path) as pdf:
+    plt.figure(figsize=(num_layers*5, 10))
+    plt.suptitle(f"Statistics of 50,000 ImageNet Images: Activations", fontsize=26)
+
+    for layer_i in range(num_layers):
+        layer_name = f"conv{layer_i+1}"
+        plt.subplot(2, num_layers, layer_i+1)
+        plt.hist(img_max_activations[layer_i], bins=num_bins)
+        plt.xlabel("max responses", fontsize=14)
+        plt.title(layer_name, fontsize=18)
+        
+        plt.subplot(2, num_layers, layer_i+1+num_layers)
+        plt.hist(img_min_activations[layer_i], bins=num_bins)
+        plt.xlabel("min responses", fontsize=14)
+        plt.title(layer_name, fontsize=18)
