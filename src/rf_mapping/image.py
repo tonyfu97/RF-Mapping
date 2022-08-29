@@ -59,7 +59,7 @@ def preprocess_img_to_tensor(img, img_size=None):
                 T.ToTensor(),
                 T.Normalize(
         mean=[-0.01618503, -0.01468056, -0.01345447],
-        std=[0.09958131, 0.0980152,  0.10090139],),
+        std=[0.45679083, 0.44849625, 0.44975275],),
     ])
     if len(img.shape) == 2:
         img_temp = np.zeros((3, img.shape[0], img.shape[1]))

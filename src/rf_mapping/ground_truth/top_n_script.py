@@ -18,31 +18,35 @@ from src.rf_mapping.image import preprocess_img_to_tensor
 from src.rf_mapping.hook import HookFunctionBase, ConvUnitCounter
 from src.rf_mapping.files import delete_all_npy_files
 import src.rf_mapping.constants as c
+from src.rf_mapping.net import get_truncated_model
 
 # Please specify some details here:
+model = models.alexnet(pretrained=True)
+model_name = 'alexnet'
 # model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
 # model_name = "vgg16"
-model = models.resnet18(pretrained=True).to(c.DEVICE)
-model_name = "resnet18"
+# model = models.resnet18(pretrained=True).to(c.DEVICE)
+# model_name = "resnet18"
 num_images = 50000
+batch_size = 100
 top_n = 100
+yn, xn = (227, 227)
 
 # Please double-check the directories:y
-# img_dir = Path(__file__).parent.parent.parent.joinpath('data/imagenet')
 img_dir = c.IMG_DIR
 img_names = [f"{i}.npy" for i in range(num_images)]
-result_dir = c.REPO_DIR + f'/results/ground_truth/top_n/{model_name}'
+result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n', model_name)
 
 ###############################################################################
 
-# # Script guard.
-# if __name__ == "__main__":
-#     user_input = input("This code takes time to run. Are you sure? "\
-#                        "Enter 'y' to proceed. Type any other key to stop: ")
-#     if user_input == 'y':
-#         pass
-#     else: 
-#         raise KeyboardInterrupt("Interrupted by user")
+# Script guard.
+if __name__ == "__main__":
+    user_input = input("This code takes time to run. Are you sure? "\
+                       "Enter 'y' to proceed. Type any other key to stop: ")
+    if user_input == 'y':
+        pass
+    else: 
+        raise KeyboardInterrupt("Interrupted by user")
 
 
 class ConvMaxMinInspector(HookFunctionBase):
@@ -59,12 +63,13 @@ class ConvMaxMinInspector(HookFunctionBase):
         self.register_forward_hook_to_layers(self.model)
 
     def hook_function(self, module, ten_in, ten_out):
-        layer_max_activations = np.zeros(ten_out.shape[1])
-        layer_max_indices = np.zeros(ten_out.shape[1])
-        layer_min_activations = np.zeros(ten_out.shape[1])
-        layer_min_indices = np.zeros(ten_out.shape[1])
+        num_units = ten_out.shape[1]
+        layer_max_activations = np.zeros(num_units)
+        layer_max_indices = np.zeros(num_units)
+        layer_min_activations = np.zeros(num_units)
+        layer_min_indices = np.zeros(num_units)
         
-        for unit in range(ten_out.shape[1]):
+        for unit in range(num_units):
             layer_max_activations[unit] = ten_out[0,unit,:,:].max().item()
             layer_max_indices[unit] = ten_out[0,unit,:,:].argmax().item()
             layer_min_activations[unit] = ten_out[0,unit,:,:].min().item()
@@ -75,26 +80,26 @@ class ConvMaxMinInspector(HookFunctionBase):
         self.img_min_activations.append(layer_min_activations)
         self.img_min_indices.append(layer_min_indices)
 
-    def inspect(self, image):
+    def inspect(self, images):
         """
         Given an image, returns the output activation volumes of all the layers
         of the type <layer_type>.
 
         Parameters
         ----------
-        image : numpy.array or torch.tensor
-            Input image, most likely with the dimension: [3, 2xx, 2xx].
+        images : numpy.array or torch.tensor
+            Input images, most likely with the dimension: [num_img, 3, 2xx, 2xx].
 
         Returns
         -------
         max_activations : list of numpy.arrays
-            The ma
+            The maximum response.
         """
-        if isinstance(image, np.ndarray):
-            image = preprocess_img_to_tensor(image)
+        if isinstance(images, np.ndarray):
+            images = preprocess_img_to_tensor(images)
         
         with torch.no_grad():  # turn off gradient calculations for speed.
-            _ = self.model(image)
+            _ = self.model(images)
         
         # Make copies of the list attributes and set them to empty lists before
         # returning them. Otherwise, they would use up too much memory.

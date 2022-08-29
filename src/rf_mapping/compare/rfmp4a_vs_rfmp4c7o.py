@@ -330,8 +330,8 @@ if __name__ == "__main__":
     #     with concurrent.futures.ProcessPoolExecutor() as executor:
     #         executor.map(make_blen_color_pdf, [i for i in range(conv_i, conv_i + real_batch_size)])
     #     conv_i += real_batch_size
-    # for conv_i in range(num_layers):
-    #     make_blen_color_pdf(conv_i)
+    for conv_i in range(num_layers):
+        make_blen_color_pdf(conv_i)
     pass
 
 
@@ -520,8 +520,8 @@ if __name__ == "__main__":
     #     with concurrent.futures.ProcessPoolExecutor() as executor:
     #         executor.map(make_bwid_color_pdf, [i for i in range(conv_i, conv_i + real_batch_size)])
     #     conv_i += real_batch_size
-    # for conv_i in range(num_layers):
-    #     make_bwid_color_pdf(conv_i)
+    for conv_i in range(num_layers):
+        make_bwid_color_pdf(conv_i)
     pass
 
 
@@ -592,7 +592,7 @@ def make_tb1_r_color_pdf():
         plt.close()
 
 if __name__ == "__main__":
-    # make_tb1_r_color_pdf()
+    make_tb1_r_color_pdf()
     pass
 
 

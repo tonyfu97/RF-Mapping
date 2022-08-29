@@ -5,6 +5,7 @@ Tony Fu, August 21st, 2022
 """
 import os
 import sys
+import math
 
 import numpy as np
 import torch.nn as nn
@@ -30,16 +31,23 @@ model_name = 'alexnet'
 # model_name = 'resnet18'
 image_shape = (227, 227)
 this_is_a_test_run = False
-max_or_min = 'max'
+max_or_min = 'min'
 font_size = 20
 r_val_threshold = 0.7
 
 # Result paths:
-result_dir = os.path.join(c.REPO_DIR,
-                          'results',
-                          'compare',
-                          'map_correlations',
-                           model_name)
+if this_is_a_test_run:
+    result_dir = os.path.join(c.REPO_DIR,
+                              'results',
+                              'compare',
+                              'map_correlations',
+                              'test')
+else:
+    result_dir = os.path.join(c.REPO_DIR,
+                             'results',
+                             'compare',
+                             'map_correlations',
+                              model_name)
 
 ###############################################################################
 
@@ -89,8 +97,11 @@ def load_maps(map_name, layer_name, max_or_min):
 def plot_r_val(r_val, p_val, font_size):
     plt.xticks([])
     plt.yticks([])
-    plt.text(0.1, 0.7, f"r = {r_val:.4f}", fontsize=font_size)
-    plt.text(0.1, 0.4, f"p = {p_val * 100:.4f}%", fontsize=font_size)
+    plt.text(0.1, 0.7, f"r = {r_val:.4f}", fontsize=font_size, color='w')
+    plt.text(0.1, 0.4, f"p = {p_val * 100:.4f}%", fontsize=font_size, color='w')
+    if math.isfinite(r_val):
+        ax = plt.gca()
+        ax.set_facecolor((r_val/2 + 0.5, 1 - abs(r_val), 1-r_val/2 - 0.5))
 
 # Make pdf:
 for conv_i in range(num_layers):
