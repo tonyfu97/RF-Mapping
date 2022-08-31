@@ -22,12 +22,12 @@ from src.rf_mapping.guided_backprop import GuidedBackprop
 import src.rf_mapping.constants as c
 
 # Please specify some details here:
-model = models.alexnet().to(c.DEVICE)
-model_name = 'alexnet'
+# model = models.alexnet().to(c.DEVICE)
+# model_name = 'alexnet'
 # model = models.vgg16().to(c.DEVICE)
 # model_name = "vgg16"
-# model = models.resnet18().to(c.DEVICE)
-# model_name = "resnet18"
+model = models.resnet18().to(c.DEVICE)
+model_name = "resnet18"
 
 image_size = (227, 227)
 top_n = 5

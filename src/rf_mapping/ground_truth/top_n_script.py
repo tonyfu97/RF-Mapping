@@ -19,17 +19,19 @@ sys.path.append('../../..')
 from src.rf_mapping.image import preprocess_img_to_tensor
 from src.rf_mapping.hook import HookFunctionBase, ConvUnitCounter
 from src.rf_mapping.files import delete_all_npy_files
+from src.rf_mapping.reproducibility import set_seeds
 import src.rf_mapping.constants as c
 
 # Please specify some details here:
-# model = models.alexnet(pretrained=True).to(c.DEVICE)
-# model_name = 'alexnet'
-# model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
+# set_seeds()
+model = models.alexnet(pretrained=True).to(c.DEVICE)
+model_name = 'alexnet'
+# model = models.vgg16(pretrained=True).to(c.DEVICE)
 # model_name = "vgg16"
-model = models.resnet18(pretrained=True).to(c.DEVICE)
-model_name = "resnet18"
+# model = models.resnet18(pretrained=True).to(c.DEVICE)
+# model_name = "resnet18"
 num_images = 50000
-batch_size = 100
+batch_size = 10
 top_n = 100
 yn, xn = (227, 227)
 this_is_a_test_run = False
@@ -61,7 +63,9 @@ class ConvMaxMinInspector(HookFunctionBase):
     """
     def __init__(self, model):
         super().__init__(model, nn.Conv2d)
-        self.model.eval()
+        self.model.eval()  # MUST config model to evaluation mode!
+                           # Otherwise, resnet18 performs 'batch' normalization
+                           # with running estimates on single images.
         self.img_max_activations = []
         self.img_max_indices = []
         self.img_min_activations = []
@@ -69,17 +73,20 @@ class ConvMaxMinInspector(HookFunctionBase):
         self.register_forward_hook_to_layers(self.model)
 
     def hook_function(self, module, ten_in, ten_out):
+        batch_size = ten_out.shape[0]
         num_units = ten_out.shape[1]
-        layer_max_activations = np.zeros(num_units)
-        layer_max_indices = np.zeros(num_units)
-        layer_min_activations = np.zeros(num_units)
-        layer_min_indices = np.zeros(num_units)
+
+        layer_max_activations = np.zeros((batch_size, num_units))
+        layer_max_indices = np.zeros((batch_size, num_units))
+        layer_min_activations = np.zeros((batch_size, num_units))
+        layer_min_indices = np.zeros((batch_size, num_units))
         
-        for unit in range(num_units):
-            layer_max_activations[unit] = ten_out[0,unit,:,:].max().item()
-            layer_max_indices[unit] = ten_out[0,unit,:,:].argmax().item()
-            layer_min_activations[unit] = ten_out[0,unit,:,:].min().item()
-            layer_min_indices[unit] = ten_out[0,unit,:,:].argmin().item()
+        for batch_i in range(batch_size):
+            for unit in range(num_units):
+                layer_max_activations[batch_i, unit] = ten_out[batch_i,unit,:,:].max().item()
+                layer_max_indices[batch_i, unit] = ten_out[batch_i, unit,:,:].argmax().item()
+                layer_min_activations[batch_i, unit] = ten_out[batch_i,unit,:,:].min().item()
+                layer_min_indices[batch_i, unit] = ten_out[batch_i, unit,:,:].argmin().item()
             
         self.img_max_activations.append(layer_max_activations)
         self.img_max_indices.append(layer_max_indices)
@@ -93,7 +100,7 @@ class ConvMaxMinInspector(HookFunctionBase):
 
         Parameters
         ----------
-        images : numpy.array or torch.tensor
+        images : torch.tensor
             Input images, most likely with the dimension: [num_img, 3, 2xx, 2xx].
 
         Returns
@@ -101,9 +108,6 @@ class ConvMaxMinInspector(HookFunctionBase):
         max_activations : list of numpy.arrays
             The maximum response.
         """
-        if isinstance(images, np.ndarray):
-            images = preprocess_img_to_tensor(images)
-        
         with torch.no_grad():  # turn off gradient calculations for speed.
             _ = self.model(images)
         
@@ -137,30 +141,43 @@ for num_units in nums_units:
 
 
 print("Recording responses...")
-for img_i, img_name in enumerate(tqdm(img_names)):
-    if this_is_a_test_run and img_i > 50000:
+img_i = 0
+while (img_i < num_images):
+    real_batch_size = min(num_images - img_i, batch_size)
+    # sys.stdout.write('\r')
+    # sys.stdout.write(f"Presenting image no.{img_i}")
+    # sys.stdout.flush()
+    if this_is_a_test_run and img_i > 1000:
         break
 
-    img_path = os.path.join(img_dir, img_name)
-    img = np.load(img_path)
+    # Prepare image tensor
+    img_tensor = torch.zeros((real_batch_size, 3, yn, xn))
+    for i in range(real_batch_size):
+        img_path = os.path.join(img_dir, f"{img_i + i}.npy")
+        img = np.load(img_path)
+        img_t = preprocess_img_to_tensor(img)
+        img_tensor[i] = img_t[0]  # [0] to remove first dimension.
+    
+    # Present image tensor
     img_max_activations, img_min_activations, img_max_indices, img_min_indices =\
-                                                inspector.inspect(img)
+                                            inspector.inspect(img_tensor)
     
     for layer_i in range(num_layers):
-        num_units = len(img_max_activations[layer_i])
-        
+        num_units = img_max_activations[layer_i].shape[1]
+
         layer_max_activations = img_max_activations[layer_i]
         layer_max_indices = img_max_indices[layer_i]
         layer_min_activations = img_min_activations[layer_i]
         layer_min_indices = img_min_indices[layer_i]
         
-        all_activations[layer_i][img_i, :, 0] = img_i
-        all_activations[layer_i][img_i, :, 1] = np.arange(num_units)
-        all_activations[layer_i][img_i, :, 2] = layer_max_activations * 100000
-        all_activations[layer_i][img_i, :, 3] = layer_max_indices
-        all_activations[layer_i][img_i, :, 4] = layer_min_activations * 100000
-        all_activations[layer_i][img_i, :, 5] = layer_min_indices
+        all_activations[layer_i][img_i:img_i+real_batch_size, :, 0] = np.tile(np.arange(img_i, img_i+real_batch_size), (num_units, 1)).T
+        all_activations[layer_i][img_i:img_i+real_batch_size, :, 1] = np.tile(np.arange(num_units), (real_batch_size, 1))
+        all_activations[layer_i][img_i:img_i+real_batch_size, :, 2] = layer_max_activations * 100000
+        all_activations[layer_i][img_i:img_i+real_batch_size, :, 3] = layer_max_indices
+        all_activations[layer_i][img_i:img_i+real_batch_size, :, 4] = layer_min_activations * 100000
+        all_activations[layer_i][img_i:img_i+real_batch_size, :, 5] = layer_min_indices
 
+    img_i += real_batch_size
 
 print("Sorting responses...")
 sorted_activations = []
@@ -207,3 +224,6 @@ with PdfPages(pdf_path) as pdf:
         plt.hist(img_min_activations[layer_i], bins=num_bins)
         plt.xlabel("min responses", fontsize=14)
         plt.title(layer_name, fontsize=18)
+
+    pdf.savefig()
+    plt.close()
