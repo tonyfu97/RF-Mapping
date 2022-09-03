@@ -47,8 +47,8 @@ def get_truncated_model(model, layer_index):
     y = model(torch.ones(1,3,200,200))
     """
     model = copy.deepcopy(model).to(c.DEVICE)
-    graph = fx.Tracer().trace(model.eval())  # Make sure to trace the eval() 
-                                             # version of the net.
+    model.eval()  # Make sure to trace the eval() version of the net.
+    graph = fx.Tracer().trace(model)
     new_graph = fx.Graph()
     layer_counter = 0
     value_remap = {}
@@ -78,6 +78,7 @@ def get_truncated_model(model, layer_index):
     
 if __name__ == "__main__":
     model = models.resnet18(pretrained=True)
+    model.eval()
     dummy_input = torch.ones(1,3,200,200)
     tm = get_truncated_model(model, 100)
     torch.testing.assert_allclose(tm(dummy_input), model(dummy_input))
@@ -165,6 +166,7 @@ def make_graph(truncated_model):
 
 if __name__ == '__main__':
     model = models.resnet18()
+    model.eval()
     for layer in make_graph(model).values():
         print(layer)
 

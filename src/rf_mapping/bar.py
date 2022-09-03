@@ -690,7 +690,7 @@ def non_overlap_barmap(new_bar, sum_map, stim_thr):
 #                                                                             #
 ###############################################################################
 def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False, 
-                 num_bars=100, response_thr=0.1, stim_thr=0.2):
+                 num_bars=100, response_thr=0.3, stim_thr=0.2):
     """
     Parameters
     ----------
@@ -740,7 +740,7 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
     if _debug:
         print(f"unit {unit_i}: r_max: {r_max:7.2f}, max bar idx: {isort[::-1][:5]}")
 
-    for max_bar_i in isort[::-1][:num_bars]:
+    for max_bar_i in isort[::-1]:
         response = center_responses[max_bar_i, unit_i]
         params = splist[max_bar_i]
         # Note that the background color are set to 0, while the foreground
@@ -758,14 +758,17 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
                                 params['x0'], params['y0'],
                                 params['theta'], params['len'], params['wid'],
                                 0.5, 1, 0)
-        has_included = non_overlap_barmap(new_bar, non_overlap_max_map, stim_thr)
-        weighted_barmap(new_bar, weighted_max_map, (response - r_min)/r_range)
-        # counts the number of bars in each map
-        num_weighted_max_bars += 1
-        if has_included:
-            num_non_overlap_max_bars += 1
+        if (response - r_min) > r_range * response_thr:
+            has_included = non_overlap_barmap(new_bar, non_overlap_max_map, stim_thr)
+            weighted_barmap(new_bar, weighted_max_map, (response - r_min)/r_range)
+            # counts the number of bars in each map
+            num_weighted_max_bars += 1
+            if has_included:
+                num_non_overlap_max_bars += 1
+        else:
+            break
 
-    for min_bar_i in isort[:num_bars]:
+    for min_bar_i in isort:
         response = center_responses[min_bar_i, unit_i]
         params = splist[min_bar_i]
         if has_color:
@@ -781,12 +784,15 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
                                 params['x0'], params['y0'],
                                 params['theta'], params['len'], params['wid'],
                                 0.5, 1, 0) 
-        has_included = non_overlap_barmap(new_bar, non_overlap_min_map, stim_thr)
-        weighted_barmap(new_bar, weighted_min_map, (r_max - response)/r_range)
-        # counts the number of bars in each map
-        num_weighted_min_bars += 1
-        if has_included:
-            num_non_overlap_min_bars += 1
+        if (response - r_min) < r_range * (1 - response_thr):
+            has_included = non_overlap_barmap(new_bar, non_overlap_min_map, stim_thr)
+            weighted_barmap(new_bar, weighted_min_map, (r_max - response)/r_range)
+            # counts the number of bars in each map
+            num_weighted_min_bars += 1
+            if has_included:
+                num_non_overlap_min_bars += 1
+        else:
+            break
 
     return weighted_max_map, weighted_min_map,\
            non_overlap_max_map, non_overlap_min_map,\
@@ -1072,6 +1078,9 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False, batch_size=10):
                 record_bar_counts(non_overlap_counts_path, layer_name, unit_i + result_i,
                                   result[6], result[7])
             unit_i += real_batch_size
+
+        # for unit_i in range(num_units):
+        #     make_barmaps(splist, center_responses, unit_i)
 
         # # Create maps of top/bottom bar average maps.
         # for unit_i in range(num_units):

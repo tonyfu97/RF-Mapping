@@ -28,10 +28,17 @@ model_name = "alexnet"
 # model = models.resnet18()
 # model_name = 'resnet18'
 sum_modes = ['abs', 'sqr']
-this_is_a_test_run = True
+this_is_a_test_run = False
+is_random = True
 
 # Please double-check the directories:
-backprop_sum_dir = c.REPO_DIR + f'/results/ground_truth/backprop_sum/{model_name}'
+if is_random:
+    backprop_sum_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+                                    'backprop_sum_random', model_name)
+else:
+    backprop_sum_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+                                    'backprop_sum', model_name)
+
 pdf_dir = backprop_sum_dir
 
 ###############################################################################

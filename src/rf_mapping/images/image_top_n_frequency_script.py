@@ -18,23 +18,28 @@ sys.path.append('../../..')
 from src.rf_mapping.hook import ConvUnitCounter
 from src.rf_mapping.image import preprocess_img_for_plot, make_box, preprocess_img_to_tensor
 from src.rf_mapping.spatial import SpatialIndexConverter
-from src.rf_mapping.guided_backprop import GuidedBackprop
 import src.rf_mapping.constants as c
 
 # Please specify some details here:
-# model = models.alexnet().to(c.DEVICE)
-# model_name = 'alexnet'
+model = models.alexnet().to(c.DEVICE)
+model_name = 'alexnet'
 # model = models.vgg16().to(c.DEVICE)
 # model_name = "vgg16"
-model = models.resnet18().to(c.DEVICE)
-model_name = "resnet18"
+# model = models.resnet18().to(c.DEVICE)
+# model_name = "resnet18"
 
 image_size = (227, 227)
 top_n = 5
+is_random = True
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR
-rank_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n', model_name)
+if is_random:
+    rank_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+                            'top_n_random', model_name)
+else:
+    rank_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+                            'top_n', model_name)
 result_dir = rank_dir
 
 # Get info of conv layers.

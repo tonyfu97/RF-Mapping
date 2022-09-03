@@ -20,10 +20,12 @@ from src.rf_mapping.spatial import get_rf_sizes, SpatialIndexConverter
 from src.rf_mapping.image import one_sided_zero_pad, preprocess_img_for_plot
 from src.rf_mapping.guided_backprop import GuidedBackprop
 from src.rf_mapping.files import delete_all_npy_files
+from src.rf_mapping.reproducibility import set_seeds
 import src.rf_mapping.constants as c
 
 # Please specify some details here:
-model = models.alexnet(pretrained=True).to(c.DEVICE)
+set_seeds()
+model = models.alexnet(pretrained=False).to(c.DEVICE)
 model_name = "alexnet"
 # model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
 # model_name = "vgg16"
@@ -31,12 +33,22 @@ model_name = "alexnet"
 # model_name = "resnet18"
 sum_modes = ['abs', 'sqr']
 top_n = 100
-this_is_a_test_run = True
+this_is_a_test_run = False
+is_random = True
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR
-index_dir = c.REPO_DIR + f'/results/ground_truth/top_n/{model_name}'
-result_dir = c.REPO_DIR + f'/results/ground_truth/backprop_sum/{model_name}'
+
+if is_random:
+    index_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+                             'top_n_random', model_name)
+    result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+                              'backprop_sum_random', model_name)
+else:
+    index_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+                             'top_n', model_name)
+    result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+                              'backprop_sum', model_name)
 
 ###############################################################################
 

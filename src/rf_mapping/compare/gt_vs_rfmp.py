@@ -3,12 +3,14 @@ To visualize the difference between ground truth and bar mapping methods.
 
 Tony Fu, July 27th, 2022
 """
+from cmath import sqrt
 import os
 import sys
 import math
 
 import numpy as np
 import pandas as pd
+from scipy.optimize import curve_fit
 from scipy.stats import pearsonr
 import torchvision.models as models
 import matplotlib.pyplot as plt
@@ -26,13 +28,13 @@ from src.rf_mapping.result_txt_format import (GtGaussian as GT,
 # Please specify the model
 model = models.alexnet()
 model_name = 'alexnet'
-# model = models.vgg16()
-# model_name = 'vgg16'
-# model = models.resnet18()
-# model_name = 'resnet18'
+model = models.vgg16()
+model_name = 'vgg16'
+model = models.resnet18()
+model_name = 'resnet18'
 
 # Please specify what ground_truth method versus what RFMP4
-is_occlude = False
+is_occlude = True
 is_rfmp4a = True
 
 # Source directories
@@ -120,7 +122,7 @@ w_b_df = pad_missing_layers(w_b_df)
 
 
 # Get/set some model-specific information.
-layer_indices, rf_sizes = get_rf_sizes(model, (227, 227))
+layer_indices, rf_sizes = get_rf_sizes(model, (999, 999))
 num_layers = len(rf_sizes)
 fxvar_thres = 0.8
 
@@ -222,7 +224,7 @@ def make_fxvar_pdf():
         plt.close()
 
 if __name__ == '__main__':
-    make_fxvar_pdf()
+    # make_fxvar_pdf()
     pass
 
 
@@ -389,13 +391,14 @@ def make_coords_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_coords_pdf()
+    # make_coords_pdf()
     pass
 
 
 #######################################.#######################################
 #                                                                             #
-#                              PDF NO.2 RF RADIUS                             #
+#                              PDF NO.2.1 RF RADIUS                           #
+#                          (SHOW TRENDS IN EACH LAYER)                        #
 #                                                                             #
 ###############################################################################
 def geo_mean(sd1, sd2):
@@ -494,7 +497,329 @@ def make_radius_pdf():
 
 
 if __name__ == '__main__':
-    make_radius_pdf()
+    # make_radius_pdf()
+    pass
+
+
+#######################################.#######################################
+#                                                                             #
+#                              PDF NO.2.2 RF RADIUS                           #
+#                           (SHOW TREND ACROSS LAYERS)                        #
+#                                                                             #
+###############################################################################
+def make_radius2_pdf():
+    all_rf_sizes = [rf_size[0] for rf_size in rf_sizes]
+    num_layers = len(rf_sizes)
+    # Collect data of all layers first.
+    all_gt_t_radii = []
+    all_gt_b_radii = []
+    all_no_t_radii = []
+    all_no_b_radii = []
+    all_w_t_radii = []
+    all_w_b_radii = []
+    
+    # Collect the x-axis tick labels given to boxes.
+    all_gt_t_ticks = []
+    all_gt_b_ticks = []
+    all_no_t_ticks = []
+    all_no_b_ticks = []
+    all_w_t_ticks = []
+    all_w_b_ticks = []
+    
+    for conv_i, rf_size in enumerate(rf_sizes):
+        # Get some layer-specific information.
+        layer_name = f'conv{conv_i+1}'
+        rf_size = rf_size[0]
+        
+        sd1data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'SD1']
+        sd2data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'SD2']
+        radii = geo_mean(sd1data, sd2data)
+        all_gt_t_radii.append(radii)
+        all_gt_t_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
+        
+        sd1data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'SD1']
+        sd2data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'SD2']
+        radii = geo_mean(sd1data, sd2data)
+        all_gt_b_radii.append(radii)
+        all_gt_b_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
+        
+        radii = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_RAD_50']
+        all_no_t_radii.append(radii)
+        all_no_t_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
+        
+        radii = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'BOT_RAD_50']
+        all_no_b_radii.append(radii)
+        all_no_b_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
+        
+        sd1data = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres), 'SD1']
+        sd2data = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres), 'SD2']
+        radii = geo_mean(sd1data, sd2data)
+        all_w_t_radii.append(radii)
+        all_w_t_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
+        
+        sd1data = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres), 'SD1']
+        sd2data = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres), 'SD2']
+        radii = geo_mean(sd1data, sd2data)
+        all_w_b_radii.append(radii)
+        all_w_b_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
+
+    pdf_path = os.path.join(result_dir, f"{model_name}_{gt_method}_{ephys_method}_radius2.pdf")
+    with PdfPages(pdf_path) as pdf:
+        plt.figure(figsize=(4*num_layers,10))
+        plt.suptitle(f"{model_name} RF radii of {gt_method}: Gaussian fit", fontsize=20)
+
+        plt.subplot(2,1,1)
+        plt.boxplot(all_gt_t_radii, labels=all_gt_t_ticks, showmeans=True, positions=all_rf_sizes, widths=5)
+        plt.title(f"top")
+        plt.ylabel('ERF')
+        plt.grid()
+    
+        plt.subplot(2,1,2)
+        plt.boxplot(all_gt_b_radii, labels=all_gt_b_ticks, showmeans=True, positions=all_rf_sizes, widths=5)
+        plt.title(f"bottom")
+        plt.xlabel("TRF", fontsize=16)
+        plt.ylabel('ERF')
+        plt.grid()
+        
+        pdf.savefig()
+        plt.close()
+        
+        plt.figure(figsize=(4*num_layers,10))
+        plt.suptitle(f"{model_name} RF radii {ephys_method}: Non-Overlap 50% mass", fontsize=14)
+        
+        plt.subplot(2,1,1)
+        plt.boxplot(all_no_t_radii, labels=all_no_t_ticks, showmeans=True, positions=all_rf_sizes, widths=5)
+        plt.title(f"top")
+        plt.ylabel('ERF')
+        plt.grid()
+        
+        plt.subplot(2,1,2)
+        plt.boxplot(all_no_b_radii, labels=all_no_b_ticks, showmeans=True, positions=all_rf_sizes, widths=5)
+        plt.title(f"bottom")
+        plt.xlabel("TRF", fontsize=16)
+        plt.ylabel('ERF')
+        plt.grid()
+    
+        pdf.savefig()
+        plt.close()
+        
+        plt.figure(figsize=(4*num_layers,10))
+        plt.suptitle(f"{model_name} RF radii of {ephys_method}: Gaussian fit to weighted map", fontsize=14)
+        
+        plt.subplot(2,1,1)
+        plt.boxplot(all_w_t_radii, labels=all_w_t_ticks, showmeans=True, positions=all_rf_sizes, widths=5)
+        plt.title(f"top")
+        plt.ylabel('ERF')
+        plt.grid()
+        
+        plt.subplot(2,1,2)
+        plt.boxplot(all_w_b_radii, labels=all_w_b_ticks, showmeans=True, positions=all_rf_sizes, widths=5)
+        plt.title(f"bottom")
+        plt.xlabel("TRF", fontsize=16)
+        plt.ylabel('ERF')
+        plt.grid()
+        
+        pdf.savefig()
+        plt.close()
+
+
+if __name__ == '__main__':
+    make_radius2_pdf()
+    pass
+
+
+#######################################.#######################################
+#                                                                             #
+#                              PDF NO.2.3 RF RADIUS                           #
+#                      (SIMPLIFIED VERSION OF PDF NO.2.2)                     #
+#                                                                             #
+###############################################################################
+def config_plot(limits):
+    plt.xlim(limits)
+    plt.ylim(limits)
+    ax = plt.gca()
+    ax.set_aspect('equal')
+    plt.grid()
+    plt.legend()
+    plt.xlabel('TRF', fontsize=16)
+    plt.ylabel('ERF', fontsize=16)
+    
+def config_plot2(ylimits):
+    plt.xlim((0, num_layers + 1))
+    plt.ylim(ylimits)
+    plt.grid()
+    plt.legend()
+    plt.xlabel("conv_i", fontsize=16)
+    plt.ylabel("ERF", fontsize=16)
+
+def config_plot3():
+    plt.xlim((0, num_layers + 1))
+    plt.ylim((0, 1))
+    plt.grid()
+    plt.legend()
+    plt.xlabel("conv_i", fontsize=16)
+    plt.ylabel("ERF / TRF", fontsize=16)
+
+def linear_func(x, m, b):
+    return x * m + b
+
+def sqrt_x_func(x, m, b):
+    return np.sqrt(x) * m + b
+
+def one_over_sqrt_x_func(x, m, b):
+    return m/np.sqrt(x) + b
+
+def l1_loss(y1, y2):
+    return np.sum(np.abs(y1 - y2))
+
+def plot_fit_curve(xdata, ydata):
+    """
+    Plot the fit curve of both the formula y = xm + b, or the formula
+    y = sqrt(n) * m + b, and display the L1 losses as well.
+    """
+    xdata = np.array(xdata)
+    ydata = np.array(ydata)
+
+    # Need to sort both arrays according to xdata because ResNets have
+    # conv layers in the shortcuts, and they have smaller RFs such that the
+    # order of plotting is incorrect and will plot strange lines. This does not
+    # affect the fit.
+    xdata_i = np.argsort(xdata)
+    xdata = np.sort(xdata)
+    ydata = ydata[xdata_i]
+    
+    fit_func = [linear_func, sqrt_x_func, one_over_sqrt_x_func]
+    formulas = ["x", "sqrt(x)", "/ sqrt(x)"]
+
+    for func, formula in zip(fit_func, formulas):
+        params, _ = curve_fit(func, xdata, ydata)
+        pred_y = func(xdata, *params)
+        loss = l1_loss(ydata, pred_y)
+        m, b = params
+        plt.plot(xdata, pred_y, '-', label=f"y = {b:.2f} + {m:.2f} {formula} (L1 loss = {loss:.2f})")
+
+def make_radius3_pdf():
+    erf_factor = 2
+    conv_i_to_exclude = [0]  # use 0 for Conv1, etc.
+    all_rf_sizes = []
+    conv_indices = []
+
+    # Collect data of all layers first.
+    all_gt_t_radii = []
+    all_gt_b_radii = []
+    all_no_t_radii = []
+    all_no_b_radii = []
+    all_w_t_radii = []
+    all_w_b_radii = []
+    
+    # Collect the x-axis tick labels given to boxes.
+    all_gt_t_ticks = []
+    all_gt_b_ticks = []
+    all_no_t_ticks = []
+    all_no_b_ticks = []
+    all_w_t_ticks = []
+    all_w_b_ticks = []
+    
+    for conv_i, rf_size in enumerate(rf_sizes):
+        if conv_i in conv_i_to_exclude:
+            continue
+        # Get some layer-specific information.
+        layer_name = f'conv{conv_i+1}'
+        rf_size = rf_size[0]
+        all_rf_sizes.append(rf_size)
+        conv_indices.append(conv_i + 1)
+        
+        sd1data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'SD1']
+        sd2data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'SD2']
+        radii = geo_mean(erf_factor * sd1data, erf_factor * sd2data)
+        all_gt_t_radii.append(radii)
+        all_gt_t_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
+        
+        sd1data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'SD1']
+        sd2data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'SD2']
+        radii = geo_mean(erf_factor * sd1data, erf_factor * sd2data)
+        all_gt_b_radii.append(radii)
+        all_gt_b_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
+        
+        radii = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_RAD_50']
+        all_no_t_radii.append(radii)
+        all_no_t_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
+        
+        radii = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'BOT_RAD_50']
+        all_no_b_radii.append(radii)
+        all_no_b_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
+        
+        sd1data = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres), 'SD1']
+        sd2data = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres), 'SD2']
+        radii = geo_mean(erf_factor * sd1data, erf_factor * sd2data)
+        all_w_t_radii.append(radii)
+        all_w_t_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
+        
+        sd1data = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres), 'SD1']
+        sd2data = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres), 'SD2']
+        radii = geo_mean(erf_factor * sd1data, erf_factor * sd2data)
+        all_w_b_radii.append(radii)
+        all_w_b_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
+    
+    pdf_path = os.path.join(result_dir, f"{model_name}_{gt_method}_{ephys_method}_radius3.pdf")
+    with PdfPages(pdf_path) as pdf:
+        data_sources = [(all_gt_t_radii, all_gt_b_radii),
+                        (all_no_t_radii, all_no_b_radii),
+                        (all_w_t_radii, all_w_b_radii)]
+        suptitles = [f"{model_name} RF radii of {gt_method}: Gaussian fit",
+                     f"{model_name} RF radii {ephys_method}: Non-Overlap 50% mass",
+                     f"{model_name} RF radii of {ephys_method}: Gaussian fit to weighted map"]
+        for (top_data, bot_data), suptitle in zip(data_sources, suptitles):
+            plt.figure(figsize=(24,15))
+            plt.suptitle(suptitle, fontsize=24)
+
+            plt.subplot(2,3,1)
+            means = [data.mean() for data in top_data]
+            plt.scatter(all_rf_sizes, means)
+            plot_fit_curve(all_rf_sizes, means)
+            plt.title(f"top", fontsize=16)
+            config_plot((-10, max(all_rf_sizes) + 10))
+
+            plt.subplot(2,3,2)
+            plt.plot(conv_indices, means, '.')
+            print(means)
+            plot_fit_curve(conv_indices, means)
+            plt.title(f"top", fontsize=16)
+            config_plot2((-10, max(all_rf_sizes) + 10))
+            
+            plt.subplot(2,3,3)
+            erf_trf_ratios = [erf/trf for erf, trf in zip(means, all_rf_sizes)]
+            plt.plot(conv_indices, erf_trf_ratios, '.')
+            plot_fit_curve(conv_indices, erf_trf_ratios)
+            plt.title(f"top", fontsize=16)
+            config_plot3()
+        
+            plt.subplot(2,3,4)
+            means = [data.mean() for data in bot_data]
+            plt.scatter(all_rf_sizes, means)
+            plot_fit_curve(all_rf_sizes, means)
+            plt.title(f"bottom", fontsize=16)
+            config_plot((-10, max(all_rf_sizes) + 10))
+            
+            plt.subplot(2,3,5)
+            plt.plot(conv_indices, means, '.')
+            plot_fit_curve(conv_indices, means)
+            plt.title(f"bottom", fontsize=16)
+            config_plot2((-10, max(all_rf_sizes) + 10))
+            
+            plt.subplot(2,3,6)
+            erf_trf_ratios = [erf/trf for erf, trf in zip(means, all_rf_sizes)]
+            plt.plot(conv_indices, erf_trf_ratios, '.')
+            plot_fit_curve(conv_indices, erf_trf_ratios)
+            plt.title(f"bottom", fontsize=16)
+            config_plot3()
+
+            pdf.savefig()
+            plt.close()
+
+
+if __name__ == '__main__':
+    make_radius3_pdf()
     pass
 
 
@@ -566,7 +891,7 @@ def make_ori_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_ori_pdf()
+    # make_ori_pdf()
     pass
 
 
@@ -834,7 +1159,7 @@ def make_error_coords_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_error_coords_pdf()
+    # make_error_coords_pdf()
     pass
 
 
@@ -991,7 +1316,7 @@ def make_error_radius_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_error_radius_pdf()
+    # make_error_radius_pdf()
     pass
 
 
@@ -1085,5 +1410,5 @@ def make_error_ori_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_error_ori_pdf()
+    # make_error_ori_pdf()
     pass

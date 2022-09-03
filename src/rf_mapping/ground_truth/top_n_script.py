@@ -5,6 +5,7 @@ Tony Fu, Jun 25, 2022
 """
 import os
 import sys
+from unittest import result
 
 import numpy as np
 import torch
@@ -23,26 +24,33 @@ from src.rf_mapping.reproducibility import set_seeds
 import src.rf_mapping.constants as c
 
 # Please specify some details here:
-# set_seeds()
-model = models.alexnet(pretrained=True).to(c.DEVICE)
+set_seeds()
+model = models.alexnet(pretrained=False).to(c.DEVICE)
 model_name = 'alexnet'
 # model = models.vgg16(pretrained=True).to(c.DEVICE)
 # model_name = "vgg16"
 # model = models.resnet18(pretrained=True).to(c.DEVICE)
 # model_name = "resnet18"
 num_images = 50000
-batch_size = 10
+batch_size = 32
 top_n = 100
 yn, xn = (227, 227)
 this_is_a_test_run = False
+is_random = True
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR
 img_names = [f"{i}.npy" for i in range(num_images)]
-if this_is_a_test_run:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n', 'test')
+
+if is_random:
+    result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n_random')
 else:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n', model_name)
+    result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n')
+
+if this_is_a_test_run:
+    result_dir = os.path.join(result_dir, 'test')
+else:
+    result_dir = os.path.join(result_dir, model_name)
 
 ###############################################################################
 
@@ -144,14 +152,14 @@ print("Recording responses...")
 img_i = 0
 while (img_i < num_images):
     real_batch_size = min(num_images - img_i, batch_size)
-    # sys.stdout.write('\r')
-    # sys.stdout.write(f"Presenting image no.{img_i}")
-    # sys.stdout.flush()
+    sys.stdout.write('\r')
+    sys.stdout.write(f"Presenting image no.{img_i}")
+    sys.stdout.flush()
     if this_is_a_test_run and img_i > 1000:
         break
 
     # Prepare image tensor
-    img_tensor = torch.zeros((real_batch_size, 3, yn, xn))
+    img_tensor = torch.zeros((real_batch_size, 3, yn, xn)).to(c.DEVICE)
     for i in range(real_batch_size):
         img_path = os.path.join(img_dir, f"{img_i + i}.npy")
         img = np.load(img_path)

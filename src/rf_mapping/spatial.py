@@ -19,7 +19,7 @@ from torchvision import models
 import matplotlib.pyplot as plt
 
 sys.path.append('../..')
-from src.rf_mapping.hook import SizeInspector, LayerOutputInspector
+from src.rf_mapping.hook import HookFunctionBase, SizeInspector, LayerOutputInspector
 import src.rf_mapping.constants as c
 from src.rf_mapping.image import (clip,
                                   preprocess_img_to_tensor,
@@ -631,6 +631,37 @@ def get_conv_output_shapes(model, image_shape):
     layer_outputs = inspector.inspect(dummy_img)
     return [layer_output.shape[1:] for layer_output in layer_outputs]
 
+
+#######################################.#######################################
+#                                                                             #
+#                                GET_NUM_LAYERS                               #
+#                                                                             #
+###############################################################################
+class LayerCounter(HookFunctionBase):
+    """
+    
+    """
+    def __init__(self, model, layer_type):
+        super().__init__(model, (layer_type,))
+        num_layers = 0
+        self.register_forward_hook_to_layers(self.model)
+
+    def hook_function(self, module, ten_in, ten_out):
+        self.num_layers += 1
+
+    def count(self):
+        self.num_layers = 0
+        self.model(torch.ones((1,3,227,227)).to(c.DEVICE))
+        return self.num_layers
+
+
+def get_num_layers(model, layer_type=nn.Conv2d):
+    counter = LayerCounter(model, layer_type)
+    return counter.count()
+
+if __name__ == "__main__":
+    model = models.resnet18()
+    print(get_num_layers(model))
 
 #######################################.#######################################
 #                                                                             #

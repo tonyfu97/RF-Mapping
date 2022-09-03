@@ -14,7 +14,7 @@ __all__ = ['set_seeds']
 def set_seeds(seed=123):
     """
     Sets seeds for randomly initialized models. Should be called everytime
-    an instance of the model is created.
+    an untrained instance of a model is created.
     """
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
