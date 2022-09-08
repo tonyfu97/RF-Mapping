@@ -367,61 +367,77 @@ def stim_dapp_bar_xyo_rgb7o(splist,xn,xlist,orilist,blen,bwid,aa):
         for j in ylist:
             for o in orilist:
                 # 111 v 000          B&W
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
-                      "aa":aa, "r1":a1, "g1":a1, "b1":a1,"r0":a0, "g0":a0, "b0":a0}
-                splist.append(tp)
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
-                      "aa":aa, "r1":a0, "g1":a0, "b1":a0,"r0":a1, "g0":a1, "b0":a1}
-                splist.append(tp)
+                # tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                #       "aa":aa, "r1":a1, "g1":a1, "b1":a1,"r0":a0, "g0":a0, "b0":a0}
+                # splist.append(tp)
+                # tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                #       "aa":aa, "r1":a0, "g1":a0, "b1":a0,"r0":a1, "g0":a1, "b0":a1}
+                # splist.append(tp)
                 
-                # 100 v 010      red-green
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
-                      "aa":aa, "r1":a1, "g1":a0, "b1":a0,"r0":a0, "g0":a1, "b0":a0}
-                splist.append(tp)
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
-                      "aa":aa, "r1":a0, "g1":a1, "b1":a0,"r0":a1, "g0":a0, "b0":a0}
-                splist.append(tp)
+                # # 100 v 010      red-green
+                # tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                #       "aa":aa, "r1":a1, "g1":a0, "b1":a0,"r0":a0, "g0":a1, "b0":a0}
+                # splist.append(tp)
+                # tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                #       "aa":aa, "r1":a0, "g1":a1, "b1":a0,"r0":a1, "g0":a0, "b0":a0}
+                # splist.append(tp)
                 
-                # 100 v 001      red-blue
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
-                      "aa":aa, "r1":a1, "g1":a0, "b1":a0,"r0":a0, "g0":a0, "b0":a1}
-                splist.append(tp)
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
-                      "aa":aa, "r1":a0, "g1":a0, "b1":a1,"r0":a1, "g0":a0, "b0":a0}
-                splist.append(tp)
+                # # 100 v 001      red-blue
+                # tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                #       "aa":aa, "r1":a1, "g1":a0, "b1":a0,"r0":a0, "g0":a0, "b0":a1}
+                # splist.append(tp)
+                # tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                #       "aa":aa, "r1":a0, "g1":a0, "b1":a1,"r0":a1, "g0":a0, "b0":a0}
+                # splist.append(tp)
                 
-                # 010 v 001      green-blue
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
-                      "aa":aa, "r1":a0, "g1":a1, "b1":a0,"r0":a0, "g0":a0, "b0":a1}
-                splist.append(tp)
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
-                      "aa":aa, "r1":a0, "g1":a0, "b1":a1,"r0":a0, "g0":a1, "b0":a0}
-                splist.append(tp)
+                # # 010 v 001      green-blue
+                # tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                #       "aa":aa, "r1":a0, "g1":a1, "b1":a0,"r0":a0, "g0":a0, "b0":a1}
+                # splist.append(tp)
+                # tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                #       "aa":aa, "r1":a0, "g1":a0, "b1":a1,"r0":a0, "g0":a1, "b0":a0}
+                # splist.append(tp)
                 
-                # 110 v 001     yellow-blue
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
-                      "aa":aa, "r1":a1, "g1":a1, "b1":a0,"r0":a0, "g0":a0, "b0":a1}
-                splist.append(tp)
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
-                      "aa":aa, "r1":a0, "g1":a0, "b1":a1,"r0":a1, "g0":a1, "b0":a0}
-                splist.append(tp)
+                # # 110 v 001     yellow-blue
+                # tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                #       "aa":aa, "r1":a1, "g1":a1, "b1":a0,"r0":a0, "g0":a0, "b0":a1}
+                # splist.append(tp)
+                # tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                #       "aa":aa, "r1":a0, "g1":a0, "b1":a1,"r0":a1, "g0":a1, "b0":a0}
+                # splist.append(tp)
                 
-                # 101 v 010    purple-green
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
-                      "aa":aa, "r1":a1, "g1":a0, "b1":a1,"r0":a0, "g0":a1, "b0":a0}
-                splist.append(tp)
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
-                      "aa":aa, "r1":a0, "g1":a1, "b1":a0,"r0":a1, "g0":a0, "b0":a1}
-                splist.append(tp)
+                # # 101 v 010    purple-green
+                # tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                #       "aa":aa, "r1":a1, "g1":a0, "b1":a1,"r0":a0, "g0":a1, "b0":a0}
+                # splist.append(tp)
+                # tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                #       "aa":aa, "r1":a0, "g1":a1, "b1":a0,"r0":a1, "g0":a0, "b0":a1}
+                # splist.append(tp)
                 
-                # 011 v 100    cyan-red
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
-                      "aa":aa, "r1":a0, "g1":a1, "b1":a1,"r0":a1, "g0":a0, "b0":a0}
-                splist.append(tp)
-                tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
-                      "aa":aa, "r1":a1, "g1":a0, "b1":a0,"r0":a0, "g0":a1, "b0":a1}
-                splist.append(tp)
-
+                # # 011 v 100    cyan-red
+                # tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                #       "aa":aa, "r1":a0, "g1":a1, "b1":a1,"r0":a1, "g0":a0, "b0":a0}
+                # splist.append(tp)
+                # tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o, "len":blen, "wid":bwid,
+                #       "aa":aa, "r1":a1, "g1":a0, "b1":a0,"r0":a0, "g0":a1, "b0":a1}
+                # splist.append(tp)
+                
+                # Added on Sep 6th to replace all backgrounds with (0, 0, 0), i.e, gray.
+                colors = [(a1, a1, a1),
+                          (a0, a0, a0),
+                          (a1, a0, a0),
+                          (a0, a1, a0),
+                          (a0, a0, a1),
+                          (a1, a1, a0),
+                          (a1, a0, a1),
+                          (a0, a1, a1)]
+                
+                for r1, g1, b1 in colors:
+                    tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "theta":o,
+                          "len":blen, "wid":bwid, "aa":aa,
+                          "r1":r1, "g1":g1, "b1":b1,
+                          "r0":0, "g0":0, "b0":0}
+                    splist.append(tp)
 
 
 #######################################.#######################################
@@ -690,7 +706,7 @@ def non_overlap_barmap(new_bar, sum_map, stim_thr):
 #                                                                             #
 ###############################################################################
 def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False, 
-                 num_bars=100, response_thr=0.3, stim_thr=0.2):
+                 num_bars=100, response_thr=0.8, stim_thr=0.2):
     """
     Parameters
     ----------
@@ -746,19 +762,27 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
         # Note that the background color are set to 0, while the foreground
         # values are always positive.
         if has_color:
+            # new_bar = stimfr_bar_color(params['xn'], params['yn'],
+            #                             params['x0'], params['y0'],
+            #                             params['theta'],
+            #                             params['len'], params['wid'], 
+            #                             params['aa'],
+            #                             max(params['r1'], 0), max(params['g1'], 0), max(params['b1'], 0),
+            #                             0, 0, 0)
             new_bar = stimfr_bar_color(params['xn'], params['yn'],
-                                        params['x0'], params['y0'],
-                                        params['theta'],
-                                        params['len'], params['wid'], 
-                                        params['aa'],
-                                        max(params['r1'], 0), max(params['g1'], 0), max(params['b1'], 0),
-                                        0, 0, 0)
+                                           params['x0'], params['y0'],
+                                           params['theta'],
+                                           params['len'], params['wid'], 
+                                           params['aa'],
+                                           params['r1'], params['g1'], params['b1'],
+                                           params['r0'], params['g0'], params['b0'])
         else:
             new_bar = stimfr_bar(params['xn'], params['yn'],
                                 params['x0'], params['y0'],
                                 params['theta'], params['len'], params['wid'],
                                 0.5, 1, 0)
-        if (response - r_min) > r_range * response_thr:
+        # if (response - r_min) > r_range * response_thr:
+        if num_weighted_max_bars < num_bars - 1:
             has_included = non_overlap_barmap(new_bar, non_overlap_max_map, stim_thr)
             weighted_barmap(new_bar, weighted_max_map, (response - r_min)/r_range)
             # counts the number of bars in each map
@@ -772,19 +796,27 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
         response = center_responses[min_bar_i, unit_i]
         params = splist[min_bar_i]
         if has_color:
+            # new_bar = stimfr_bar_color(params['xn'], params['yn'],
+            #                             params['x0'], params['y0'],
+            #                             params['theta'],
+            #                             params['len'], params['wid'], 
+            #                             params['aa'],
+            #                             max(params['r1'], 0), max(params['g1'], 0), max(params['b1'], 0),
+            #                             0, 0, 0)
             new_bar = stimfr_bar_color(params['xn'], params['yn'],
-                                        params['x0'], params['y0'],
-                                        params['theta'],
-                                        params['len'], params['wid'], 
-                                        params['aa'],
-                                        max(params['r1'], 0), max(params['g1'], 0), max(params['b1'], 0),
-                                        0, 0, 0)
+                                           params['x0'], params['y0'],
+                                           params['theta'],
+                                           params['len'], params['wid'], 
+                                           params['aa'],
+                                           params['r1'], params['g1'], params['b1'],
+                                           params['r0'], params['g0'], params['b0'])
         else:
             new_bar = stimfr_bar(params['xn'], params['yn'],
                                 params['x0'], params['y0'],
                                 params['theta'], params['len'], params['wid'],
                                 0.5, 1, 0) 
-        if (response - r_min) < r_range * (1 - response_thr):
+        # if (response - r_min) < r_range * (1 - response_thr):
+        if num_weighted_min_bars < num_bars - 1:
             has_included = non_overlap_barmap(new_bar, non_overlap_min_map, stim_thr)
             weighted_barmap(new_bar, weighted_min_map, (r_max - response)/r_range)
             # counts the number of bars in each map
