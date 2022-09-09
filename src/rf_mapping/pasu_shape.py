@@ -170,20 +170,20 @@ def fill_contour(bool_contour, fgval=1.0, bgval=-1.0):
     filled_contour[bool_contour] = fgval
     prev_row = np.full(bool_contour[0].shape, bgval)
     for row_i, bool_row in enumerate(bool_contour):
-        curr_row = fill_row(bool_row, fgval, bgval, prev_row)
+        curr_row = fill_row(bool_row, fgval, bgval, prev_row, row_i)
         filled_contour[row_i, :] = curr_row
         prev_row = curr_row
     return filled_contour
 
 
-def fill_row(bool_row, fgval, bgval, prev_row):
+def fill_row(bool_row, fgval, bgval, prev_row, row_i):
     """
     Return an array of the same length as bool_row but with 'fgval' values at
     the interior of the contours and 'bgval' values at the exterior.
     
     Tony Fu, September 6th, 2022
     """
-    max_thickness = max(bool_row.shape[0] // 15, 1)
+    max_thickness = max(bool_row.shape[0] // 12, 1)
     is_fgval = np.isclose(prev_row, fgval)
 
     # Initialize the output array.
@@ -219,6 +219,7 @@ def fill_row(bool_row, fgval, bgval, prev_row):
     if len(contour_start_end_pairs) == 0 or contour_start_end_pairs[-1] != (start,end):
         contour_start_end_pairs.append((start,end))
 
+    # print(row_i, contour_start_end_pairs)
 
     # Case: 1 contour
     if len(contour_start_end_pairs) == 1:
@@ -227,6 +228,8 @@ def fill_row(bool_row, fgval, bgval, prev_row):
         return filled_row
     
     # Case: 2 contours
+    # TODO: 'underline' artifacts seen in 3 shapes when their are symmetrical
+    #       about the vertical axis and has two vertices pointing down.
     if len(contour_start_end_pairs) == 2:
         l_start, l_end = contour_start_end_pairs[0]
         r_start, r_end = contour_start_end_pairs[1]
@@ -235,7 +238,8 @@ def fill_row(bool_row, fgval, bgval, prev_row):
         filled_row[l_start:l_end+1] = fgval
         filled_row[r_start:r_end+1] = fgval
         if total_sum != 0 and lr_sum > 1:
-            if lr_sum / (r_start -  l_end) > 0.2:
+            # if the previous row is most filled between r_start and l_end.
+            if lr_sum / (r_start -  l_end) > 0.4:
                 filled_row[l_start:r_end+1] = fgval
 
     # Case: 3 contours
@@ -272,15 +276,16 @@ def fill_row(bool_row, fgval, bgval, prev_row):
         sum12 = np.sum(is_fgval[end_1:start_2+1])
         sum23 = np.sum(is_fgval[end_2:start_3+1])
         total_sum = np.sum(is_fgval)
+        middle_sum = np.sum(is_fgval[end_1:start_2])
         if total_sum == 0:
             filled_row[start_0:end_1] = fgval
             filled_row[start_2:end_3] = fgval
         else:
-            if sum01 + sum23 > sum12:
-                filled_row[start_0:end_1] = fgval
-                filled_row[start_2:end_3] = fgval
+            if sum01 + sum23 > sum12 or middle_sum/(start_2-end_1) < 0.9:
+                filled_row[start_0:end_1+1] = fgval
+                filled_row[start_2:end_3+1] = fgval
             else:
-                filled_row[start_1:end_2] = fgval
+                filled_row[start_1:end_2+1] = fgval
         filled_row[start_0:end_0+1] = fgval
         filled_row[start_1:end_1+1] = fgval
         filled_row[start_2:end_2+1] = fgval
@@ -337,12 +342,12 @@ def make_pasu_shape(si, ri, output_size=100, plot=False):
 
 
 if __name__ == "__main__":
-    # make_pasu_shape(34, 1, output_size=100, plot=True)
+    # make_pasu_shape(48, 1, output_size=80, plot=True)
     for si in range(51):
         num_angles = pasu_shape_nrotu[si]
         plt.figure(figsize=(num_angles*3, 4))
         plt.suptitle(f"{si + 1}")
         for ri in range(num_angles): 
             plt.subplot(1,num_angles,ri+1)
-            make_pasu_shape(si, ri, output_size=100, plot=True)
+            make_pasu_shape(si, ri, output_size=200, plot=True)
         plt.show()
