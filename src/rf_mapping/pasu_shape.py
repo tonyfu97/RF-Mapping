@@ -183,7 +183,7 @@ def fill_row(bool_row, fgval, bgval, prev_row):
     
     Tony Fu, September 6th, 2022
     """
-    max_thickness = 5
+    max_thickness = max(bool_row.shape[0] // 15, 1)
     is_fgval = np.isclose(prev_row, fgval)
 
     # Initialize the output array.
@@ -218,7 +218,8 @@ def fill_row(bool_row, fgval, bgval, prev_row):
     # Don't forget to append the last pair.
     if len(contour_start_end_pairs) == 0 or contour_start_end_pairs[-1] != (start,end):
         contour_start_end_pairs.append((start,end))
-    
+
+
     # Case: 1 contour
     if len(contour_start_end_pairs) == 1:
         start, end = contour_start_end_pairs[0]
@@ -234,13 +235,10 @@ def fill_row(bool_row, fgval, bgval, prev_row):
         filled_row[l_start:l_end+1] = fgval
         filled_row[r_start:r_end+1] = fgval
         if total_sum != 0 and lr_sum > 1:
-            filled_row[l_start:r_end+1] = fgval
+            if lr_sum / (r_start -  l_end) > 0.2:
+                filled_row[l_start:r_end+1] = fgval
 
     # Case: 3 contours
-    # This case is difficult because we are not sure how to pair the extra one
-    # contour. However, for Pasupathy shapes, we know that the closer pair
-    # is likely to enclose the shape, and there are at most three contours
-    # per shape.
     if len(contour_start_end_pairs) == 3:
         start_0, end_0 = contour_start_end_pairs[0]
         start_1, end_1 = contour_start_end_pairs[1]
@@ -339,12 +337,12 @@ def make_pasu_shape(si, ri, output_size=100, plot=False):
 
 
 if __name__ == "__main__":
-    # make_pasu_shape(40, 1, plot=True)
+    # make_pasu_shape(34, 1, output_size=100, plot=True)
     for si in range(51):
         num_angles = pasu_shape_nrotu[si]
         plt.figure(figsize=(num_angles*3, 4))
         plt.suptitle(f"{si + 1}")
         for ri in range(num_angles): 
             plt.subplot(1,num_angles,ri+1)
-            make_pasu_shape(si, ri, output_size=200, plot=True)
+            make_pasu_shape(si, ri, output_size=100, plot=True)
         plt.show()
