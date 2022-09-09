@@ -706,7 +706,7 @@ def non_overlap_barmap(new_bar, sum_map, stim_thr):
 #                                                                             #
 ###############################################################################
 def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False, 
-                 num_bars=100, response_thr=0.8, stim_thr=0.2):
+                 num_bars=500, response_thr=0.8, stim_thr=0.2):
     """
     Parameters
     ----------
@@ -782,7 +782,7 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
                                 params['theta'], params['len'], params['wid'],
                                 0.5, 1, 0)
         # if (response - r_min) > r_range * response_thr:
-        if num_weighted_max_bars < num_bars - 1:
+        if num_weighted_max_bars < num_bars:
             has_included = non_overlap_barmap(new_bar, non_overlap_max_map, stim_thr)
             weighted_barmap(new_bar, weighted_max_map, (response - r_min)/r_range)
             # counts the number of bars in each map
@@ -816,7 +816,7 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
                                 params['theta'], params['len'], params['wid'],
                                 0.5, 1, 0) 
         # if (response - r_min) < r_range * (1 - response_thr):
-        if num_weighted_min_bars < num_bars - 1:
+        if num_weighted_min_bars < num_bars:
             has_included = non_overlap_barmap(new_bar, non_overlap_min_map, stim_thr)
             weighted_barmap(new_bar, weighted_min_map, (r_max - response)/r_range)
             # counts the number of bars in each map
@@ -1204,19 +1204,20 @@ def rfmp4c7o_run_01(model, model_name, result_dir, _debug=False, batch_size=100)
     non_overlap_counts_path = os.path.join(result_dir, f"{model_name}_rfmp4c7o_non_overlap_counts.txt")
 
     # Delete previous files
-    delete_all_npy_files(result_dir)
-    if os.path.exists(tb1_path):
-        os.remove(tb1_path)
-    if os.path.exists(tb20_path):
-        os.remove(tb20_path)
-    if os.path.exists(tb100_path):
-        os.remove(tb100_path)
-    if os.path.exists(weighted_counts_path):
-        os.remove(weighted_counts_path)
-    if os.path.exists(non_overlap_counts_path):
-        os.remove(non_overlap_counts_path)
+    # delete_all_npy_files(result_dir)
+    # if os.path.exists(tb1_path):
+    #     os.remove(tb1_path)
+    # if os.path.exists(tb20_path):
+    #     os.remove(tb20_path)
+    # if os.path.exists(tb100_path):
+    #     os.remove(tb100_path)
+    # if os.path.exists(weighted_counts_path):
+    #     os.remove(weighted_counts_path)
+    # if os.path.exists(non_overlap_counts_path):
+    #     os.remove(non_overlap_counts_path)
     
     for conv_i in range(len(layer_indices)):
+        if conv_i < 8: continue
         layer_name = f"conv{conv_i + 1}"
         print(f"\n{layer_name}\n")
         # Get layer-specific info
