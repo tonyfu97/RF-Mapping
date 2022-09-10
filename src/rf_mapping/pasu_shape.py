@@ -25,12 +25,15 @@ import math
 import concurrent.futures
 import torch
 import torch.nn as nn
+import torchvision.models as models
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from src.rf_mapping.hook import ConvUnitCounter
+from tqdm import tqdm
 
 sys.path.append('../..')
+from src.rf_mapping.image import make_box
+from src.rf_mapping.hook import ConvUnitCounter
 from src.rf_mapping.spatial import (xn_to_center_rf,
                                     calculate_center,
                                     get_rf_sizes,)
@@ -1115,6 +1118,7 @@ def pasu_bw_run_01b(model, model_name, result_dir, _debug=False, batch_size=10):
         non_overlap_pdf_path = os.path.join(result_dir, f"{layer_name}_non_overlap_shapemaps.pdf")
         make_map_pdf(non_overlap_max_maps, non_overlap_min_maps, non_overlap_pdf_path)
 
+
 #######################################.#######################################
 #                                                                             #
 #                               PASU_COLOR_RUN_01                             #
@@ -1260,3 +1264,96 @@ def pasu_color_run_01(model, model_name, result_dir, _debug=False, batch_size=10
         make_map_pdf(np.transpose(non_overlap_max_maps, (0,2,3,1)),
                      np.transpose(non_overlap_min_maps, (0,2,3,1)),
                      non_overlap_pdf_path)
+
+
+#######################################.#######################################
+#                                                                             #
+#                              MAKE_PASU_GRID_PDF                             #
+#                                                                             #
+###############################################################################
+def make_pasu_grid_pdf(pdf_path, model):
+    xn_list = xn_to_center_rf(model, image_size=(999,999))  # Get the xn just big enough.
+    layer_indices, max_rfs = get_rf_sizes(model, (999, 999), layer_type=nn.Conv2d)
+    num_layers = len(max_rfs)
+
+    # Array of shape sizes
+    pasu_size_ratios = np.array([48/64, 24/64, 12/64])
+    pasu_size_ratio_strs = ['48/64', '24/64', '12/64']
+    
+    # Decide what shape to plot
+    si = 16
+    ri = 0
+
+    with PdfPages(pdf_path) as pdf:
+        for size_i, pasu_size_ratio in enumerate(pasu_size_ratios):
+            plt.figure(figsize=(4*num_layers, 5))
+            plt.suptitle(f"Shape No.{si}, Shape Size = {pasu_size_ratio_strs[size_i]}", fontsize=24)
+            for conv_i, max_rf in enumerate(max_rfs):
+                layer_name = f"conv{conv_i + 1}"
+                layer_index = layer_indices[conv_i]
+                # Get layer-specific info
+                xn = xn_list[conv_i]
+                max_rf = max_rf[0]
+
+                # Set bar parameters
+                pasu_size = max(round(pasu_size_ratio * max_rf),1)
+                xlist = stimset_gridx_barmap(max_rf, pasu_size)
+
+                # Plot the bar
+                shape = make_pasu_shape(xn,xn,0,0,si,ri,1,0.5,pasu_size,plot=False)
+                plt.subplot(1, num_layers, conv_i+1)
+                plt.imshow(shape, cmap='gray', vmin=0, vmax=1)
+                plt.title(f"{layer_name}\n(idx={layer_index}, maxRF={max_rf}, xn={xn})")
+
+                # Plot the bar centers (i.e., the "grids").
+                for y0 in xlist:
+                    for x0 in xlist:
+                        plt.plot(y0+xn/2, x0+xn/2, 'k.')
+
+                # Highlight maximum RF
+                padding = (xn - max_rf)//2
+                rect = make_box((padding-1, padding-1, padding+max_rf-1, padding+max_rf-1), linewidth=1)
+                ax = plt.gca()
+                ax.add_patch(rect)
+                # ax.invert_yaxis()
+    
+            pdf.savefig()
+            plt.show()
+            plt.close()
+
+
+# Generate a RFMP4a grid pdf for AlexNet
+# if __name__ == "__main__":
+#     model = models.alexnet()
+#     model_name = 'alexnet'
+#     model = models.vgg16()
+#     model_name = 'vgg16'
+#     model = models.resnet18()
+#     model_name = 'resnet18'
+#     pdf_path = os.path.join(c.REPO_DIR,'results','pasu','mapping', model_name,
+#                             f'{model_name}_test_grid.pdf')
+#     make_pasu_grid_pdf(pdf_path, model)
+
+
+#######################################.#######################################
+#                                                                             #
+#                               MAKE_PASU_SET_PDF                             #
+#                                                                             #
+###############################################################################
+def make_pasu_set_pdf(size):
+    pdf_path = os.path.join(c.REPO_DIR,'results','pasu', f'pasu_shapes_size{size}.pdf')
+    with PdfPages(pdf_path) as pdf:
+        for si in range(51):
+            num_angles = pasu_shape_nrotu[si]
+            plt.figure(figsize=(num_angles*3, 4))
+            plt.suptitle(f"{si + 1}")
+            for ri in range(num_angles): 
+                plt.subplot(1,num_angles,ri+1)
+                make_pasu_shape(size,size,0,0,si,ri,fgval=1.0,bgval=-1.0,size=size,plot=True)
+            pdf.savefig()
+            plt.close()
+
+
+# if __name__ == "__main__":
+#     for size in [25, 50, 75, 100, 150, 200]:
+#         make_pasu_set_pdf(size)
