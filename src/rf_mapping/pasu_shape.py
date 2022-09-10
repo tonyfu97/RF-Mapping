@@ -352,7 +352,7 @@ def put_shape_into_full_xn(filled_contour, xn, yn, x0, y0, bgval):
     
     # Put the filled contour at the right position.
     output[vx_min:vx_max+1, hx_min:hx_max+1] = filled_contour[fc_vx_min:fc_vx_max,
-                                                              fc_hx_min:fc_hx_max]
+                                                                fc_hx_min:fc_hx_max]
 
     return output
 
@@ -484,12 +484,12 @@ def stimset_dict_pasu_bw(xn, max_rf):
                     num_angles = pasu_shape_nrotu[si]
                     for ri in range(num_angles):
                         tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "si":si, "ri":ri,
-                             "fgval":fgval, "bgval":bgval, "size":round(pasu_size)}
+                             "fgval":fgval, "bgval":bgval, "size":max(round(pasu_size),1)}
                         splist.append(tp)
                         
                         # Now swap 'bgval' and 'fgval' to make opposite contrast
                         tp = {"xn":xn, "yn":yn, "x0":i, "y0":j, "si":si, "ri":ri,
-                             "fgval":bgval, "bgval":fgval, "size":round(pasu_size)}
+                             "fgval":bgval, "bgval":fgval, "size":max(round(pasu_size),1)}
                         splist.append(tp)
     return splist
 
@@ -531,7 +531,7 @@ def stimset_dict_pasu_rgb7o(xn, max_rf):
                                   "si":si, "ri":ri,
                                   "r1":r1, "g1":g1, "b1":b1,
                                   "r0":0, "g0":0, "b0":0,
-                                  "size":round(pasu_size)}
+                                  "size":max(round(pasu_size),1)}
                             splist.append(tp)
     return splist
 
@@ -1008,6 +1008,9 @@ def pasu_bw_run_01b(model, model_name, result_dir, _debug=False, batch_size=10):
         num_units = nums_units[conv_i]
         max_rf = max_rfs[conv_i][0]
         splist = stimset_dict_pasu_bw(xn, max_rf)
+        
+        if max_rf < 30:
+            continue
 
         # Array initializations
         weighted_max_maps = np.zeros((num_units, max_rf, max_rf))
@@ -1174,6 +1177,9 @@ def pasu_color_run_01(model, model_name, result_dir, _debug=False, batch_size=10
         num_units = nums_units[conv_i]
         max_rf = max_rfs[conv_i][0]
         splist = stimset_dict_pasu_rgb7o(xn, max_rf)
+        
+        if max_rf < 30:
+            continue
 
         # Array initializations
         weighted_max_maps = np.zeros((num_units, 3, max_rf, max_rf))
