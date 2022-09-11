@@ -13,6 +13,7 @@ import pandas as pd
 import torchvision.models as models
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
+from scipy.stats import kurtosis
 from scipy.ndimage.filters import gaussian_filter
 from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
@@ -32,9 +33,9 @@ model_name = 'alexnet'
 # model_name = 'resnet18'
 
 # Please specify the what maps to compare:
-# Choices are: 'gt', 'occlude', 'rfmp4a', and 'rfmp4c7o'.
+# Choices are: 'gt', 'occlude', 'rfmp4a', 'rfmp4c7o', and 'pasu'.
 gt_method = 'gt'
-ephys_method = 'rfmp4a'
+ephys_method = 'pasu'
 
 # Please confirm the directories
 source_dir = os.path.join(c.REPO_DIR, 'results', ephys_method, 'mapping', model_name)
@@ -76,6 +77,13 @@ def load_maps(map_name, layer_name, max_or_min):
                                     f"{layer_name}_weighted_{max_or_min}_barmaps.npy")
         maps = np.load(mapping_path)  # [unit, 3, yn, xn]
         return np.mean(maps, axis=1)
+    elif map_name == 'pasu':
+        mapping_path = os.path.join(mapping_dir,
+                                    'pasu',
+                                    'mapping',
+                                    model_name,
+                                    f"{layer_name}_weighted_{max_or_min}_shapemaps.npy")
+        return np.load(mapping_path)  # [unit, yn, xn]
     else:
         raise KeyError(f"{map_name} does not exist.")
 
@@ -124,6 +132,8 @@ for conv_i in range(num_layers):
     bot_areas_under_curve = []
     top_r_max = []
     bot_r_max = []
+    top_kurtosises = []
+    bot_kurtosises = []
     
     pdf_path = os.path.join(result_dir, f"{model_name}_{layer_name}_{gt_method}_and_{ephys_method}_responses.pdf")
     with PdfPages(pdf_path) as pdf:
@@ -141,25 +151,29 @@ for conv_i in range(num_layers):
             top_responses = top_r_df.loc[(top_r_df.UNIT == unit_i), 'R']
             norm_top_responses = normalize_responses(top_responses)
             top_intergral = np.sum(norm_top_responses)
+            top_kurtosis = kurtosis(norm_top_responses)
             if math.isfinite(top_r_val):
                 top_r_vals.append(top_r_val)
                 top_r_max.append(top_responses.tolist()[0])
                 top_areas_under_curve.append(top_intergral)
+                top_kurtosises.append(top_kurtosis)
 
             bot_responses = bot_r_df.loc[(bot_r_df.UNIT == unit_i), 'R']
             norm_bot_responses = normalize_responses(bot_responses)
             bot_intergral = np.sum(norm_bot_responses)
+            bot_kurtosis = kurtosis(norm_bot_responses)
             if math.isfinite(bot_r_val):
                 bot_r_vals.append(bot_r_val)
                 bot_r_max.append(bot_responses.tolist()[0])
                 bot_areas_under_curve.append(bot_intergral) 
+                bot_kurtosises.append(bot_kurtosis)
 
             plt.figure(figsize=(10,6))
             plt.suptitle(f"{layer_name} no.{unit_i} 5000 responses")
             
             plt.subplot(2,3,1)
             plt.plot(np.arange(1, 5001), top_responses)
-            plt.title(f"top (nauc = {top_intergral:.0f})")
+            plt.title(f"top(nauc={top_intergral:.0f},kurtosis={top_kurtosis:.1f})")
             plt.ylabel('response')
             
             plt.subplot(2,3,2)
@@ -172,7 +186,7 @@ for conv_i in range(num_layers):
             
             plt.subplot(2,3,4)
             plt.plot(np.arange(1, 5001), bot_responses)
-            plt.title(f"bottom (nauc = {bot_intergral:.0f})")
+            plt.title(f"bottom(nauc={bot_intergral:.0f},kurtosis={bot_kurtosis:.1f})")
             plt.xlabel('ranking')
             plt.ylabel('response')
             
@@ -199,6 +213,7 @@ for conv_i in range(num_layers):
         top_r_vals = np.exp(top_r_vals)
         bot_r_vals = np.exp(bot_r_vals)
         
+        # Summarizing the layer: Normalized under the curve
         total_top_r_val, _ = pearsonr(top_r_vals, top_areas_under_curve)
         total_bot_r_val, _ = pearsonr(bot_r_vals, bot_areas_under_curve)
         plt.figure(figsize=(10,5))
@@ -206,19 +221,20 @@ for conv_i in range(num_layers):
 
         plt.subplot(1,2,1)
         plt.scatter(top_r_vals, top_areas_under_curve)
-        plt.xlabel('r (gt and rfmp4a correlation)')
+        plt.xlabel('exp(r) (gt and rfmp4a correlation)')
         plt.ylabel('area under sorted response curve')
         plt.title(f"top (r = {total_top_r_val:.2f})")
         
         plt.subplot(1,2,2)
         plt.scatter(bot_r_vals, bot_areas_under_curve)
-        plt.xlabel('r (gt and rfmp4a correlation)')
+        plt.xlabel('exp(r) (gt and rfmp4a correlation)')
         plt.ylabel('area under sorted response curve')
         plt.title(f"bottom (r = {total_bot_r_val:.2f})")
 
         pdf.savefig()
         plt.close()
 
+        # Summarizing the layer: Max reponse
         total_top_r_val, _ = pearsonr(top_r_vals, top_r_max)
         total_bot_r_val, _ = pearsonr(bot_r_vals, bot_r_max)
         plt.figure(figsize=(10,5))
@@ -226,14 +242,35 @@ for conv_i in range(num_layers):
 
         plt.subplot(1,2,1)
         plt.scatter(top_r_vals, top_r_max)
-        plt.xlabel('r (gt and rfmp4a correlation)')
+        plt.xlabel('exp(r) (gt and rfmp4a correlation)')
         plt.ylabel('maximum response')
         plt.title(f"top (r = {total_top_r_val:.2f})")
         
         plt.subplot(1,2,2)
         plt.scatter(bot_r_vals, bot_r_max)
-        plt.xlabel('r (gt and rfmp4a correlation)')
+        plt.xlabel('exp(r) (gt and rfmp4a correlation)')
         plt.ylabel('maximum response')
+        plt.title(f"bottom (r = {total_bot_r_val:.2f})")
+
+        pdf.savefig()
+        plt.close()
+
+        # Summarizing the layer: Kurtosis
+        total_top_r_val, _ = pearsonr(top_r_vals, top_kurtosises)
+        total_bot_r_val, _ = pearsonr(bot_r_vals, bot_kurtosises)
+        plt.figure(figsize=(10,5))
+        plt.suptitle(f"{layer_name}")
+
+        plt.subplot(1,2,1)
+        plt.scatter(top_r_vals, top_kurtosises)
+        plt.xlabel('exp(r) (gt and rfmp4a correlation)')
+        plt.ylabel('kurtosis')
+        plt.title(f"top (r = {total_top_r_val:.2f})")
+        
+        plt.subplot(1,2,2)
+        plt.scatter(bot_r_vals, bot_kurtosises)
+        plt.xlabel('exp(r) (gt and rfmp4a correlation)')
+        plt.ylabel('kurtosis')
         plt.title(f"bottom (r = {total_bot_r_val:.2f})")
 
         pdf.savefig()
