@@ -24,9 +24,9 @@ model_name = "alexnet"
 # model_name = "vgg16"
 # model = models.resnet18(pretrained=True).to(c.DEVICE)
 # model_name = "resnet18"
-top_n = 5
+top_n = 100
 image_size = (227, 227)
-this_is_a_test_run = False
+this_is_a_test_run = True
 batch_size = 10
 
 # Please double-check the directories:
@@ -55,6 +55,7 @@ conv_counter = ConvUnitCounter(model)
 # Get info of conv layers.
 layer_indices, nums_units = conv_counter.count()
 layer_indices, rf_sizes = get_rf_sizes(model, image_size)
+top_n_to_plot = max(top_n, 3)
 
 if __name__ == "__main__":
     for conv_i, layer_idx in enumerate(layer_indices):
@@ -68,13 +69,13 @@ if __name__ == "__main__":
         num_units = nums_units[conv_i]
         
         # Array intializations
-        max_discrepancy_maps = np.zeros((top_n, num_units, rf_size, rf_size))
-        min_discrepancy_maps = np.zeros((top_n, num_units, rf_size, rf_size))
+        max_discrepancy_maps = np.zeros((num_units, rf_size, rf_size))
+        min_discrepancy_maps = np.zeros((num_units, rf_size, rf_size))
 
         pdf_path = os.path.join(result_dir, f"{layer_name}.pdf")
         with PdfPages(pdf_path) as pdf:
-            fig, plt_axes = plt.subplots(2, top_n)
-            fig.set_size_inches(20, 8)
+            fig, plt_axes = plt.subplots(2, top_n_to_plot)
+            fig.set_size_inches(5 * top_n_to_plot, 8)
             
             # Collect axis and imshow handles in a list.
             ax_handles = []
@@ -87,7 +88,7 @@ if __name__ == "__main__":
 
             for unit_i in tqdm(range(num_units)):
                 if this_is_a_test_run and unit_i > 2:
-                    continue
+                    break
                 # sys.stdout.write('\r')
                 # sys.stdout.write(f"Making pdf for {layer_name} no.{unit_i}...")
                 # sys.stdout.flush()
@@ -111,9 +112,11 @@ if __name__ == "__main__":
                                                           truncated_model, rf_size,
                                                           max_patch_idx, unit_i, box,
                                                           batch_size=batch_size, _debug=this_is_a_test_run, image_size=image_size)
-                    im_handles[i].set_data(discrepancy_map/discrepancy_map.max())
-                    ax_handles[i].set_title(f"top {i+1} image")
-                    max_discrepancy_maps[i][unit_i] = discrepancy_map.copy()
+                    max_discrepancy_maps[unit_i] += discrepancy_map / top_n
+                    if i < top_n_to_plot:
+                        im_handles[i].set_data(discrepancy_map/discrepancy_map.max())
+                        ax_handles[i].set_title(f"top {i+1} image")
+                        
 
                 # Bottom N images and gradient patches:
                 for i, (min_img_idx, min_patch_idx) in enumerate(zip(min_n_img_indices,
@@ -126,9 +129,10 @@ if __name__ == "__main__":
                                                           truncated_model, rf_size,
                                                           min_patch_idx, unit_i, box,
                                                           batch_size=batch_size, _debug=this_is_a_test_run, image_size=image_size)
-                    im_handles[i+top_n].set_data(discrepancy_map/discrepancy_map.max())
-                    ax_handles[i+top_n].set_title(f"bottom {i+1} image")
-                    min_discrepancy_maps[i][unit_i] = discrepancy_map.copy()
+                    min_discrepancy_maps[unit_i] += discrepancy_map / top_n
+                    if i < top_n_to_plot:
+                        im_handles[i+top_n_to_plot].set_data(discrepancy_map/discrepancy_map.max())
+                        ax_handles[i+top_n_to_plot].set_title(f"bottom {i+1} image")
 
                 plt.show()
                 pdf.savefig(fig)

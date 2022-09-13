@@ -60,8 +60,7 @@ def load_maps(map_name, layer_name, max_or_min):
                                     'mapping',
                                     model_name,
                                     f"{layer_name}_{max_or_min}.npy")
-        maps = np.load(mapping_path)  # [top_n, unit, y, x]
-        return np.mean(maps, axis=0)
+        return np.load(mapping_path)  # [unit, yn, xn]
     elif map_name == 'rfmp4a':
         mapping_path = os.path.join(mapping_dir,
                                     'rfmp4a',

@@ -110,6 +110,19 @@ class Rfmp4c7oSplist(Enum):
     B0     = 14
 
 
+class PasuBWSplist(Enum):
+    STIM_I = 0  # counting from 0
+    XN     = 1
+    YN     = 2
+    X0     = 3
+    Y0     = 4
+    SI     = 5  # shape index [1...51]
+    RI     = 6  # rotation index (could be [0...1], [0...3], or [0...7])
+    FGVAL  = 7
+    BGVAL  = 8
+    SIZE   = 9
+
+
 class CenterReponses(Enum):
     UNIT   = 0
     RANK   = 1  # top 0, 1, 2, ... and bottom 0, 1, 2, ...

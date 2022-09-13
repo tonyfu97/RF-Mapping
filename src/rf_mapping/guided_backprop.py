@@ -236,6 +236,7 @@ def _test_guided_backprop():
 
         plt.subplot(1,2,1)
         plt.imshow(img_proc(gbp_map))
+        print(np.sum(gbp_map < 0))
         plt.title(f"array of ones")
         rect = make_box(box)
         ax = plt.gca()
@@ -243,6 +244,7 @@ def _test_guided_backprop():
 
         print(gbp_map.shape)
         print(gbp_map.max(), gbp_map.min())
+        print(np.sum(gbp_map < 0))
         plt.subplot(1,2,2)
         plt.imshow((np.mean(gbp_map, axis=0) != 0), cmap='gray')
         plt.title(f"binarized (non-zeros = white)")

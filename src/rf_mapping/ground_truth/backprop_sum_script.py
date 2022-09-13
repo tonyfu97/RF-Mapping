@@ -33,7 +33,7 @@ model_name = "alexnet"
 # model_name = "resnet18"
 sum_modes = ['abs', 'sqr']
 top_n = 100
-this_is_a_test_run = False
+this_is_a_test_run = True
 is_random = True
 
 # Please double-check the directories:
@@ -154,6 +154,8 @@ for conv_i, rf_size in enumerate(rf_sizes):
             max_grad_patch_padded = get_grad_patch(max_img, layer_idx, unit_i, max_idx, rf_size)
             for i, sum_mode in enumerate(sum_modes):
                 max_sum[i, unit_i, ...] = add_patch_to_sum(max_grad_patch_padded, max_sum[i, unit_i, ...], sum_mode)
+            
+            print(np.sum(max_sum < 0))
 
             # Bottom N images:
             min_img_path = os.path.join(img_dir, f"{min_img_idx}.npy")

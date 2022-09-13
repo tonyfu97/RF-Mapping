@@ -27,10 +27,10 @@ import src.rf_mapping.constants as c
 # Please specify some details here:
 model = models.alexnet(pretrained=True)  # repeat for correct bar_count
 model_name = 'alexnet'
-# model = models.vgg16(pretrained=True).to(c.DEVICE)
-# model_name = 'vgg16'
-# model = models.resnet18(pretrained=True)
-# model_name = 'resnet18'
+model = models.vgg16(pretrained=True).to(c.DEVICE)
+model_name = 'vgg16'
+model = models.resnet18(pretrained=True)
+model_name = 'resnet18'
 image_shape = (227, 227)
 this_is_a_test_run = False
 

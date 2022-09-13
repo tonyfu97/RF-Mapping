@@ -103,12 +103,8 @@ for conv_i in range(len(layer_indices)):
     # Load backprop sums:
     max_file_path = os.path.join(map_dir, f"{layer_name}_max.npy")
     min_file_path = os.path.join(map_dir, f"{layer_name}_min.npy")
-    max_maps = np.load(max_file_path)  # [top_n, unit, y, x]
-    min_maps = np.load(min_file_path)  # [top_n, unit, y, x]
-
-    # Average across the top-N maps.
-    max_maps = np.mean(max_maps, axis=0)
-    min_maps = np.mean(min_maps, axis=0)
+    max_maps = np.load(max_file_path)  # [unit, y, x]
+    min_maps = np.load(min_file_path)  # [unit, y, x]
 
     # Initialize arrays for parameters and standard error (SEM) values:
     num_units = nums_units[conv_i]

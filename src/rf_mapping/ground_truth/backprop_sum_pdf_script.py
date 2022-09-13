@@ -28,8 +28,8 @@ model_name = "alexnet"
 # model = models.resnet18()
 # model_name = 'resnet18'
 sum_modes = ['abs', 'sqr']
-this_is_a_test_run = False
-is_random = True
+this_is_a_test_run = True
+is_random = False
 
 # Please double-check the directories:
 if is_random:
