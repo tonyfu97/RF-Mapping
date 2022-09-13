@@ -14,6 +14,7 @@ from torchvision import models
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
+from scipy.ndimage.filters import gaussian_filter
 
 sys.path.append('../../..')
 from src.rf_mapping.gaussian_fit import (gaussian_fit,
@@ -120,7 +121,12 @@ for conv_i in range(len(layer_indices)):
             # Do only the first 5 unit during testing phase
             if this_is_a_test_run and unit_i >= 5:
                 break
-
+            
+            # blur the maps
+            sigma = rf_size // 10
+            max_map = gaussian_filter(max_map, sigma=sigma)
+            min_map = gaussian_filter(min_map, sigma=sigma)
+            
             # Fit 2D Gaussian, and plot them.
             plt.figure(figsize=(20, 10))
             plt.suptitle(f"Elliptical Gaussian fit ({layer_name} no.{unit_i})", fontsize=20)

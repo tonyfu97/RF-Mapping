@@ -3,7 +3,6 @@ To visualize the difference between ground truth and bar mapping methods.
 
 Tony Fu, July 27th, 2022
 """
-from cmath import sqrt
 import os
 import sys
 import math
@@ -28,13 +27,13 @@ from src.rf_mapping.result_txt_format import (GtGaussian as GT,
 # Please specify the model
 model = models.alexnet()
 model_name = 'alexnet'
-model = models.vgg16()
-model_name = 'vgg16'
-model = models.resnet18()
-model_name = 'resnet18'
+# model = models.vgg16()
+# model_name = 'vgg16'
+# model = models.resnet18()
+# model_name = 'resnet18'
 
 # Please specify what ground_truth method versus what RFMP4
-is_occlude = True
+is_occlude = False
 is_rfmp4a = True
 
 # Source directories
@@ -224,7 +223,7 @@ def make_fxvar_pdf():
         plt.close()
 
 if __name__ == '__main__':
-    # make_fxvar_pdf()
+    make_fxvar_pdf()
     pass
 
 
@@ -391,7 +390,7 @@ def make_coords_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_coords_pdf()
+    make_coords_pdf()
     pass
 
 
@@ -497,7 +496,7 @@ def make_radius_pdf():
 
 
 if __name__ == '__main__':
-    # make_radius_pdf()
+    make_radius_pdf()
     pass
 
 
@@ -891,7 +890,7 @@ def make_ori_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_ori_pdf()
+    make_ori_pdf()
     pass
 
 
@@ -1159,7 +1158,7 @@ def make_error_coords_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_error_coords_pdf()
+    make_error_coords_pdf()
     pass
 
 
@@ -1316,7 +1315,7 @@ def make_error_radius_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_error_radius_pdf()
+    make_error_radius_pdf()
     pass
 
 
@@ -1410,5 +1409,5 @@ def make_error_ori_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_error_ori_pdf()
+    make_error_ori_pdf()
     pass
