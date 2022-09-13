@@ -85,10 +85,7 @@ def draw_occluder(img_tensor, top_left, bottom_right):
     
     # Occluder is a random patch with uniform distribution over [-1, +1), set
     # independently for RGB color channels.
-    np.random.seed(123)
     occluder = (torch.rand(3, *occluder_size).to(c.DEVICE) * 2) - 1
-    
-    print(occluder)
     
     occluded_img_tensor[0, :, top_left[0]:bottom_right[0]+1, top_left[1]:bottom_right[1]+1] = occluder
     return occluded_img_tensor[0]

@@ -13,6 +13,7 @@ from src.rf_mapping.hook import ConvUnitCounter
 from src.rf_mapping.spatial import SpatialIndexConverter, get_rf_sizes
 from src.rf_mapping.net import get_truncated_model
 import src.rf_mapping.constants as c
+from src.rf_mapping.reproducibility import set_seeds
 from src.rf_mapping.occluder_discrepancy import (get_occluder_params,
                                                  get_discrepancy_map)
 
@@ -26,7 +27,7 @@ model_name = "alexnet"
 # model_name = "resnet18"
 top_n = 100
 image_size = (227, 227)
-this_is_a_test_run = True
+this_is_a_test_run = False
 batch_size = 10
 
 # Please double-check the directories:
@@ -55,7 +56,8 @@ conv_counter = ConvUnitCounter(model)
 # Get info of conv layers.
 layer_indices, nums_units = conv_counter.count()
 layer_indices, rf_sizes = get_rf_sizes(model, image_size)
-top_n_to_plot = max(top_n, 3)
+top_n_to_plot = min(top_n, 5)
+set_seeds()  # For reproducibility
 
 if __name__ == "__main__":
     for conv_i, layer_idx in enumerate(layer_indices):
