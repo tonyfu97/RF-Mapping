@@ -123,7 +123,11 @@ for conv_i in range(len(layer_indices)):
                 break
             
             # blur the maps
-            sigma = rf_size // 10
+            sigma = rf_size / 30   # Reason behind the choice of sigma:
+                                   # The occlude stride is rf_size // 5 // 2
+                                   # so about rf_size / 10. A Gaussian is about
+                                   # 3 sigmas to each side => rf_size / 10 / 3
+                                   # = rf_size / 30.
             max_map = gaussian_filter(max_map, sigma=sigma)
             min_map = gaussian_filter(min_map, sigma=sigma)
             

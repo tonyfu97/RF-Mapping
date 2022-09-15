@@ -33,7 +33,7 @@ model_name = 'alexnet'
 # model_name = 'resnet18'
 
 # Please specify what ground_truth method versus what RFMP4
-is_occlude = False
+is_occlude = True
 is_rfmp4a = True
 
 # Source directories

@@ -147,11 +147,13 @@ for conv_i in range(num_layers):
             """
             # Smooth the maps with gaussian blur to get rid off local texture
             # that will influence direct correlation.
-            sigma = gt_maps[unit_i].shape[-1] // 15
-            gt_map = gaussian_filter(gt_maps[unit_i], sigma=sigma)
-            gt_max_min_map = gaussian_filter(gt_max_min_maps[unit_i], sigma=sigma)
+            sigma = occlude_maps[unit_i].shape[-1] / 30
             occlude_map = gaussian_filter(occlude_maps[unit_i], sigma=sigma)
-            rfmp4a_map = gaussian_filter(rfmp4a_maps[unit_i], sigma=sigma)
+            
+            # Get the other maps of this unit
+            gt_map = gt_maps[unit_i]
+            gt_max_min_map = gt_max_min_maps[unit_i]
+            rfmp4a_map = rfmp4a_maps[unit_i]
             rfmp4c7o_map = rfmp4c7o_maps[unit_i]
             
             all_maps = [gt_map, gt_max_min_map, occlude_map, rfmp4a_map, rfmp4c7o_map]
@@ -168,12 +170,12 @@ for conv_i in range(num_layers):
             # Plot the maps at the margin.
             for idx, map in enumerate(all_maps):
                 plt.subplot(len(all_maps)+1, len(all_maps)+1, idx + 2)
-                plt.imshow(map)
+                plt.imshow(map, cmap='gray')
                 plt.title(all_map_names[idx], fontsize=font_size)
                 
                 plt.subplot(len(all_maps)+1, len(all_maps)+1,
                             (len(all_maps) + 1) * (idx + 1) + 1)
-                plt.imshow(map)
+                plt.imshow(map, cmap='gray')
                 plt.title(all_map_names[idx], fontsize=font_size)
 
             # Average the color channels of rfmp4c7o before correlation.

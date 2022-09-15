@@ -21,11 +21,11 @@
 import os
 import sys
 import math
+import warnings
 
 import concurrent.futures
 import torch
 import torch.nn as nn
-import torchvision.models as models
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -40,8 +40,11 @@ from src.rf_mapping.spatial import (xn_to_center_rf,
 from src.rf_mapping.files import delete_all_npy_files
 from src.rf_mapping.net import get_truncated_model
 import src.rf_mapping.constants as c
+from src.rf_mapping.stimulus import *
 
-__all__ = ['make_pasu_shape', 'make_pasu_shape_color', 'pasu_bw_run_01b', 'pasu_color_run_01b']
+
+__all__ = ['make_pasu_shape', 'make_pasu_shape_color',
+           'pasu_bw_run_01b', 'pasu_color_run_01b']
 
 #
 #  In this cell are the control coordinates for all 51 shapes, in addition
@@ -119,7 +122,33 @@ pasu_shape = [
 [-1.6,0.0,-1.131,1.131,0.0,1.6,1.131,1.131,1.6,0.0,1.2,-0.4,0.74,-0.5,0.351,-0.751,0.1,-1.14,0.0,-1.6,-0.1,-1.14,-0.351,-0.751,-0.74,-0.5,-1.2,-0.4,-1.6,0.0],
 [-1.6,0.0,-0.988,0.122,-0.468,0.468,-0.122,0.988,0.0,1.6,0.1,1.14,0.351,0.751,0.74,0.5,1.2,0.4,1.6,0.0,1.131,-1.131,0.0,-1.6,-0.4,-1.2,-0.5,-0.74,-0.751,-0.351,-1.14,-0.1,-1.6,0.0]]
 
+#######################################.#######################################
+#                                                                             #
+#                                  IMPORT JIT                                #
+#                                                                             #
+#  Numba may not work with the lastest version of NumPy. In that case, a      #
+#  do-nothing decorator also named jit is used.                              #
+#                                                                             #
+###############################################################################
+try:
+    from numba import jit
+except:
+    warnings.warn("stimulus.py cannot import Numba.")
+    def jit(func):
+        """
+        A do-nothing decorator in place of the actual njit in case that Python
+        cannot import Numba.
+        """
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
 
+
+#######################################.#######################################
+#                                                                             #
+#                                    FVMAX                                    #
+#                                                                             #
+###############################################################################
 def fvmax(invec, sample=50):
     """
     Routine from Taekjun Kim that takes the control points 'invec' and produces
@@ -167,12 +196,12 @@ def fvmax(invec, sample=50):
     return outvec
 
 
-def clip(val, min_val, max_val):
-    val = max(min_val, val)
-    val = min(max_val, val)
-    return val
-
-
+#######################################.#######################################
+#                                                                             #
+#                               DRAE_BOOL_CONTOUR                             #
+#                                                                             #
+###############################################################################
+@jit
 def draw_bool_contour(x, y, shape):
     """
     Returns a boolean map of the size 'shape' with False everywhere except for
@@ -188,6 +217,11 @@ def draw_bool_contour(x, y, shape):
     return bool_contour
 
 
+#######################################.#######################################
+#                                                                             #
+#                                FILL_CONTOUR                                 #
+#                                                                             #
+###############################################################################
 def fill_contour(bool_contour, fgval=1.0, bgval=-1.0):
     """A line scan filling algorithm for Pasupathy shapes."""
     filled_contour = np.full((bool_contour.shape), bgval)
@@ -200,6 +234,11 @@ def fill_contour(bool_contour, fgval=1.0, bgval=-1.0):
     return filled_contour
 
 
+#######################################.#######################################
+#                                                                             #
+#                                  FILL_ROW                                   #
+#                                                                             #
+###############################################################################
 def fill_row(bool_row, fgval, bgval, prev_row, row_i):
     """
     Return an array of the same length as bool_row but with 'fgval' values at
@@ -320,6 +359,12 @@ def fill_row(bool_row, fgval, bgval, prev_row, row_i):
     return filled_row
 
 
+#######################################.#######################################
+#                                                                             #
+#                            PUT_SHAPE_INTO_FULL_XN                           #
+#                                                                             #
+###############################################################################
+@jit
 def put_shape_into_full_xn(filled_contour, xn, yn, x0, y0, bgval):
     """Put the filled_contour in the appropriate location."""
     output = np.full((yn, xn), bgval)
@@ -357,6 +402,11 @@ def put_shape_into_full_xn(filled_contour, xn, yn, x0, y0, bgval):
     return output
 
 
+#######################################.#######################################
+#                                                                             #
+#                               MAKE_PASU_SHAPE                               #
+#                                                                             #
+###############################################################################
 def make_pasu_shape(xn,yn,x0,y0,si,ri,fgval,bgval,size,plot=False):
     """
     Make the original Pasupathy and Connor (2001) shape set. There are 51
@@ -430,6 +480,11 @@ if __name__ == "__main__":
     #     plt.show()
 
 
+#######################################.#######################################
+#                                                                             #
+#                            MAKE_PASU_SHAPE_COLOR                            #
+#                                                                             #
+###############################################################################
 def make_pasu_shape_color(xn,yn,x0,y0,si,ri,r1,g1,b1,r0,g0,b0,size,plot=False):
     s = np.empty((3, yn, xn), dtype='float32')
     s[0] = make_pasu_shape(xn,yn,x0,y0,si,ri,r1,r0,size,plot=False)
@@ -447,19 +502,11 @@ if __name__ == "__main__":
     plt.show()
 
 
-def stimset_gridx_barmap(max_rf, pasu_size):
-    """
-    Parameters
-    ----------
-    max_rf     - theoretical size of RF (pix)\n
-    pasu_shape - the shape of the Pasupathy shape stimulus.
-    """
-    dx = pasu_size / 2.0
-    xmax = round((max_rf/dx) / 2.0) * dx  # Max offset of grid point from center
-    xlist = np.arange(-xmax,xmax+1,dx)
-    return xlist
-
-
+#######################################.#######################################
+#                                                                             #
+#                             STIMSET_DICT_PASU_BW                            #
+#                                                                             #
+###############################################################################
 def stimset_dict_pasu_bw(xn, max_rf):
     """
     Parameters
@@ -477,7 +524,7 @@ def stimset_dict_pasu_bw(xn, max_rf):
     pasu_sizes = np.array([48/64, 24/64, 12/64]) * max_rf
     
     for pasu_size in pasu_sizes:
-        ylist = xlist = stimset_gridx_barmap(max_rf, pasu_size)
+        ylist = xlist = stimset_gridx_map(max_rf, pasu_size)
         for i in xlist:
             for j in ylist:
                 for si in range(51):
@@ -494,6 +541,11 @@ def stimset_dict_pasu_bw(xn, max_rf):
     return splist
 
 
+#######################################.#######################################
+#                                                                             #
+#                            STIMSET_DICT_PASU_RGB7o                          #
+#                                                                             #
+###############################################################################
 def stimset_dict_pasu_rgb7o(xn, max_rf):
     """
     Parameters
@@ -520,7 +572,7 @@ def stimset_dict_pasu_rgb7o(xn, max_rf):
               (a0, a1, a1)]
     
     for pasu_size in pasu_sizes:
-        ylist = xlist = stimset_gridx_barmap(max_rf, pasu_size)
+        ylist = xlist = stimset_gridx_map(max_rf, pasu_size)
         for i in xlist:
             for j in ylist:
                 for si in range(51):
@@ -614,56 +666,6 @@ def pasu_run_01b(splist, truncated_model, num_units, batch_size=100,
 
 #######################################.#######################################
 #                                                                             #
-#                              WEIGHTED_SHAPEMAP                              #
-#                                                                             #
-###############################################################################
-def weighted_shapemap(new_shape, sum_map, response):
-    """
-    Add the new_shape, weighted by the unit's response to the shape, to the
-    sum_map.
-
-    Parameters
-    ----------
-    new_shape - shape to be added to the map.
-    sum_map   - cumulative map.
-    response  - the unit's response to the new_shape.
-    """
-    sum_map += new_shape * response
-
-
-#######################################.#######################################
-#                                                                             #
-#                             NON_OVERLAP_SHAPEMAP                            #
-#                                                                             #
-###############################################################################
-def non_overlap_shapemap(new_shape, sum_map, stim_thr):
-    """
-    Add the new_bar to the map if the new_shape is not overlapping with any
-    existing bars. The new_bar is first binarized with the {stim_thr} threshold
-    to get rid of some of the anti-aliasing pixels.
-
-    Parameters
-    ----------
-    new_shape - shape to be added to the map.\n
-    sum_map   - cumulative map.\n
-    stim_thr  - shape pixels w/ a value below stim_thr will be excluded.
-
-    Returns
-    -------
-    True if the new_bar has been included in the 
-    """
-    # Binarize new_bar
-    new_shape[new_shape < stim_thr] = 0
-    new_shape[new_shape >= stim_thr] = 1
-    # Only add the new bar if it is not overlapping with any existing bars.
-    if not np.any(np.logical_and(sum_map>0, new_shape>0)):
-        sum_map += new_shape
-        return True
-    return False
-
-
-#######################################.#######################################
-#                                                                             #
 #                                MAKE_SHAPEMAP                                #
 #                                                                             #
 ###############################################################################
@@ -735,8 +737,8 @@ def make_shapemaps(splist, center_responses, unit_i, _debug=False, has_color=Fal
                                         params['size'], plot=False)
         # if (response - r_min) > r_range * response_thr:
         if num_weighted_max_shapes < num_shapes:
-            has_included = non_overlap_shapemap(new_shape, non_overlap_max_map, stim_thr)
-            weighted_shapemap(new_shape, weighted_max_map, (response - r_min)/r_range)
+            has_included = add_non_overlap_map(new_shape, non_overlap_max_map, stim_thr)
+            add_weighted_map(new_shape, weighted_max_map, (response - r_min)/r_range)
             # counts the number of bars in each map
             num_weighted_max_shapes += 1
             if has_included:
@@ -762,8 +764,8 @@ def make_shapemaps(splist, center_responses, unit_i, _debug=False, has_color=Fal
                                         params['size'], plot=False)
         # if (response - r_min) < r_range * (1 - response_thr):
         if num_weighted_min_shapes < num_shapes:
-            has_included = non_overlap_shapemap(new_shape, non_overlap_min_map, stim_thr)
-            weighted_shapemap(new_shape, weighted_min_map, (r_max - response)/r_range)
+            has_included = add_non_overlap_map(new_shape, non_overlap_min_map, stim_thr)
+            add_weighted_map(new_shape, weighted_min_map, (r_max - response)/r_range)
             # counts the number of bars in each map
             num_weighted_min_shapes += 1
             if has_included:
@@ -775,184 +777,6 @@ def make_shapemaps(splist, center_responses, unit_i, _debug=False, has_color=Fal
            non_overlap_max_map, non_overlap_min_map,\
            num_weighted_max_shapes, num_weighted_min_shapes,\
            num_non_overlap_max_shapes, num_non_overlap_min_shapes
-
-
-#######################################.#######################################
-#                                                                             #
-#                                SUMMARIZE_TB1                                #
-#                                                                             #
-###############################################################################
-def summarize_TB1(splist, center_responses, layer_name, txt_path):
-    """
-    Summarize the top bar and bottom bar in a .txt file in format:
-    layer_name, unit_i, top_idx, top_x, top_y, top_r, bot_idx, bot_x, bot_y
-
-    Parameters
-    ----------
-    splist           - bar stimulus parameter list.\n
-    center_responses - responses of center unit in [stim_i, unit_i] format.\n 
-    model_name       - name of the model. Used for file naming.\n
-    layer_name       - name of the layer. Used as file entries/primary key.\n
-    txt_path         - path name of the file, must end with '.txt'\n
-    """
-    num_units = center_responses.shape[1]  # shape = [stim, unit]
-    with open(txt_path, 'a') as f:
-        for unit_i in range(num_units):
-            isort = np.argsort(center_responses[:, unit_i])  # Ascending
-            top_i = isort[-1]
-            bot_i = isort[0]
-            
-            top_r = center_responses[top_i, unit_i]
-            bot_r = center_responses[bot_i, unit_i]
-            
-            top_bar = splist[top_i]
-            bot_bar = splist[bot_i]
-            f.write(f"{layer_name:} {unit_i:} ")
-            f.write(f"{top_i:} {top_bar['x0']:.2f} {top_bar['y0']:.2f} {top_r:.4f} ")
-            f.write(f"{bot_i:} {bot_bar['x0']:.2f} {bot_bar['y0']:.2f} {bot_r:.4f}\n")
-
-
-#######################################.#######################################
-#                                                                             #
-#                                SUMMARIZE_TBn                                #
-#                                                                             #
-###############################################################################
-def summarize_TBn(splist, center_responses, layer_name, txt_path, top_n=20):
-    """
-    Summarize the top- and bottom-n shapes in a .txt file in format:
-    layer_name, unit_i, top_avg_x, top_avg_y, bot_avg_x, bot_avg_y
-
-    Parameters
-    ----------
-    splist           - the stimulus parameter list.\n
-    center_responses - the responses of center unit in [stim_i, unit_i] format.\n 
-    model_name       - name of the model. Used for file naming.\n
-    layer_name       - name of the layer. Used as file entries/primary key.\n
-    txt_dir          - the path name of the file, must end with '.txt'\n
-    top_n            - the top and bottom N bars to record.
-    """
-    num_units = center_responses.shape[1]  # shape = [stim, unit]
-    with open(txt_path, 'a') as f:
-        for unit_i in range(num_units):
-            isort = np.argsort(center_responses[:, unit_i])  # Ascending
-            
-            # Initializations
-            top_avg_x = 0
-            top_avg_y = 0
-            bot_avg_x = 0
-            bot_avg_y = 0
-            
-            for i in range(top_n):
-                top_i = isort[-i-1]
-                bot_i = isort[i]
-
-                # Equally weighted sum for avg coordinates of stimuli.
-                top_avg_x += splist[top_i]['x0']/top_n
-                top_avg_y += splist[top_i]['y0']/top_n
-                bot_avg_x += splist[bot_i]['x0']/top_n
-                bot_avg_y += splist[bot_i]['y0']/top_n
-
-            f.write(f"{layer_name} {unit_i} ")
-            f.write(f"{top_avg_x:.2f} {top_avg_y:.2f} ")
-            f.write(f"{bot_avg_x:.2f} {bot_avg_y:.2f}\n")
-            
-
-#######################################.#######################################
-#                                                                             #
-#                             RECORD_SHAPE_COUNTS                             #
-#                                                                             #
-###############################################################################
-def record_shape_counts(txt_path, layer_name, unit_i, num_max_shapes, num_min_shapes):
-    """Write the numbers of shapess used in the top and bottom maps."""
-    with open(txt_path, 'a') as f:
-        f.write(f"{layer_name} {unit_i} {num_max_shapes} {num_min_shapes}\n")
-
-
-#######################################.#######################################
-#                                                                             #
-#                               RECORD_SPLIST                                 #
-#                                                                             #
-###############################################################################
-def record_splist(txt_path, splist):
-    """Write the contents of splist into a text file."""
-    with open(txt_path, 'a') as f:
-        for stimulus_idx, params in enumerate(splist):
-            f.write(f"{stimulus_idx}")
-            for val in params.values():
-                f.write(f" {val}")
-            f.write('\n')
-
-
-#######################################.#######################################
-#                                                                             #
-#                           RECORD_CENTER_RESPONSES                           #
-#                                                                             #
-###############################################################################
-def record_center_responses(txt_path, center_responses, top_n, is_top):
-    """
-    Write the indicies and responses of the top- and bottom-N into a text file.
-    """
-    num_units = center_responses.shape[1]  # in dimension: [stimulus, unit]
-    center_responses_sorti = np.argsort(center_responses, axis=0)
-    if is_top:
-        center_responses_sorti = np.flip(center_responses_sorti, 0)
-    with open(txt_path, 'a') as f:
-        for unit_i in range(num_units):
-            for i, stimulus_idx in enumerate(center_responses_sorti[:, unit_i]):
-                if i >= top_n:
-                    break
-                f.write(f"{unit_i} {i} {stimulus_idx} ")
-                f.write(f"{center_responses[stimulus_idx, unit_i]:.4f}\n")
-                # Format: unit_i, rank, stimulus_index, response_value
-
-
-#######################################.#######################################
-#                                                                             #
-#                                 MAKE_MAP_PDF                                #
-#                                                                             #
-###############################################################################
-def make_map_pdf(max_maps, min_maps, pdf_path):
-    """
-    Make a pdf, one unit per page.
-
-    Parameters
-    ----------
-    maps     - maps with dimensions [unit_i, y, x] (black and white) or
-               [unit_i, y, x, rgb] (color)\n
-    pdf_path - path name of the file, must end with '.pdf'\n
-    """
-    yn, xn = max_maps.shape[1:3]
-
-    with PdfPages(pdf_path) as pdf:
-        fig, (ax1, ax2) = plt.subplots(1, 2)
-        fig.set_size_inches(10, 5)
-        im1 = ax1.imshow(np.zeros((yn, xn, 3)), vmax=1, vmin=0, cmap='gray')
-        im2 = ax2.imshow(np.zeros((yn, xn, 3)), vmax=1, vmin=0, cmap='gray')
-        for unit_i, (max_map, min_map) in enumerate(zip(max_maps, min_maps)):
-            sys.stdout.write('\r')
-            sys.stdout.write(f"Making pdf for unit {unit_i}...")
-            sys.stdout.flush()
-            fig.suptitle(f"no.{unit_i}", fontsize=20)
-
-            vmax = max_map.max()
-            vmin = max_map.min()
-            vrange = vmax - vmin
-            if math.isclose(vrange, 0):
-                vrange = 1
-            im1.set_data((max_map-vmin)/vrange)
-            ax1.set_title('max')
-
-            vmax = min_map.max()
-            vmin = min_map.min()
-            vrange = vmax - vmin
-            if math.isclose(vrange, 0):
-                vrange = 1
-            im2.set_data((min_map-vmin)/vrange)
-            ax2.set_title('min')
-
-            plt.show()
-            pdf.savefig(fig)
-            plt.close()
 
 
 #######################################.#######################################
@@ -1055,9 +879,9 @@ def pasu_bw_run_01b(model, model_name, result_dir, _debug=False, batch_size=10):
                 non_overlap_max_maps[unit_i + result_i] = result[2][padding:padding+max_rf, padding:padding+max_rf]
                 non_overlap_min_maps[unit_i + result_i] = result[3][padding:padding+max_rf, padding:padding+max_rf]
                 # Record the number of bars used in each map (append to txt files).
-                record_shape_counts(weighted_counts_path, layer_name, unit_i + result_i,
+                record_stim_counts(weighted_counts_path, layer_name, unit_i + result_i,
                                   result[4], result[5])
-                record_shape_counts(non_overlap_counts_path, layer_name, unit_i + result_i,
+                record_stim_counts(non_overlap_counts_path, layer_name, unit_i + result_i,
                                   result[6], result[7])
             unit_i += real_batch_size
 
@@ -1224,9 +1048,9 @@ def pasu_color_run_01(model, model_name, result_dir, _debug=False, batch_size=10
                 non_overlap_max_maps[unit_i + result_i] = result[2][:,padding:padding+max_rf, padding:padding+max_rf]
                 non_overlap_min_maps[unit_i + result_i] = result[3][:,padding:padding+max_rf, padding:padding+max_rf]
                 # Record the number of bars used in each map (append to txt files).
-                record_shape_counts(weighted_counts_path, layer_name, unit_i + result_i,
+                record_stim_counts(weighted_counts_path, layer_name, unit_i + result_i,
                                   result[4], result[5])
-                record_shape_counts(non_overlap_counts_path, layer_name, unit_i + result_i,
+                record_stim_counts(non_overlap_counts_path, layer_name, unit_i + result_i,
                                   result[6], result[7])
             unit_i += real_batch_size
 
@@ -1303,7 +1127,7 @@ def make_pasu_grid_pdf(pdf_path, model):
 
                 # Set bar parameters
                 pasu_size = max(round(pasu_size_ratio * max_rf),1)
-                xlist = stimset_gridx_barmap(max_rf, pasu_size)
+                xlist = stimset_gridx_map(max_rf, pasu_size)
 
                 # Plot the bar
                 shape = make_pasu_shape(xn,xn,0,0,si,ri,1,0.5,pasu_size,plot=False)
