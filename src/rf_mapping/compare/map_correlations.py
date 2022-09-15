@@ -91,6 +91,14 @@ def load_maps(map_name, layer_name, max_or_min):
                                     f"{layer_name}_weighted_{max_or_min}_barmaps.npy")
         maps = np.load(mapping_path)  # [unit, 3, yn, xn]
         return np.transpose(maps, (0,2,3,1))  # Need the color channel for plots.
+    elif map_name == 'rfmp4_sin1':
+        mapping_path = os.path.join(mapping_dir,
+                                    'rfmp4_sin1',
+                                    'mapping',
+                                    model_name,
+                                    f"{layer_name}_weighted_{max_or_min}_sinemaps.npy")
+        maps = np.load(mapping_path)  # [unit, 3, yn, xn]
+        return np.transpose(maps, (0,2,3,1))  # Need the color channel for plots.
     else:
         raise KeyError(f"{map_name} does not exist.")
     
@@ -107,6 +115,7 @@ def plot_r_val(r_val, p_val, font_size):
 for conv_i in range(num_layers):
     layer_name = f"conv{conv_i+1}"
     
+    all_map_names = ['gt', 'gt_composite', 'occlude', 'rfmp4a', 'rfmp4c7o', 'rfmp_sin1']
     high_r_val_counts = {'gt_vs_gt_composite' : 0,
                          'gt_vs_occlude' : 0,
                          'gt_vs_rfmp4a' : 0,
@@ -127,6 +136,7 @@ for conv_i in range(num_layers):
             gt_max_min_maps = gt_max_maps + gt_min_maps
             occlude_maps = load_maps('occlude', layer_name, max_or_min)
             rfmp4a_maps = load_maps('rfmp4a', layer_name, max_or_min)
+            rfmp4c7o_maps = load_maps('rfmp4c7o', layer_name, max_or_min)
             rfmp4c7o_maps = load_maps('rfmp4c7o', layer_name, max_or_min)
         except:
             break  # This layer was not mapped.
@@ -157,7 +167,6 @@ for conv_i in range(num_layers):
             rfmp4c7o_map = rfmp4c7o_maps[unit_i]
             
             all_maps = [gt_map, gt_max_min_map, occlude_map, rfmp4a_map, rfmp4c7o_map]
-            all_map_names = ['gt', 'gt_composite', 'occlude', 'rfmp4a', 'rfmp4c7o']
             
             # Normalize the maps
             for i in range(len(all_maps)):

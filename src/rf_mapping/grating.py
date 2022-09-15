@@ -436,7 +436,7 @@ def sinmap_run_01b(splist, truncated_model, num_units, batch_size=100, _debug=Fa
 #                                                                             #
 ###############################################################################
 def make_stimmaps(splist, center_responses, unit_i, _debug=False,
-                 num_bars=500, response_thr=0.8, stim_thr=0.2):
+                  num_bars=500, response_thr=0.8, stim_thr=0.2):
     """
     Parameters
     ----------
