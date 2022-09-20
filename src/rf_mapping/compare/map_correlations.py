@@ -91,14 +91,20 @@ def load_maps(map_name, layer_name, max_or_min):
                                     f"{layer_name}_weighted_{max_or_min}_barmaps.npy")
         maps = np.load(mapping_path)  # [unit, 3, yn, xn]
         return np.transpose(maps, (0,2,3,1))  # Need the color channel for plots.
-    elif map_name == 'rfmp4_sin1':
+    elif map_name == 'rfmp_sin1':
         mapping_path = os.path.join(mapping_dir,
-                                    'rfmp4_sin1',
+                                    'rfmp_sin1',
                                     'mapping',
                                     model_name,
                                     f"{layer_name}_weighted_{max_or_min}_sinemaps.npy")
-        maps = np.load(mapping_path)  # [unit, 3, yn, xn]
-        return np.transpose(maps, (0,2,3,1))  # Need the color channel for plots.
+        return np.load(mapping_path)  # [unit, yn, xn]
+    elif map_name == 'pasu':
+        mapping_path = os.path.join(mapping_dir,
+                                    'pasu',
+                                    'mapping',
+                                    model_name,
+                                    f"{layer_name}_weighted_{max_or_min}_shapemaps.npy")
+        return np.load(mapping_path)  # [unit, yn, xn]
     else:
         raise KeyError(f"{map_name} does not exist.")
     
@@ -115,21 +121,18 @@ def plot_r_val(r_val, p_val, font_size):
 for conv_i in range(num_layers):
     layer_name = f"conv{conv_i+1}"
     
-    all_map_names = ['gt', 'gt_composite', 'occlude', 'rfmp4a', 'rfmp4c7o', 'rfmp_sin1']
-    high_r_val_counts = {'gt_vs_gt_composite' : 0,
-                         'gt_vs_occlude' : 0,
-                         'gt_vs_rfmp4a' : 0,
-                         'gt_vs_rfmp4c7o' : 0,
-                         'gt_composite_vs_occlude' : 0,
-                         'gt_composite_vs_rfmp4a' : 0,
-                         'gt_composite_vs_rfmp4c7o' : 0,
-                         'occlude_vs_rfmp4a' : 0,
-                         'occlude_vs_rfmp4c7o' : 0,
-                         'rfmp4a_vs_rfmp4c7o' : 0}
+    # ADDING NEW MAP? MODIFY BELOW:
+    all_map_names = ['gt', 'gt_composite', 'occlude', 'rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
+    high_r_val_counts = {}
+    for idx1, map_name1 in enumerate(all_map_names):
+        for idx2, map_name2 in enumerate(all_map_names):
+            if idx1 < idx2:
+                high_r_val_counts[f"{map_name1}_vs_{map_name2}"] = 0
     
     pdf_path = os.path.join(result_dir, f"{layer_name}_{max_or_min}_map_r.pdf")
     with PdfPages(pdf_path) as pdf:
         try:
+            # ADDING NEW MAP? MODIFY BELOW:
             gt_maps = load_maps('gt', layer_name, max_or_min)
             gt_max_maps = load_maps('gt', layer_name, 'max')
             gt_min_maps = load_maps('gt', layer_name, 'min')
@@ -137,36 +140,31 @@ for conv_i in range(num_layers):
             occlude_maps = load_maps('occlude', layer_name, max_or_min)
             rfmp4a_maps = load_maps('rfmp4a', layer_name, max_or_min)
             rfmp4c7o_maps = load_maps('rfmp4c7o', layer_name, max_or_min)
-            rfmp4c7o_maps = load_maps('rfmp4c7o', layer_name, max_or_min)
+            rfmp_sin1_maps = load_maps('rfmp_sin1', layer_name, max_or_min)
+            pasu_maps = load_maps('pasu', layer_name, max_or_min)
         except:
             break  # This layer was not mapped.
-
+        
         num_units = gt_maps.shape[0]
 
         # Correlate the maps.
         for unit_i in tqdm(range(num_units)):
-            """
-            Subplot indices:
-
-                              2.gt  3.gt(max+min) 4.occlude  5.rfmp4a  6.rfmp4c7o         
-                7. gt          8        9            10         11         12
-                13.gt(max+min)          15           16         17         18
-                19.occlude                           22         23         24
-                25.rfmp4a                                       29         30
-                31.rfmp4c7o                                                36
-            """
             # Smooth the maps with gaussian blur to get rid off local texture
             # that will influence direct correlation.
             sigma = occlude_maps[unit_i].shape[-1] / 30
             occlude_map = gaussian_filter(occlude_maps[unit_i], sigma=sigma)
             
             # Get the other maps of this unit
+            # ADDING NEW MAP? MODIFY BELOW:
             gt_map = gt_maps[unit_i]
             gt_max_min_map = gt_max_min_maps[unit_i]
             rfmp4a_map = rfmp4a_maps[unit_i]
             rfmp4c7o_map = rfmp4c7o_maps[unit_i]
-            
-            all_maps = [gt_map, gt_max_min_map, occlude_map, rfmp4a_map, rfmp4c7o_map]
+            rfmp_sin1_map = rfmp_sin1_maps[unit_i]
+            pasu_map = pasu_maps[unit_i]
+
+            # ADDING NEW MAP? MODIFY BELOW:
+            all_maps = [gt_map, gt_max_min_map, occlude_map, rfmp4a_map, rfmp4c7o_map, rfmp_sin1_map, pasu_map]
             
             # Normalize the maps
             for i in range(len(all_maps)):
@@ -208,8 +206,9 @@ for conv_i in range(num_layers):
             pdf.savefig()
             plt.close()
         
-        plt.figure(figsize=(25, 8))
-        plt.bar(high_r_val_counts.keys(), high_r_val_counts.values())
+        plt.figure(figsize=(len(high_r_val_counts) * 3, 8))
+        bars = plt.bar(high_r_val_counts.keys(), high_r_val_counts.values())
+        plt.gca().bar_label(bars)   # Display the counts on top of the bars.
         plt.ylabel('counts', fontsize=font_size)
         plt.title(f"Distribution of r values higher than {r_val_threshold}", fontsize=font_size)
         pdf.savefig()

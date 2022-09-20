@@ -29,10 +29,10 @@ import src.rf_mapping.constants as c
 # Please specify some details here:
 model = models.alexnet(pretrained=True)
 model_name = 'alexnet'
-# model = models.vgg16(pretrained=True).to(c.DEVICE)
-# model_name = "vgg16"
-# model = models.resnet18(pretrained=True).to(c.DEVICE)
-# model_name = "resnet18"
+model = models.vgg16(pretrained=True).to(c.DEVICE)
+model_name = "vgg16"
+model = models.resnet18(pretrained=True).to(c.DEVICE)
+model_name = "resnet18"
 this_is_a_test_run = False
 # Please double-check the directories:
 map_dir = os.path.join(c.REPO_DIR, 'results', 'occlude', 'mapping', model_name)
@@ -45,13 +45,13 @@ else:
 ###############################################################################
 
 # Script guard
-if __name__ == "__main__":
-    print("Look for a prompt.")
-    user_input = input("This code may take time to run. Are you sure? [y/n] ")
-    if user_input == 'y':
-        pass
-    else: 
-        raise KeyboardInterrupt("Interrupted by user")
+# if __name__ == "__main__":
+#     print("Look for a prompt.")
+#     user_input = input("This code may take time to run. Are you sure? [y/n] ")
+#     if user_input == 'y':
+#         pass
+#     else: 
+#         raise KeyboardInterrupt("Interrupted by user")
 
 # Get info of conv layers.
 unit_counter = ConvUnitCounter(model)

@@ -14,6 +14,7 @@ import concurrent.futures
 import numpy as np
 import torch
 import torch.nn as nn
+import torchvision.models as models
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -722,7 +723,8 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
 #                                RFMP4a_RUN_01b                               #
 #                                                                             #
 ###############################################################################
-def rfmp4a_run_01b(model, model_name, result_dir, _debug=False, batch_size=10):
+def rfmp4a_run_01b(model, model_name, result_dir, _debug=False, batch_size=100,
+                   num_bars=500, conv_i_to_run=None):
     """
     Map the RF of all conv layers in model using RF mapping paradigm 4a.
     
@@ -762,6 +764,11 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False, batch_size=10):
         os.remove(non_overlap_counts_path)
     
     for conv_i in range(len(layer_indices)):
+        # In case we would like to run only one layer...
+        if conv_i is not None:
+            if conv_i != conv_i_to_run:
+                continue
+
         layer_name = f"conv{conv_i + 1}"
         print(f"\n{layer_name}\n")
         # Get layer-specific info
@@ -793,7 +800,7 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False, batch_size=10):
         # a bottleneck of the program because it is all computed by a single
         # CPU core. Improvement by multiprocessing was implemented on August
         # 15, 2022 to solve the problem.
-        batch_size = os.cpu_count()
+        batch_size = os.cpu_count() // 2
         unit_i = 0
         while (unit_i < num_units):
             if _debug and unit_i >= 20:
@@ -806,6 +813,7 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False, batch_size=10):
                                        [i for i in np.arange(unit_i, unit_i + real_batch_size)],
                                        [_debug for _ in range(real_batch_size)],
                                        [False for _ in range(real_batch_size)],
+                                       [num_bars for _ in range(real_batch_size)],
                                        )
             # Crop and save maps to layer-level array
             for result_i, result in enumerate(results):
@@ -885,7 +893,8 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False, batch_size=10):
 #                                RFMAP_TOP_4C7O                               #
 #                                                                             #
 ###############################################################################
-def rfmp4c7o_run_01(model, model_name, result_dir, _debug=False, batch_size=100):
+def rfmp4c7o_run_01(model, model_name, result_dir, _debug=False, batch_size=100,
+                    num_bars=500, conv_i_to_run=None):
     """
     Map the RF of all conv layers in model using RF mapping paradigm 4c7o,
     which is like paradigm 4a, but with 6 additional colors.
@@ -913,20 +922,24 @@ def rfmp4c7o_run_01(model, model_name, result_dir, _debug=False, batch_size=100)
     non_overlap_counts_path = os.path.join(result_dir, f"{model_name}_rfmp4c7o_non_overlap_counts.txt")
 
     # Delete previous files
-    # delete_all_npy_files(result_dir)
-    # if os.path.exists(tb1_path):
-    #     os.remove(tb1_path)
-    # if os.path.exists(tb20_path):
-    #     os.remove(tb20_path)
-    # if os.path.exists(tb100_path):
-    #     os.remove(tb100_path)
-    # if os.path.exists(weighted_counts_path):
-    #     os.remove(weighted_counts_path)
-    # if os.path.exists(non_overlap_counts_path):
-    #     os.remove(non_overlap_counts_path)
+    delete_all_npy_files(result_dir)
+    if os.path.exists(tb1_path):
+        os.remove(tb1_path)
+    if os.path.exists(tb20_path):
+        os.remove(tb20_path)
+    if os.path.exists(tb100_path):
+        os.remove(tb100_path)
+    if os.path.exists(weighted_counts_path):
+        os.remove(weighted_counts_path)
+    if os.path.exists(non_overlap_counts_path):
+        os.remove(non_overlap_counts_path)
     
     for conv_i in range(len(layer_indices)):
-        if conv_i < 8: continue
+        # In case we would like to run only one layer...
+        if conv_i is not None:
+            if conv_i != conv_i_to_run:
+                continue
+        
         layer_name = f"conv{conv_i + 1}"
         print(f"\n{layer_name}\n")
         # Get layer-specific info
@@ -971,6 +984,7 @@ def rfmp4c7o_run_01(model, model_name, result_dir, _debug=False, batch_size=100)
                                        [i for i in np.arange(unit_i, unit_i + real_batch_size)],
                                        [_debug for _ in range(real_batch_size)],
                                        [True for _ in range(real_batch_size)],
+                                       [num_bars for _ in range(real_batch_size)],
                                        )
             # Crop and save maps to layer-level array
             for result_i, result in enumerate(results):
@@ -1077,7 +1091,7 @@ def make_rfmp4a_grid_pdf(pdf_path, model):
                     xlist = stimset_gridx_map(max_rf,bl)
 
                     # Plot the bar
-                    bar = stimfr_bar(xn, xn, 0, 0, 30, bl, bw, 0.5, 1, 0.5)
+                    bar = stimfr_bar(xn, xn, 0, 0, 15, bl, bw, 0.5, 1, 0.5)
                     plt.subplot(1, num_layers, conv_i+1)
                     plt.imshow(bar, cmap='gray', vmin=0, vmax=1)
                     plt.title(f"{layer_name}\n(idx={layer_index}, maxRF={max_rf}, xn={xn})")
@@ -1085,7 +1099,7 @@ def make_rfmp4a_grid_pdf(pdf_path, model):
                     # Plot the bar centers (i.e., the "grids").
                     for y0 in xlist:
                         for x0 in xlist:
-                            plt.plot(y0+xn/2, x0+xn/2, 'k.')
+                            plt.plot(y0+xn/2, x0+xn/2, 'k.', alpha=0.4)
 
                     # Highlight maximum RF
                     padding = (xn - max_rf)//2
@@ -1100,11 +1114,11 @@ def make_rfmp4a_grid_pdf(pdf_path, model):
 
 
 # Generate a RFMP4a grid pdf for AlexNet
-# if __name__ == "__main__":
-#     # model = models.resnet18()
-#     # model_name = 'resnet18'
-#     model = models.alexnet()
-#     model_name = 'alexnet'
-#     pdf_path = os.path.join(c.REPO_DIR,'results','rfmp4a','mapping', 'test',
-#                             f'{model_name}_test_grid.pdf')
-#     make_rfmp4a_grid_pdf(pdf_path, model)
+if __name__ == "__main__":
+    # model = models.resnet18()
+    # model_name = 'resnet18'
+    model = models.alexnet()
+    model_name = 'alexnet'
+    pdf_path = os.path.join(c.REPO_DIR,'results','rfmp4a','mapping', 'test',
+                            f'{model_name}_test_grid.pdf')
+    make_rfmp4a_grid_pdf(pdf_path, model)

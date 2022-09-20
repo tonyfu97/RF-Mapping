@@ -138,10 +138,58 @@ def stimfr_sine(xn,yn,x0,y0,diam,sf,phase,theta,bgval,contrast):
     return s
 
 
+# if __name__ == "__main__":
+#     def binarize_map(s, thres=0):
+#         s[s > thres] = 1
+#         s[s < thres] = 0
+#     s1 = stimfr_sine(200,150,0,0,100,0.2,0,45,0,1)
+#     s2 = stimfr_sine(200,150,0,0,100,0.2,135,47,0,1)
+#     binarize_map(s1)
+#     binarize_map(s2)
+#     plt.imshow(s1 + s2, cmap='gray')
+#     plt.show()
+
+
 if __name__ == "__main__":
-    s = stimfr_sine(200,150,0,50,50,0.1,10,10,0,1)
-    plt.imshow(s, cmap='gray')
+    spatial_freqs = np.array([ 0.02, 0.04, 0.08, 0.16, 0.32 ])
+    phase = np.array([ 0.0, 90.0, 180.0, 270.0 ])
+    orilist = np.arange(0.0, 180.0, 22.5)
+    
+    plt.figure(figsize=(50,10))
+    plot_size = (100, 500)
+    s = np.zeros((plot_size))
+    for i, sf in enumerate(spatial_freqs):
+        s += stimfr_sine(plot_size[1], plot_size[0],-200+100*i,0,100,sf,0,0,0,1)
+    plt.imshow(s, cmap='gray', vmin=-1, vmax=1)
+    plt.axis('off')
     plt.show()
+    
+    plt.figure(figsize=(40,10))
+    plot_size = (100, 400)
+    s = np.zeros((plot_size))
+    for i, p in enumerate(phase):
+        s += stimfr_sine(plot_size[1], plot_size[0],-150+100*i,0,90,0.02,p,0,0,1)
+    plt.imshow(s, cmap='gray', vmin=-1, vmax=1)
+    plt.axis('off')
+    plt.show()
+    
+    plt.figure(figsize=(80,10))
+    plot_size = (100, 800)
+    s = np.zeros((plot_size))
+    for i, ori in enumerate(orilist):
+        s += stimfr_sine(plot_size[1], plot_size[0],-350+100*i,0,90,0.02,0,ori,0,1)
+    plt.imshow(s, cmap='gray', vmin=-1, vmax=1)
+    plt.axis('off')
+    plt.show()
+
+        
+    # for p in phase:
+    #     for ori in orilist:
+    #         s = stimfr_sine(200,200,0,0,190,sf,p,ori,0,1)
+    #         plt.imshow(s, cmap='gray', vmin=-1, vmax=1)
+    #         plt.axis('off')
+    #         plt.title(f"{sf}, {p}, {ori}")
+    #         plt.show()
 
 
 #######################################.#######################################
@@ -436,7 +484,7 @@ def sinmap_run_01b(splist, truncated_model, num_units, batch_size=100, _debug=Fa
 #                                                                             #
 ###############################################################################
 def make_stimmaps(splist, center_responses, unit_i, _debug=False,
-                  num_bars=500, response_thr=0.8, stim_thr=0.2):
+                  num_stim=500, response_thr=0.8, stim_thr=0.2):
     """
     Parameters
     ----------
@@ -488,7 +536,7 @@ def make_stimmaps(splist, center_responses, unit_i, _debug=False,
                                params['theta'], 
                                params['bgval'], params['contrast'])
         # if (response - r_min) > r_range * response_thr:
-        if num_weighted_max_bars < num_bars:
+        if num_weighted_max_bars < num_stim:
             has_included = add_non_overlap_map(new_stim, non_overlap_max_map, stim_thr)
             add_weighted_map(new_stim, weighted_max_map, (response - r_min)/r_range)
             # counts the number of bars in each map
@@ -507,7 +555,7 @@ def make_stimmaps(splist, center_responses, unit_i, _debug=False,
                                params['theta'], 
                                params['bgval'], params['contrast'])
         # if (response - r_min) < r_range * (1 - response_thr):
-        if num_weighted_min_bars < num_bars:
+        if num_weighted_min_bars < num_stim:
             has_included = add_non_overlap_map(new_stim, non_overlap_min_map, stim_thr)
             add_weighted_map(new_stim, weighted_min_map, (r_max - response)/r_range)
             # counts the number of bars in each map
@@ -613,7 +661,8 @@ def stimset_dict_rfmp_sin1(xn,max_rf):
 #                                 SIN1_RUN_01b                                #
 #                                                                             #
 ###############################################################################
-def sin1_run_01b(model, model_name, result_dir, _debug=False, batch_size=10):
+def sin1_run_01b(model, model_name, result_dir, _debug=False, batch_size=10,
+                 num_stim=500, conv_i_to_run=None):
     """
     Map the RF of all conv layers in model using RF mapping paradigm sin1.
     
@@ -653,6 +702,11 @@ def sin1_run_01b(model, model_name, result_dir, _debug=False, batch_size=10):
         os.remove(non_overlap_counts_path)
     
     for conv_i in range(len(layer_indices)):
+        # In case we would like to run only one layer...
+        if conv_i is not None:
+            if conv_i != conv_i_to_run:
+                continue
+        
         layer_name = f"conv{conv_i + 1}"
         print(f"\n{layer_name}\n")
         # Get layer-specific info
@@ -695,6 +749,7 @@ def sin1_run_01b(model, model_name, result_dir, _debug=False, batch_size=10):
                                        [center_responses for _ in range(real_batch_size)],
                                        [i for i in np.arange(unit_i, unit_i + real_batch_size)],
                                        [_debug for _ in range(real_batch_size)],
+                                       [num_stim for _ in range(real_batch_size)],
                                        )
             # Crop and save maps to layer-level array
             for result_i, result in enumerate(results):
@@ -741,3 +796,80 @@ def sin1_run_01b(model, model_name, result_dir, _debug=False, batch_size=10):
         make_map_pdf(weighted_max_maps, weighted_min_maps, weighted_pdf_path)
         non_overlap_pdf_path = os.path.join(result_dir, f"{layer_name}_non_overlap_sinemaps.pdf")
         make_map_pdf(non_overlap_max_maps, non_overlap_min_maps, non_overlap_pdf_path)
+
+
+#######################################.#######################################
+#                                                                             #
+#                              MAKE_SIN1_GRID_PDF                             #
+#                                                                             #
+###############################################################################
+def make_sin1_grid_pdf(pdf_path, model):
+    xn_list = xn_to_center_rf(model, image_size=(999,999))  # Get the xn just big enough.
+    img_size = 227
+    layer_indices, max_rfs = get_rf_sizes(model, (img_size, img_size), layer_type=nn.Conv2d)
+    num_layers = len(max_rfs)
+
+    # Array of bar lengths
+    size_ratios = np.array([48/64,
+                            24/64,
+                            12/64,
+                             6/64])
+    size_ratio_str = np.array(['48/64',
+                               '24/64',
+                               '12/64',
+                                '6/64'])
+
+    spatial_freqs = np.array([ 0.02, 0.04, 0.08, 0.16, 0.32 ])
+    # phase = np.array([ 0.0, 90.0, 180.0, 270.0 ])
+    # orilist = np.arange(0.0, 180.0, 22.5)
+
+    with PdfPages(pdf_path) as pdf:
+        for size_i, size_ratio in enumerate(size_ratios):
+            for sf in spatial_freqs:
+                plt.figure(figsize=(4*num_layers, 5))
+                plt.suptitle(f"Size = {size_ratio_str[size_i]} M, Spatial freq = {sf}", fontsize=24)
+
+                for conv_i, max_rf in enumerate(max_rfs):
+                    layer_name = f"conv{conv_i + 1}"
+                    layer_index = layer_indices[conv_i]
+                    # Get layer-specific info
+                    xn = xn_list[conv_i]
+                    max_rf = max_rf[0]
+
+                    # Set bar parameters
+                    size = size_ratio * max_rf
+                    xlist = stimset_gridx_map(max_rf,size)
+
+                    # Plot the stimulus
+                    stim = stimfr_sine(xn,xn,0,0,size,sf,22.5,0,0,1)
+                    plt.subplot(1, num_layers, conv_i+1)
+                    plt.imshow(stim, cmap='gray', vmin=-1, vmax=1)
+                    plt.title(f"{layer_name}\n(idx={layer_index}, maxRF={max_rf}, xn={xn})")
+
+                    # Plot the bar centers (i.e., the "grids").
+                    for y0 in xlist:
+                        for x0 in xlist:
+                            plt.plot(y0+xn/2, x0+xn/2, 'k.', alpha=0.4)
+
+                    # Highlight maximum RF
+                    padding = (xn - max_rf)//2
+                    rect = make_box((padding-1, padding-1, padding+max_rf-1, padding+max_rf-1), linewidth=1)
+                    ax = plt.gca()
+                    ax.add_patch(rect)
+                    # plt.axis('off')
+                    # ax.invert_yaxis()
+        
+                pdf.savefig()
+                plt.show()
+                plt.close()
+
+
+# Generate a RFMP-Sin1 grid pdf for AlexNet
+if __name__ == "__main__":
+    # model = models.resnet18()
+    # model_name = 'resnet18'
+    model = models.alexnet()
+    model_name = 'alexnet'
+    pdf_path = os.path.join(c.REPO_DIR,'results','rfmp_sin1','mapping', 'test',
+                            f'{model_name}_test_grid.pdf')
+    # make_sin1_grid_pdf(pdf_path, model)

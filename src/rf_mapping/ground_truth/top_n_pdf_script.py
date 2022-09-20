@@ -22,8 +22,8 @@ from src.rf_mapping.reproducibility import set_seeds
 import src.rf_mapping.constants as c
 
 # Please specify some details here:
-set_seeds()
-model = models.alexnet(pretrained=False).to(c.DEVICE)
+# set_seeds()
+model = models.alexnet(pretrained=True).to(c.DEVICE)
 model_name = "alexnet"
 # model = models.vgg16(pretrained=True).to(c.DEVICE)
 # model_name = "vgg16"
@@ -31,7 +31,7 @@ model_name = "alexnet"
 # model_name = "resnet18"
 top_n = 5
 image_size = (227, 227)
-is_random = True
+is_random = False
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR
@@ -40,9 +40,10 @@ if is_random:
     index_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
                              'top_n_random', model_name)
 else:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+    index_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
                               'top_n', model_name)
-result_dir = index_dir
+result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+                          'top_n', 'test')
 
 ###############################################################################
 
@@ -83,7 +84,7 @@ def plot_one_img(im, ax, img_idx, box):
     ax.add_patch(make_box(box))
 
 
-def plot_one_grad_map(im, ax, img_idx, unit_idx, patch_idx, box):
+def plot_one_grad_map(im, ax, img_idx, unit_idx, patch_idx, box, grad_method):
     """Plots the target unit's gradient map for the image."""
     # Remove patches
     try:
@@ -104,7 +105,9 @@ def plot_one_grad_map(im, ax, img_idx, unit_idx, patch_idx, box):
 
 
 for conv_i, layer_idx in enumerate(layer_indices):
-    grad_method = GuidedBackprop(model, layer_idx)
+    if conv_i != 1: continue
+    top_grad_method = GuidedBackprop(model, layer_idx, remove_neg_grad=True)
+    bot_grad_method = GuidedBackprop(model, layer_idx, remove_neg_grad=False)
     layer_name = f"conv{conv_i + 1}"
     index_path = os.path.join(index_dir, f"{layer_name}.npy")
     max_min_indices = np.load(index_path).astype(int)
@@ -141,7 +144,9 @@ for conv_i, layer_idx in enumerate(layer_indices):
                 plot_one_img(im_handles[i], ax_handles[i], max_img_idx, box)
                 ax_handles[i].set_title(f"top {i+1} image")
 
-                plot_one_grad_map(im_handles[i+top_n], ax_handles[i+top_n], max_img_idx, unit_i, max_patch_idx, box)
+                plot_one_grad_map(im_handles[i+top_n], ax_handles[i+top_n],
+                                  max_img_idx, unit_i, max_patch_idx,
+                                  box, top_grad_method)
                 ax_handles[i+top_n].set_title(f"top {i+1} gradient")
 
             # Bottom N images and gradient patches:
@@ -151,7 +156,9 @@ for conv_i, layer_idx in enumerate(layer_indices):
                 plot_one_img(im_handles[i+2*top_n], ax_handles[i+2*top_n], min_img_idx, box)
                 ax_handles[i+2*top_n].set_title(f"bottom {i+1} image")
 
-                plot_one_grad_map(im_handles[i+3*top_n], ax_handles[i+3*top_n], min_img_idx, unit_i, min_patch_idx, box)
+                plot_one_grad_map(im_handles[i+3*top_n], ax_handles[i+3*top_n],
+                                  min_img_idx, unit_i, min_patch_idx,
+                                  box, bot_grad_method)
                 ax_handles[i+3*top_n].set_title(f"bottom {i+1} gradient")
 
             pdf.savefig(fig)

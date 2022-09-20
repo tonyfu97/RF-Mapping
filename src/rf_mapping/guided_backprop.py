@@ -35,11 +35,12 @@ class GuidedBackprop:
     include unit specificity and by me to improve generalizability for other
     model architectures.
     """
-    def __init__(self, model, layer_index):
+    def __init__(self, model, layer_index, remove_neg_grad=True):
         self.model = get_truncated_model(model, layer_index)
 
         self.gradients = None
         self.forward_relu_outputs = []
+        self.remove_neg_grad = remove_neg_grad
 
         self._register_hook_to_first_layer(self.model)
         self._update_relus(self.model)
@@ -74,7 +75,7 @@ class GuidedBackprop:
                 corresponding_forward_output = self.forward_relu_outputs[-1]
                 corresponding_forward_output[corresponding_forward_output > 0] = 1
                 # Rectification (see Springenberg et al. 2015 Figure 1).
-                modified_grad_out = corresponding_forward_output * F.relu(target_grad)
+                modified_grad_out = corresponding_forward_output * target_grad * (target_grad > 0)
             except:
                 # TODO: This is a temporary fix for resnet18().
                 # Why this work: the original error (in the 'try' clause) is
@@ -90,8 +91,7 @@ class GuidedBackprop:
 
                 corresponding_forward_output = self.forward_relu_outputs[-1]
                 corresponding_forward_output[corresponding_forward_output > 0] = 1
-                # Rectification (see Springenberg et al. 2015 Figure 1).
-                modified_grad_out = corresponding_forward_output * F.relu(target_grad)
+                modified_grad_out = corresponding_forward_output * target_grad * (target_grad > 0)
 
             # Remove last forward output and return.
             del self.forward_relu_outputs[-1]
@@ -182,7 +182,7 @@ if __name__ == "__main__":
     layer_idx = 3  # AlexNet = [0, 3, 6, 8, 10] for conv1-5
     unit_idx = 2
     spatial_idx = (5, 5)
-    gbp = GuidedBackprop(model, layer_idx)
+    gbp = GuidedBackprop(model, layer_idx, False)
     gbp_map = gbp.generate_gradients(img, unit_idx, spatial_idx)
 
     plt.figure(figsize=(10,15))

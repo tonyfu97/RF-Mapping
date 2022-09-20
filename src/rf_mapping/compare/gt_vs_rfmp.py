@@ -33,7 +33,7 @@ model_name = 'alexnet'
 # model_name = 'resnet18'
 
 # Please specify what ground_truth method versus what RFMP4
-is_occlude = True
+is_occlude = False
 is_rfmp4a = True
 
 # Source directories
@@ -223,7 +223,7 @@ def make_fxvar_pdf():
         plt.close()
 
 if __name__ == '__main__':
-    make_fxvar_pdf()
+    # make_fxvar_pdf()
     pass
 
 
@@ -390,7 +390,7 @@ def make_coords_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_coords_pdf()
+    # make_coords_pdf()
     pass
 
 
@@ -496,7 +496,7 @@ def make_radius_pdf():
 
 
 if __name__ == '__main__':
-    make_radius_pdf()
+    # make_radius_pdf()
     pass
 
 
@@ -623,7 +623,7 @@ def make_radius2_pdf():
 
 
 if __name__ == '__main__':
-    make_radius2_pdf()
+    # make_radius2_pdf()
     pass
 
 
@@ -818,7 +818,7 @@ def make_radius3_pdf():
 
 
 if __name__ == '__main__':
-    make_radius3_pdf()
+    # make_radius3_pdf()
     pass
 
 
@@ -890,7 +890,7 @@ def make_ori_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_ori_pdf()
+    # make_ori_pdf()
     pass
 
 
@@ -1000,7 +1000,7 @@ def make_error_coords_pdf():
             try:
                 r_val, p_val = pearsonr(gt_xdata.loc[no_df.TOP_RAD_10 != -1], xdata)
             except:
-                r_val = -1
+                r_val = np.NaN
             plt.title(f'{gt_method} vs. top non-overlap x (n={num_units_included}, r={r_val:.2f})')
 
             ydata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_Y']
@@ -1013,7 +1013,7 @@ def make_error_coords_pdf():
             try:
                 r_val, p_val = pearsonr(gt_ydata.loc[no_df.TOP_RAD_10 != -1], ydata)
             except:
-                r_val = -1
+                r_val = np.NaN
             plt.title(f'{gt_method} vs. top non-overlap y (n={num_units_included}, r={r_val:.2f})')
 
             xdata = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres) & (gt_t_df.FXVAR > fxvar_thres), 'MUX']
@@ -1026,7 +1026,7 @@ def make_error_coords_pdf():
             try:
                 r_val, p_val = pearsonr(gt_xdata.loc[w_t_df.FXVAR > fxvar_thres], xdata)
             except:
-                r_val = -1
+                r_val = np.NaN
             plt.title(f'{gt_method} vs. top weighted x (n={num_units_included}, r={r_val:.2f})')
 
             ydata = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres) & (gt_t_df.FXVAR > fxvar_thres), 'MUY']
@@ -1039,7 +1039,7 @@ def make_error_coords_pdf():
             try:
                 r_val, p_val = pearsonr(gt_ydata.loc[w_t_df.FXVAR > fxvar_thres], ydata)
             except:
-                r_val = -1
+                r_val = np.NaN
             plt.title(f'{gt_method} vs. top weighted y (n={num_units_included}, r={r_val:.2f})')
 
             xdata = tb1_df.loc[(tb1_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_X']
@@ -1158,7 +1158,132 @@ def make_error_coords_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_error_coords_pdf()
+    # make_error_coords_pdf()
+    pass
+
+
+#######################################.#######################################
+#                                                                             #
+#                          PDF NO.4-2 ERROR COORDS2                           #
+#                                                                             #
+###############################################################################
+def config_plot(limits):
+    line = np.linspace(min(limits), max(limits), 100)
+    plt.plot(line, line, 'k', alpha=0.4)
+    plt.axhline(0, color=(0, 0, 0, 0.5))
+    plt.axvline(0, color=(0, 0, 0, 0.5))
+    plt.xlim(limits)
+    plt.ylim(limits)
+    plt.xticks([-60, 0, 60])
+    plt.yticks([-60, 0, 60])
+    ax = plt.gca()
+    ax.set_aspect('equal')
+
+def make_error_coords2_pdf():
+    """Note that on the first page, only the x-coords are plotted."""
+    pdf_path = os.path.join(result_dir, f"{model_name}_{gt_method}_vs_{ephys_method}_coords2.pdf")
+    with PdfPages(pdf_path) as pdf:
+        num_layers = len(rf_sizes)
+        top_x_r_vals = []
+        top_y_r_vals = []
+        bot_x_r_vals = []
+        bot_y_r_vals = []
+        
+        top_face_color = 'orange'
+        bot_face_color = 'silver'
+        
+        plt.figure(figsize=(20,9))
+        for conv_i in range(1, num_layers):  # Skip Conv1
+            # Get some layer-specific information.
+            layer_name = f'conv{conv_i+1}'
+            num_units_total = len(gt_t_df.loc[(gt_t_df.LAYER == layer_name)])
+            limits = (-75, 75)
+
+            gt_xdata = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'MUX']
+            gt_ydata = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'MUY']
+            gb_xdata = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'MUX']
+            gb_ydata = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'MUY']
+
+            xdata = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres) & (gt_t_df.FXVAR > fxvar_thres), 'MUX']
+            ydata = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres) & (gt_t_df.FXVAR > fxvar_thres), 'MUY']
+
+            plt.subplot(2,num_layers-1,conv_i)
+            config_plot(limits)
+            plt.scatter(gt_xdata.loc[w_t_df.FXVAR > fxvar_thres], xdata, alpha=0.4, c='b')
+            if conv_i == 1:
+                plt.ylabel(f'Bar', fontsize=16)
+            try:
+                top_x_r_val, _ = pearsonr(gt_xdata.loc[w_t_df.FXVAR > fxvar_thres], xdata)
+            except:
+                top_x_r_val = np.NaN
+            try:
+                top_y_r_val, _ = pearsonr(gt_ydata.loc[w_t_df.FXVAR > fxvar_thres], ydata)
+            except:
+                top_y_r_val = np.NaN
+            plt.title(f'{layer_name}\n(total n = {num_units_total})', fontsize=20)
+            plt.text(-70,50,f'n = {len(xdata)}\nr = {top_x_r_val:.2f}', fontsize=16)
+            top_x_r_vals.append(top_x_r_val)
+            top_y_r_vals.append(top_y_r_val)
+            plt.gca().set_facecolor(top_face_color)
+
+            xdata = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres) & (gt_b_df.FXVAR > fxvar_thres), 'MUX']
+            ydata = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres) & (gt_b_df.FXVAR > fxvar_thres), 'MUY']
+            plt.subplot(2,num_layers-1,conv_i + num_layers-1)
+            config_plot(limits)
+            plt.scatter(gb_xdata.loc[w_b_df.FXVAR > fxvar_thres], xdata, alpha=0.4, c='b')
+            plt.xlabel(f'Ground truth', fontsize=16)
+            if conv_i == 1:
+                plt.ylabel(f'Bar', fontsize=16)
+            try:
+                bot_x_r_val, _ = pearsonr(gb_xdata.loc[w_b_df.FXVAR > fxvar_thres], xdata)
+            except:
+                top_x_r_val = np.NaN
+            try:
+                bot_y_r_val, _ = pearsonr(gb_ydata.loc[w_b_df.FXVAR > fxvar_thres], ydata)
+            except:
+                bot_y_r_val = np.NaN
+            plt.text(-70,50,f'n = {len(xdata)}\nr = {bot_x_r_val:.2f}', fontsize=16)
+            bot_x_r_vals.append(bot_x_r_val)
+            bot_y_r_vals.append(bot_y_r_val)
+            plt.gca().set_facecolor(bot_face_color)
+        
+        pdf.savefig()
+        plt.show()
+        plt.close()
+        
+        
+        plt.figure(figsize=(12,5))
+        
+        x = np.arange(1,num_layers)
+        x_str = [f"conv{num+1}" for num in x]
+        plt.subplot(1,2,1)
+        plt.plot(x, top_x_r_vals, 'b.-' ,markersize=20, label='x')
+        plt.plot(x, top_y_r_vals, 'g.-' ,markersize=20, label='y')
+        plt.ylabel('r', fontsize=16)
+        plt.title("Top", fontsize=20)
+        plt.xticks(x,x_str, fontsize=16)
+        plt.yticks([0, 0.5, 1])
+        plt.ylim(-0.1, 1.1)
+        plt.gca().set_facecolor(top_face_color)
+        plt.legend(fontsize=16)
+        
+        plt.subplot(1,2,2)
+        plt.plot(x, bot_x_r_vals, 'b.-', markersize=20, label='x')
+        plt.plot(x, bot_y_r_vals, 'g.-', markersize=20, label='y')
+        plt.ylabel('r', fontsize=16)
+        plt.title("Bottom", fontsize=20)
+        plt.xticks(x,x_str, fontsize=16)
+        plt.yticks([0, 0.5, 1])
+        plt.ylim(-0.1, 1.1)
+        plt.gca().set_facecolor(bot_face_color)
+        plt.legend(fontsize=16)
+
+        pdf.savefig()
+        plt.show()
+        plt.close()
+
+if __name__ == '__main__':
+    make_error_coords2_pdf()
     pass
 
 
@@ -1315,7 +1440,7 @@ def make_error_radius_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_error_radius_pdf()
+    # make_error_radius_pdf()
     pass
 
 
@@ -1409,5 +1534,5 @@ def make_error_ori_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    make_error_ori_pdf()
+    # make_error_ori_pdf()
     pass
