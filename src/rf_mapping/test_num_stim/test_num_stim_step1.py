@@ -29,10 +29,9 @@ model_name = 'alexnet'
 # model_name = "resnet18"
 this_is_a_test_run = False
 batch_size = 10
-conv_i_to_run = 1  # conv_i = 1 means Conv2
+conv_i_to_run = 2  # conv_i = 1 means Conv2
 rfmp_name = 'rfmp4c7o'
-# num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000]
-num_stim_list = [3000, 5000, 10000]
+num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 5000]
 
 result_dir = os.path.join(c.REPO_DIR, 'results', 'test_num_stim', rfmp_name)
 

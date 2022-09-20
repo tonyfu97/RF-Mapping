@@ -183,6 +183,7 @@ def get_result_dir(map_name, is_random, this_is_a_test_run):
 ###############################################################################
 
 result_dir = get_result_dir(map_name, is_random, this_is_a_test_run)
+
 top_file_path = os.path.join(result_dir, f"{model_name}_{map_name}_gaussian_top.txt")
 bot_file_path = os.path.join(result_dir, f"{model_name}_{map_name}_gaussian_bot.txt")
 
@@ -205,7 +206,7 @@ for conv_i in range(len(layer_indices)):
     max_maps = load_maps(map_name, layer_name, 'max', is_random, rf_size)
     min_maps = load_maps(map_name, layer_name, 'min', is_random, rf_size)
 
-    pdf_path = os.path.join(result_dir, f"{layer_name}.pdf")
+    pdf_path = os.path.join(result_dir, f"{layer_name}_gaussian_fit.pdf")
     with PdfPages(pdf_path) as pdf:
         
         for unit_i, (max_map, min_map) in enumerate(tqdm(zip(max_maps, min_maps))):

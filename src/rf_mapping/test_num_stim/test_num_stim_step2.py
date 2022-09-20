@@ -24,6 +24,7 @@ from src.rf_mapping.gaussian_fit import GaussianFitParamFormat as ParamFormat
 from src.rf_mapping.hook import ConvUnitCounter
 from src.rf_mapping.spatial import get_rf_sizes
 import src.rf_mapping.constants as c
+from src.rf_mapping.bar import mapstat_comr_1
 
 
 # Please specify some details here:
@@ -36,8 +37,8 @@ model_name = 'alexnet'
 image_shape = (227, 227)
 this_is_a_test_run = False
 batch_size = 10
-conv_i_to_run = 1  # conv_i = 1 means Conv2
-rfmp_name = 'rfmp4c7o'
+conv_i_to_run = 2  # conv_i = 1 means Conv2
+rfmp_name = 'rfmp4a'
 num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 3000, 5000, 10000]
 
 source_dir = os.path.join(c.REPO_DIR, 'results', 'test_num_stim')
@@ -170,6 +171,8 @@ for num_stim in num_stim_list:
                                 str(num_stim), f"gaussian_fit_weighted_bot.txt")
     corr_txt_path = os.path.join(result_dir, rfmp_name, model_name, layer_name,
                                   str(num_stim), f"map_correlations.txt")
+    com_txt_path = os.path.join(result_dir, rfmp_name, model_name, layer_name,
+                                  str(num_stim), f"com.txt")
     
     # Delete previous files
     if os.path.exists(top_txt_path):
@@ -178,6 +181,8 @@ for num_stim in num_stim_list:
         os.remove(bot_txt_path)
     if os.path.exists(corr_txt_path):
         os.remove(corr_txt_path)
+    if os.path.exists(com_txt_path):
+        os.remove(com_txt_path)
 
     pdf_path = os.path.join(result_dir, rfmp_name, model_name, layer_name, str(num_stim),
                             f"{layer_name}_weighted_gaussian.pdf")
@@ -196,16 +201,6 @@ for num_stim in num_stim_list:
             fxvar = calc_f_explained_var(max_map, params)
             with open(top_txt_path, 'a') as top_f:
                 write_txt(top_f, layer_name, unit_i, params, fxvar, rf_size, max_bar_counts[unit_i])
-
-            # plt.title(f"max (nbar = {max_bar_counts[unit_i]}, fxvar = {fxvar:.4f})\n"
-            #         f"A={params[ParamFormat.A_IDX]:.2f}(err={sems[ParamFormat.A_IDX]:.2f}), "
-            #         f"mu_x={params[ParamFormat.MU_X_IDX]:.2f}(err={sems[ParamFormat.MU_X_IDX]:.2f}), "
-            #         f"mu_y={params[ParamFormat.MU_Y_IDX]:.2f}(err={sems[ParamFormat.MU_Y_IDX]:.2f}),\n"
-            #         f"sigma_1={params[ParamFormat.SIGMA_1_IDX]:.2f}(err={sems[ParamFormat.SIGMA_1_IDX]:.2f}), "
-            #         f"sigma_2={params[ParamFormat.SIGMA_2_IDX]:.2f}(err={sems[ParamFormat.SIGMA_2_IDX]:.2f}),\n"
-            #         f"theta={params[ParamFormat.THETA_IDX]:.2f}(err={sems[ParamFormat.THETA_IDX]:.2f}), "
-            #         f"offset={params[ParamFormat.OFFSET_IDX]:.2f}(err={sems[ParamFormat.OFFSET_IDX]:.2f})",
-            #         fontsize=14)
             radius = geo_mean(params[ParamFormat.SIGMA_1_IDX], params[ParamFormat.SIGMA_2_IDX])
             plt.title(f"max {radius:.2f}", fontsize=18)
 
@@ -214,15 +209,6 @@ for num_stim in num_stim_list:
             fxvar = calc_f_explained_var(min_map, params)
             with open(bot_txt_path, 'a') as bot_f:
                 write_txt(bot_f, layer_name, unit_i, params, fxvar, rf_size, min_bar_counts[unit_i])
-            # plt.title(f"min (nbar = {min_bar_counts[unit_i]}, fxvar = {fxvar:.4f})\n"
-            #         f"A={params[ParamFormat.A_IDX]:.2f}(err={sems[ParamFormat.A_IDX]:.2f}), "
-            #         f"mu_x={params[ParamFormat.MU_X_IDX]:.2f}(err={sems[ParamFormat.MU_X_IDX]:.2f}), "
-            #         f"mu_y={params[ParamFormat.MU_Y_IDX]:.2f}(err={sems[ParamFormat.MU_Y_IDX]:.2f}),\n"
-            #         f"sigma_1={params[ParamFormat.SIGMA_1_IDX]:.2f}(err={sems[ParamFormat.SIGMA_1_IDX]:.2f}), "
-            #         f"sigma_2={params[ParamFormat.SIGMA_2_IDX]:.2f}(err={sems[ParamFormat.SIGMA_2_IDX]:.2f}),\n"
-            #         f"theta={params[ParamFormat.THETA_IDX]:.2f}(err={sems[ParamFormat.THETA_IDX]:.2f}), "
-            #         f"offset={params[ParamFormat.OFFSET_IDX]:.2f}(err={sems[ParamFormat.OFFSET_IDX]:.2f})",
-            #         fontsize=14)
             radius = geo_mean(params[ParamFormat.SIGMA_1_IDX], params[ParamFormat.SIGMA_2_IDX])
             plt.title(f"min {radius:.2f}", fontsize=18)
 
@@ -230,7 +216,6 @@ for num_stim in num_stim_list:
             if this_is_a_test_run: plt.show()
             plt.close()
 
-            
             # Direct correlation of barmap and GT map.
             gt_max_map = gt_max_maps[unit_i]
             gt_min_map = gt_min_maps[unit_i]
@@ -240,3 +225,14 @@ for num_stim in num_stim_list:
             
             with open(corr_txt_path, 'a') as corr_f:
                 corr_f.write(f"{layer_name} {unit_i} {max_r_val:.4f} {min_r_val:.4f}\n")
+
+            # Compute the center of mass (COM)
+            
+                
+top_y, top_x, top_rad_10 = mapstat_comr_1(max_map, 0.1)
+_, _, top_rad_50 = mapstat_comr_1(max_map, 0.5)
+_, _, top_rad_90 = mapstat_comr_1(max_map, 0.9)
+
+bot_y, bot_x, bot_rad_10 = mapstat_comr_1(min_map, 0.1)
+_, _, bot_rad_50 = mapstat_comr_1(min_map, 0.5)
+_, _, bot_rad_90 = mapstat_comr_1(min_map, 0.9)

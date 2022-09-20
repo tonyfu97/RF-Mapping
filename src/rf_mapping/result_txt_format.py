@@ -93,6 +93,17 @@ class RfmpCOM(Enum):
     BOT_RAD_10   = 9  # radius of 10% of mass
     BOT_RAD_50   = 10 # radius of 50% of mass
     BOT_RAD_90   = 11 # radius of 90% of mass
+    
+
+class RfmpHotSpot(Enum):
+    LAYER        = 0  # layer name
+    UNIT         = 1  # index of unit, 0...              
+                      # Top map
+    TOP_X        = 2  # x-coord of max pixel
+    TOP_Y        = 3  # y-coord of max pixel (negative)
+                      # Bottom map
+    BOT_X        = 4  # x-coord of max pixel
+    BOT_Y        = 5  # y-coord of max pixel (negative)
 
 
 class Rfmp4aSplist(Enum):

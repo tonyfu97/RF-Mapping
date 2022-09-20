@@ -31,22 +31,22 @@ model_name = 'alexnet'
 # model = models.resnet18(pretrained=True).to(c.DEVICE)
 # model_name = "resnet18"
 
-this_is_a_test_run = True
+this_is_a_test_run = False
 is_random = False
-map_name = 'gt'
+map_name = 'pasu'
 sigma_rf_ratio = 1/60
 
 
 ###############################################################################
 
 # Script guard
-if __name__ == "__main__":
-    print("Look for a prompt.")
-    user_input = input("This code may take time to run. Are you sure? [y/n]") 
-    if user_input == 'y':
-        pass
-    else: 
-        raise KeyboardInterrupt("Interrupted by user")
+# if __name__ == "__main__":
+#     print("Look for a prompt.")
+#     user_input = input("This code may take time to run. Are you sure? [y/n]") 
+#     if user_input == 'y':
+#         pass
+#     else: 
+#         raise KeyboardInterrupt("Interrupted by user")
 
 # Get info of conv layers.
 unit_counter = ConvUnitCounter(model)
