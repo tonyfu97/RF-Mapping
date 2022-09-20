@@ -97,6 +97,19 @@ def load_gaussian_fit_df(rfmp_name, model_name, layer_name, num_stim):
     return top_df, bot_df
 
 
+def load_corr_df(rfmp_name, model_name, layer_name, num_stim):
+    corr_txt_path = os.path.join(result_dir, rfmp_name, model_name, layer_name,
+                                str(num_stim), f"map_correlations.txt")
+
+    # Load the txt files as pandas DF.
+    corr_df  = pd.read_csv(corr_txt_path, sep=" ", header=None)
+
+    # Name the columns
+    corr_df.columns = [e for e in ['LAYER', 'UNIT', 'TOP_CORR', 'BOT_CORR']]
+
+    return corr_df
+
+
 def geo_mean(sd1, sd2):
     return np.sqrt(np.power(sd1, 2) + np.power(sd2, 2))
 
@@ -109,6 +122,7 @@ pdf_path = os.path.join(result_dir, rfmp_name, model_name, layer_name,
 with PdfPages(pdf_path) as pdf:
     radius_list = []
     num_units_list = []
+    avg_corr_list = []
     for num_stim in num_stim_list:
         # Load Gaussian fit results
         top_df, bot_df = load_gaussian_fit_df(rfmp_name, model_name, layer_name, num_stim)
@@ -117,22 +131,29 @@ with PdfPages(pdf_path) as pdf:
         sd2data = top_df.loc[(top_df.LAYER == layer_name) & (top_df.FXVAR > fxvar_thres), 'SD2']
         
         radii = geo_mean(sd1data, sd2data)
-        radii_without_too_big = radii[radii < rf_size]
-        radius_list.append(np.mean(radii_without_too_big))
-        num_units_list.append(len(radii_without_too_big))
+        radii = radii[radii < rf_size]
+        radius_list.append(np.mean(radii))
+        num_units_list.append(len(radii))
+        
+        # Load map correlations.
+        corr_df = load_corr_df(rfmp_name, model_name, layer_name, num_stim)
+        avg_corr_list.append(np.mean(corr_df['TOP_CORR']))
 
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(18, 6))
     
-    plt.subplot(1,2,1)
+    plt.subplot(1,3,1)
     plt.plot(num_stim_list, radius_list, '.-', markersize=20)
-    plt.xlabel('number of stimuli included', fontsize=16)
     plt.ylabel('average radius (pix)', fontsize=16)
     
-    plt.subplot(1,2,2)
+    plt.subplot(1,3,2)
     plt.plot(num_stim_list, num_units_list, '.-', markersize=20)
     plt.xlabel('number of stimuli included', fontsize=16)
     plt.ylabel(f'number of units with fxvar above {fxvar_thres}', fontsize=16)
     plt.ylim([0, 192])
+    
+    plt.subplot(1,3,3)
+    plt.plot(num_stim_list, avg_corr_list, '.-', markersize=20)
+    plt.ylabel(f'average direct correlation', fontsize=16)
     
     pdf.savefig()
     plt.show()

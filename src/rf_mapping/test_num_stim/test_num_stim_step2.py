@@ -12,6 +12,7 @@ import numpy as np
 import torch.nn as nn
 from torchvision import models
 from tqdm import tqdm
+from scipy.stats import pearsonr
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -90,8 +91,16 @@ def write_txt(f, layer_name, unit_i, raw_params, fxvar, map_size, num_bars):
 
 def load_maps(map_name, layer_name, num_stim, max_or_min):
     """Loads the maps of the layer."""
-    
-    if map_name == 'rfmp4a':
+    if map_name == 'gt':
+        mapping_path = os.path.join(source_dir,
+                                    '..',
+                                    'ground_truth',
+                                    'backprop_sum',
+                                    model_name,
+                                    'abs',
+                                    f"{layer_name}_{max_or_min}.npy")
+        return np.load(mapping_path)  # [unit, yn, xn]
+    elif map_name == 'rfmp4a':
         mapping_path = os.path.join(source_dir,
                                     'rfmp4a',
                                     model_name,
@@ -150,17 +159,25 @@ for num_stim in num_stim_list:
                 min_bar_counts.append(int(line.split(' ')[3]))
 
     # Load bar maps:
+    gt_max_maps = load_maps('gt', layer_name, -1, 'max')
+    gt_min_maps = load_maps('gt', layer_name, -1, 'min')
     max_maps = load_maps(rfmp_name, layer_name, num_stim, 'max')
     min_maps = load_maps(rfmp_name, layer_name, num_stim, 'min')
     
-    top_txt_path = os.path.join(result_dir, rfmp_name, model_name, layer_name, str(num_stim), f"gaussian_fit_weighted_top.txt")
-    bot_txt_path = os.path.join(result_dir, rfmp_name, model_name, layer_name, str(num_stim), f"gaussian_fit_weighted_bot.txt")
+    top_txt_path = os.path.join(result_dir, rfmp_name, model_name, layer_name,
+                                str(num_stim), f"gaussian_fit_weighted_top.txt")
+    bot_txt_path = os.path.join(result_dir, rfmp_name, model_name, layer_name,
+                                str(num_stim), f"gaussian_fit_weighted_bot.txt")
+    corr_txt_path = os.path.join(result_dir, rfmp_name, model_name, layer_name,
+                                  str(num_stim), f"map_correlations.txt")
     
     # Delete previous files
     if os.path.exists(top_txt_path):
         os.remove(top_txt_path)
     if os.path.exists(bot_txt_path):
         os.remove(bot_txt_path)
+    if os.path.exists(corr_txt_path):
+        os.remove(corr_txt_path)
 
     pdf_path = os.path.join(result_dir, rfmp_name, model_name, layer_name, str(num_stim),
                             f"{layer_name}_weighted_gaussian.pdf")
@@ -212,3 +229,14 @@ for num_stim in num_stim_list:
             pdf.savefig()
             if this_is_a_test_run: plt.show()
             plt.close()
+
+            
+            # Direct correlation of barmap and GT map.
+            gt_max_map = gt_max_maps[unit_i]
+            gt_min_map = gt_min_maps[unit_i]
+            
+            max_r_val, _ = pearsonr(max_map.flatten(), gt_max_map.flatten())
+            min_r_val, _ = pearsonr(min_map.flatten(), gt_min_map.flatten())
+            
+            with open(corr_txt_path, 'a') as corr_f:
+                corr_f.write(f"{layer_name} {unit_i} {max_r_val:.4f} {min_r_val:.4f}\n")

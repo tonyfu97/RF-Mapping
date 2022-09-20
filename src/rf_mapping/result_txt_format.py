@@ -78,6 +78,23 @@ class Rfmp4aWeighted(Enum):
     NUM_BARS = 10  # number of bars included in the map
 
 
+class RfmpCOM(Enum):
+    LAYER        = 0  # layer name
+    UNIT         = 1  # index of unit, 0...
+    
+    TOP_X        = 2  # COM x-coord of top map
+    TOP_Y        = 3  # COM y-coord (negative)
+    TOP_RAD_10   = 4  # radius of 10% of mass
+    TOP_RAD_50   = 5  # radius of 50% of mass
+    TOP_RAD_90   = 6  # radius of 90% of mass
+    
+    BOT_X        = 7  # COM x-coord of bottom map
+    BOT_Y        = 8  # COM y-coord (negative)
+    BOT_RAD_10   = 9  # radius of 10% of mass
+    BOT_RAD_50   = 10 # radius of 50% of mass
+    BOT_RAD_90   = 11 # radius of 90% of mass
+
+
 class Rfmp4aSplist(Enum):
     STIM_I = 0  # counting from 0
     XN     = 1

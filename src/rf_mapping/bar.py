@@ -971,7 +971,7 @@ def rfmp4c7o_run_01(model, model_name, result_dir, _debug=False, batch_size=100,
         # a bottleneck of the program because it is all computed by a single
         # CPU core. Improvement by multiprocessing was implemented on August
         # 15, 2022 to solve the problem.
-        batch_size = os.cpu_count()
+        batch_size = os.cpu_count() // 2
         unit_i = 0
         while (unit_i < num_units):
             if _debug and unit_i >= 20:
