@@ -201,6 +201,7 @@ def config_plot(limits):
     ax = plt.gca()
     ax.set_aspect('equal')
 
+
 ###############################################################################
 
 # Load the center of mass dataframes and pad the missing layers
@@ -209,7 +210,7 @@ top_x_df2, top_y_df2, bot_x_df2, bot_y_df2 = get_top_bot_xy_dfs(map2_name, model
 
 result_dir = get_result_dir(map1_name, map2_name, model_name, this_is_a_test_run)
 
-pdf_path = os.path.join(result_dir, f"{model_name}_{map1_name}_and_{map2_name}_com.pdf")
+pdf_path = os.path.join(result_dir, f"{model_name}_{map1_name}_{map2_name}_{fit_name}.pdf")
 with PdfPages(pdf_path) as pdf:
     top_x_r_vals = []
     top_y_r_vals = []
@@ -332,6 +333,52 @@ with PdfPages(pdf_path) as pdf:
     ###########################################################################
     #                FIGURE 3. ERROR DISTANCE IN EACH LAYER                   #
     ###########################################################################
-    
-    
-    
+    plt.figure(figsize=(20, 9))
+    if fit_name == 'gaussian_fit':
+        plt.suptitle(f"{model_name}: {map1_name} vs {map2_name} ({fit_name}, fxvar_threshold = {fxvar_thres})", fontsize=24)
+    else:
+        plt.suptitle(f"{model_name}: {map1_name} vs {map2_name} ({fit_name})", fontsize=24)
+    for conv_i, rf_size in enumerate(rf_sizes):
+        # Skip Conv1
+        if conv_i == 0:
+            continue
+        
+        # Some basic layer info
+        layer_name = f"conv{conv_i+1}"
+        limits = (-75, 75)
+        
+        # Get data
+        top_x1 = top_x_df1.loc[(top_x_df1.LAYER == layer_name), 'TOP_X']
+        top_y1 = top_y_df1.loc[(top_y_df1.LAYER == layer_name), 'TOP_Y']
+        bot_x1 = bot_x_df1.loc[(bot_x_df1.LAYER == layer_name), 'BOT_X']
+        bot_y1 = bot_y_df1.loc[(bot_y_df1.LAYER == layer_name), 'BOT_Y']
+
+        top_x2 = top_x_df2.loc[(top_x_df2.LAYER == layer_name), 'TOP_X']
+        top_y2 = top_y_df2.loc[(top_y_df2.LAYER == layer_name), 'TOP_Y']
+        bot_x2 = bot_x_df2.loc[(bot_x_df2.LAYER == layer_name), 'BOT_X']
+        bot_y2 = bot_y_df2.loc[(bot_y_df2.LAYER == layer_name), 'BOT_Y']
+        
+        # Skip this layer if there is not data
+        if len(top_x1) == 0 or len(top_x2) == 0:
+            continue
+        
+        # Compute error distance
+        top_err_dist = np.sqrt(np.square(top_x1 - top_x2) + np.square(top_y1 - top_y2))
+        bot_err_dist = np.sqrt(np.square(bot_x1 - bot_x2) + np.square(bot_y1 - bot_y2))
+        
+        # Plot the distribution of the error distance
+        plt.subplot(2,num_layers - 1, conv_i)
+        plt.hist(top_err_dist)
+        plt.title(f"{layer_name} (n = {len(top_err_dist)})", fontsize=16)
+        if conv_i == 1:
+            plt.ylabel(f"count", fontsize=16)
+        
+        plt.subplot(2,num_layers - 1, num_layers+conv_i-1)
+        plt.hist(bot_err_dist)
+        if conv_i == 1:
+            plt.ylabel(f"count", fontsize=16)
+        plt.xlabel(f"error distance", fontsize=16)
+
+    pdf.savefig()
+    plt.show()
+    plt.close()
