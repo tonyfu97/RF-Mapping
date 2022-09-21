@@ -35,8 +35,8 @@ image_shape = (227, 227)
 this_is_a_test_run = False
 batch_size = 10
 conv_i_to_run = 1  # conv_i = 1 means Conv2
-rfmp_name = 'rfmp4a'
-num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 3000, 5000, 10000]
+rfmp_name = 'rfmp4c7o'
+num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 5000]
 fxvar_thres = 0.7
 
 source_dir = os.path.join(c.REPO_DIR, 'results', 'test_num_stim')
@@ -149,7 +149,7 @@ with PdfPages(pdf_path) as pdf:
     plt.plot(num_stim_list, num_units_list, '.-', markersize=20)
     plt.xlabel('number of stimuli included', fontsize=16)
     plt.ylabel(f'number of units with fxvar above {fxvar_thres}', fontsize=16)
-    plt.ylim([0, 192])
+    plt.ylim([0, 384])
     
     plt.subplot(1,3,3)
     plt.plot(num_stim_list, avg_corr_list, '.-', markersize=20)

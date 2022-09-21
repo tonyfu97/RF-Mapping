@@ -12,11 +12,9 @@ import torch.nn as nn
 from scipy.stats import pearsonr
 from scipy.ndimage.filters import gaussian_filter
 from torchvision import models
-# from torchvision.models import AlexNet_Weights, VGG16_Weights
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
-
 
 sys.path.append('../../..')
 from src.rf_mapping.spatial import get_rf_sizes
@@ -32,9 +30,12 @@ model_name = 'alexnet'
 # model_name = 'resnet18'
 image_shape = (227, 227)
 this_is_a_test_run = False
-max_or_min = 'max'
+max_or_min = 'min'
 font_size = 20
 r_val_threshold = 0.7
+
+# ADDING NEW MAP? MODIFY BELOW:
+all_map_names = ['gt', 'gt_composite', 'occlude', 'rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
 
 # Result paths:
 if this_is_a_test_run:
@@ -55,6 +56,8 @@ else:
 # Get some layer info:
 _, rf_sizes = get_rf_sizes(model, image_shape, layer_type=nn.Conv2d)
 num_layers = len(rf_sizes)
+
+#############################  HELPER FUNCTIONS  ##############################
 
 # Define helper functions:
 def load_maps(map_name, layer_name, max_or_min):
@@ -117,18 +120,34 @@ def plot_r_val(r_val, p_val, font_size):
         ax = plt.gca()
         ax.set_facecolor((r_val/2 + 0.5, 1 - abs(r_val), 1-r_val/2 - 0.5))
 
+###############################################################################
+
+# Set path to record r values in a txt file.
+txt_path = os.path.join(result_dir, f"{max_or_min}_map_r.txt")
+if os.path.exists(txt_path):
+    os.remove(txt_path)
+# Give column names
+with open(txt_path, 'a') as f:
+    f.write(f"LAYER UNIT")
+    for idx1, map_name1 in enumerate(all_map_names):
+        for idx2, map_name2 in enumerate(all_map_names):
+            if idx1 <= idx2:
+                f.write(f" {map_name1}_vs_{map_name2}")
+    f.write("\n")
+
+###############################################################################
+
 # Make pdf:
 for conv_i in range(num_layers):
     layer_name = f"conv{conv_i+1}"
     
-    # ADDING NEW MAP? MODIFY BELOW:
-    all_map_names = ['gt', 'gt_composite', 'occlude', 'rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
+    # Initialize counter dictionary to record the number of 'good' map pairs.
     high_r_val_counts = {}
     for idx1, map_name1 in enumerate(all_map_names):
         for idx2, map_name2 in enumerate(all_map_names):
             if idx1 < idx2:
                 high_r_val_counts[f"{map_name1}_vs_{map_name2}"] = 0
-    
+
     pdf_path = os.path.join(result_dir, f"{layer_name}_{max_or_min}_map_r.pdf")
     with PdfPages(pdf_path) as pdf:
         try:
@@ -153,7 +172,7 @@ for conv_i in range(num_layers):
             # that will influence direct correlation.
             sigma = occlude_maps[unit_i].shape[-1] / 30
             occlude_map = gaussian_filter(occlude_maps[unit_i], sigma=sigma)
-            
+
             # Get the other maps of this unit
             # ADDING NEW MAP? MODIFY BELOW:
             gt_map = gt_maps[unit_i]
@@ -165,21 +184,21 @@ for conv_i in range(num_layers):
 
             # ADDING NEW MAP? MODIFY BELOW:
             all_maps = [gt_map, gt_max_min_map, occlude_map, rfmp4a_map, rfmp4c7o_map, rfmp_sin1_map, pasu_map]
-            
+
             # Normalize the maps
             for i in range(len(all_maps)):
                 if all_maps[i].max() != 0:
                     all_maps[i] = all_maps[i] / all_maps[i].max()
-            
+
             plt.figure(figsize=(4*len(all_maps), 4*len(all_maps) - 2))
             plt.suptitle(f"Correlations of different maps (no.{unit_i}, {max_or_min})", fontsize=32)
-            
+
             # Plot the maps at the margin.
             for idx, map in enumerate(all_maps):
                 plt.subplot(len(all_maps)+1, len(all_maps)+1, idx + 2)
                 plt.imshow(map, cmap='gray')
                 plt.title(all_map_names[idx], fontsize=font_size)
-                
+
                 plt.subplot(len(all_maps)+1, len(all_maps)+1,
                             (len(all_maps) + 1) * (idx + 1) + 1)
                 plt.imshow(map, cmap='gray')
@@ -190,6 +209,7 @@ for conv_i in range(num_layers):
             all_maps[rfmp4c7o_idx] = np.mean(all_maps[rfmp4c7o_idx], axis=2)
 
             # Display the r values and p values.
+            r_vals = []
             for idx1, map1 in enumerate(all_maps):
                 for idx2, map2 in enumerate(all_maps):
                     if idx1 <= idx2:
@@ -197,15 +217,21 @@ for conv_i in range(num_layers):
                                     len(all_maps)+1,
                                     (len(all_maps) + 1) * (idx1 + 1) + 2 + idx2)
                         r_val, p_val = pearsonr(map1.flatten(), map2.flatten())
+                        r_vals.append(r_val)
                         plot_r_val(r_val, p_val, font_size)
                         if idx1 != idx2 and r_val > r_val_threshold:
                             name1 = all_map_names[idx1]
                             name2 = all_map_names[idx2]
                             high_r_val_counts[f'{name1}_vs_{name2}'] += 1
-
             pdf.savefig()
             plt.close()
-        
+            
+            with open(txt_path, 'a') as f:
+                f.write(f"{layer_name} {unit_i}")
+                for this_r_val in r_vals:
+                    f.write(f" {this_r_val:.4f}")
+                f.write("\n")
+
         plt.figure(figsize=(len(high_r_val_counts) * 3, 8))
         bars = plt.bar(high_r_val_counts.keys(), high_r_val_counts.values())
         plt.gca().bar_label(bars)   # Display the counts on top of the bars.

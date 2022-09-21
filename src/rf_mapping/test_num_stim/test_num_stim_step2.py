@@ -37,9 +37,9 @@ model_name = 'alexnet'
 image_shape = (227, 227)
 this_is_a_test_run = False
 batch_size = 10
-conv_i_to_run = 2  # conv_i = 1 means Conv2
+conv_i_to_run = 1  # conv_i = 1 means Conv2
 rfmp_name = 'rfmp4a'
-num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 3000, 5000, 10000]
+num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 5000]
 
 source_dir = os.path.join(c.REPO_DIR, 'results', 'test_num_stim')
 result_dir = source_dir
