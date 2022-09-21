@@ -34,7 +34,7 @@ model_name = 'alexnet'
 is_random = False
 this_is_a_test_run = False
 map1_name = 'gt'                # ['gt', 'occlude']
-map2_name = 'rfmp4c7o'            # ['rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
+map2_name = 'rfmp4a'            # ['rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
 fit_name = 'gaussian_fit'       # ['gaussian_fit', 'com', 'hot_spot']
 fxvar_thres = 0.8
 
@@ -233,7 +233,7 @@ with PdfPages(pdf_path) as pdf:
         
         bot_y_df1 = bot_y_df1.loc[(bot_y_df1.FXVAR > fxvar_thres) & (bot_y_df2.FXVAR > fxvar_thres), :]
         bot_y_df2 = bot_y_df2.loc[(bot_y_df1.FXVAR > fxvar_thres) & (bot_y_df2.FXVAR > fxvar_thres), :]
-    
+
     ###########################################################################
     #                   FIGURE 1. CORRELATIONS IN EACH LAYER                  #
     ###########################################################################
@@ -333,6 +333,9 @@ with PdfPages(pdf_path) as pdf:
     ###########################################################################
     #                FIGURE 3. ERROR DISTANCE IN EACH LAYER                   #
     ###########################################################################
+    all_top_err_dist = np.array([])
+    all_bot_err_dist = np.array([])
+    
     plt.figure(figsize=(20, 9))
     if fit_name == 'gaussian_fit':
         plt.suptitle(f"{model_name}: {map1_name} vs {map2_name} ({fit_name}, fxvar_threshold = {fxvar_thres})", fontsize=24)
@@ -366,19 +369,64 @@ with PdfPages(pdf_path) as pdf:
         top_err_dist = np.sqrt(np.square(top_x1 - top_x2) + np.square(top_y1 - top_y2))
         bot_err_dist = np.sqrt(np.square(bot_x1 - bot_x2) + np.square(bot_y1 - bot_y2))
         
+        # Append to lists
+        all_top_err_dist = np.append(all_top_err_dist, top_err_dist)
+        all_bot_err_dist = np.append(all_bot_err_dist, bot_err_dist)
+
         # Plot the distribution of the error distance
         plt.subplot(2,num_layers - 1, conv_i)
         plt.hist(top_err_dist)
         plt.title(f"{layer_name} (n = {len(top_err_dist)})", fontsize=16)
         if conv_i == 1:
             plt.ylabel(f"count", fontsize=16)
+        plt.gca().set_facecolor(top_face_color)
         
         plt.subplot(2,num_layers - 1, num_layers+conv_i-1)
         plt.hist(bot_err_dist)
         if conv_i == 1:
             plt.ylabel(f"count", fontsize=16)
+        plt.gca().set_facecolor(bot_face_color)
         plt.xlabel(f"error distance", fontsize=16)
 
     pdf.savefig()
     plt.show()
     plt.close()
+    
+    ###########################################################################
+    #           FIGURE 4. ERROR DISTANCE VS. COLOR ROTATION INDEX             #
+    ###########################################################################
+    # Save the error distances in a data frame:
+    top_err_dist_df = top_x_df1.loc[(top_x_df1.LAYER != 'conv1'), ['LAYER', 'UNIT']]
+    top_err_dist_df['ERR_DIST'] = all_top_err_dist
+
+    bot_err_dist_df = bot_x_df1.loc[(bot_x_df1.LAYER != 'conv1'), ['LAYER', 'UNIT']]
+    bot_err_dist_df['ERR_DIST'] = all_bot_err_dist
+    
+    # Load the color rotation index
+    cri_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, 'cri.txt')
+    cri_df = pd.read_csv(cri_path, sep=" ", header=None)
+    cri_df.columns = ['LAYER', 'UNIT', 'CRI']
+    
+    # Merge the two pds
+    top_cri_err_dist_df = pd.merge(top_err_dist_df, cri_df, how='left')
+    bot_cri_err_dist_df = pd.merge(bot_err_dist_df, cri_df, how='left')
+    
+    for conv_i, _ in enumerate(nums_units):
+        if conv_i == 0:
+            continue
+        
+        layer_name = f"conv{conv_i+1}"
+        
+        top_err_dist = top_cri_err_dist_df.loc[(top_cri_err_dist_df.LAYER == layer_name), 'ERR_DIST']
+        top_cri      = top_cri_err_dist_df.loc[(top_cri_err_dist_df.LAYER == layer_name), 'CRI']
+        bot_err_dist = bot_cri_err_dist_df.loc[(bot_cri_err_dist_df.LAYER == layer_name), 'ERR_DIST']
+        bot_cri      = bot_cri_err_dist_df.loc[(bot_cri_err_dist_df.LAYER == layer_name), 'CRI']
+        
+        plt.subplot(1,2,1)
+        plt.scatter(top_err_dist, top_cri)
+        
+        plt.subplot(1,2,2)
+        plt.scatter(bot_err_dist, bot_cri)
+        
+        plt.show()
+        
