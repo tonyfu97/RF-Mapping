@@ -115,7 +115,7 @@ class ColorRotationInspector(HookFunctionBase):
         # Calculate the image-wise standard deviation for all 6 rotations
         image_wise_standard_devations = []
         for conv_i, layer_center_responses in enumerate(six_all_center_responses):
-                image_wise_standard_devations.append(np.std(six_all_center_responses[conv_i], axis=0))
+            image_wise_standard_devations.append(np.std(six_all_center_responses[conv_i], axis=0))
         
         return original_center_responses, image_wise_standard_devations
 
@@ -176,7 +176,7 @@ if os.path.exists(cri_txt_path):
     os.remove(cri_txt_path)
 for conv_i in range(len(nums_units)):
     numerators = np.mean(all_image_wise_standard_devations[conv_i], axis=0)
-    denominators = np.mean(all_original_center_responses[conv_i], axis=0)
+    denominators = np.std(all_original_center_responses[conv_i], axis=0)
     cri_list = numerators/denominators
     
     for unit_i, cri in enumerate(cri_list):

@@ -34,7 +34,7 @@ model_name = 'alexnet'
 is_random = False
 this_is_a_test_run = False
 map1_name = 'gt'                # ['gt', 'occlude']
-map2_name = 'rfmp4a'            # ['rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
+map2_name = 'rfmp4c7o'            # ['rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
 fit_name = 'gaussian_fit'       # ['gaussian_fit', 'com', 'hot_spot']
 fxvar_thres = 0.8
 
@@ -432,10 +432,10 @@ with PdfPages(pdf_path) as pdf:
         if conv_i == 1:
             plt.ylabel("CRI", fontsize=16)
         plt.gca().set_facecolor(top_face_color)
-        plt.text(45,5,f'n = {len(top_err_dist)}\nr = {rval:.2f}', fontsize=16)
+        plt.text(45,1,f'n = {len(top_err_dist)}\nr = {rval:.2f}', fontsize=16)
         plt.title(layer_name, fontsize=16)
         plt.xlim([0, 70])
-        plt.ylim([0, 7])
+        plt.ylim([0, 2])
         
         
         plt.subplot(2,num_layers - 1, num_layers+conv_i-1)
@@ -445,11 +445,13 @@ with PdfPages(pdf_path) as pdf:
         if conv_i == 1:
             plt.ylabel("CRI", fontsize=16)
         plt.gca().set_facecolor(bot_face_color)
-        plt.text(45,5,f'n = {len(bot_err_dist)}\nr = {rval:.2f}', fontsize=16)
+        plt.text(45,1,f'n = {len(bot_err_dist)}\nr = {rval:.2f}', fontsize=16)
         plt.xlim([0, 70])
-        plt.ylim([0, 7])
+        plt.ylim([0, 2])
         
+    pdf.savefig()
     plt.show()
+    plt.close()
     
 
     ###########################################################################
@@ -502,9 +504,10 @@ with PdfPages(pdf_path) as pdf:
         plt.text(45,0.6,f'n = {len(bot_err_dist)}\nr = {rval:.2f}', fontsize=16)
         plt.xlim([0, 70])
         plt.ylim([-1, 1])
-        
-        
+
+    pdf.savefig()
     plt.show()
+    plt.close()
     
     
     ###########################################################################
@@ -535,8 +538,8 @@ with PdfPages(pdf_path) as pdf:
         if conv_i == 1:
             plt.ylabel("map correlation", fontsize=16)
         plt.gca().set_facecolor(top_face_color)
-        plt.text(4,0.6,f'n = {len(top_cri)}\nr = {rval:.2f}', fontsize=16)
-        plt.xlim([0, 7])
+        plt.text(1,0.6,f'n = {len(top_cri)}\nr = {rval:.2f}', fontsize=16)
+        plt.xlim([0, 2])
         plt.ylim([-1, 1])
 
         plt.subplot(2,num_layers - 1, num_layers+conv_i-1)
@@ -546,8 +549,10 @@ with PdfPages(pdf_path) as pdf:
         if conv_i == 1:
             plt.ylabel("map correlation", fontsize=16)
         plt.gca().set_facecolor(bot_face_color)
-        plt.text(4,0.6,f'n = {len(bot_cri)}\nr = {rval:.2f}', fontsize=16)
-        plt.xlim([0, 7])
+        plt.text(1,0.6,f'n = {len(bot_cri)}\nr = {rval:.2f}', fontsize=16)
+        plt.xlim([0, 2])
         plt.ylim([-1, 1])
 
+    pdf.savefig()
     plt.show()
+    plt.close()

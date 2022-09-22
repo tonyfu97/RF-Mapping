@@ -7,6 +7,7 @@ Tony Fu, August 18th, 2022
 """
 import os
 import sys
+import math
 
 import numpy as np
 import torch.nn as nn
@@ -38,8 +39,8 @@ image_shape = (227, 227)
 this_is_a_test_run = False
 batch_size = 10
 conv_i_to_run = 1  # conv_i = 1 means Conv2
-rfmp_name = 'rfmp4a'
-num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 5000]
+rfmp_name = 'rfmp4c7o'
+num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 5000, 10000]
 
 source_dir = os.path.join(c.REPO_DIR, 'results', 'test_num_stim')
 result_dir = source_dir
@@ -47,18 +48,20 @@ result_dir = source_dir
 ###############################################################################
 
 # Script guard
-if __name__ == "__main__":
-    print("Look for a prompt.")
-    user_input = input("This code may take time to run. Are you sure? [y/n] ")
-    if user_input == 'y':
-        pass
-    else: 
-        raise KeyboardInterrupt("Interrupted by user")
+# if __name__ == "__main__":
+#     print("Look for a prompt.")
+#     user_input = input("This code may take time to run. Are you sure? [y/n] ")
+#     if user_input == 'y':
+#         pass
+#     else: 
+#         raise KeyboardInterrupt("Interrupted by user")
 
 # Get info of conv layers.
 unit_counter = ConvUnitCounter(model)
 layer_indices, nums_units = unit_counter.count()
 _, rf_sizes = get_rf_sizes(model, image_shape, layer_type=nn.Conv2d)
+
+###############################################################################
 
 # Helper functions.
 def write_txt(f, layer_name, unit_i, raw_params, fxvar, map_size, num_bars):
@@ -142,6 +145,11 @@ def geo_mean(sd1, sd2):
     return np.sqrt(np.power(sd1, 2) + np.power(sd2, 2))
 
 
+def get_hot_spot(map):
+    return np.unravel_index(np.argmax(map), map.shape)
+
+###############################################################################
+
 layer_name = f"conv{conv_i_to_run + 1}"
 rf_size = rf_sizes[conv_i_to_run][0]
 
@@ -170,9 +178,11 @@ for num_stim in num_stim_list:
     bot_txt_path = os.path.join(result_dir, rfmp_name, model_name, layer_name,
                                 str(num_stim), f"gaussian_fit_weighted_bot.txt")
     corr_txt_path = os.path.join(result_dir, rfmp_name, model_name, layer_name,
-                                  str(num_stim), f"map_correlations.txt")
+                                str(num_stim), f"map_correlations.txt")
     com_txt_path = os.path.join(result_dir, rfmp_name, model_name, layer_name,
-                                  str(num_stim), f"com.txt")
+                                str(num_stim), f"com.txt")
+    hot_spot_txt_path = os.path.join(result_dir, rfmp_name, model_name, layer_name,
+                                str(num_stim), f"hot_spot.txt")
     
     # Delete previous files
     if os.path.exists(top_txt_path):
@@ -183,6 +193,8 @@ for num_stim in num_stim_list:
         os.remove(corr_txt_path)
     if os.path.exists(com_txt_path):
         os.remove(com_txt_path)
+    if os.path.exists(hot_spot_txt_path):
+        os.remove(hot_spot_txt_path)
 
     pdf_path = os.path.join(result_dir, rfmp_name, model_name, layer_name, str(num_stim),
                             f"{layer_name}_weighted_gaussian.pdf")
@@ -227,12 +239,27 @@ for num_stim in num_stim_list:
                 corr_f.write(f"{layer_name} {unit_i} {max_r_val:.4f} {min_r_val:.4f}\n")
 
             # Compute the center of mass (COM)
+            top_y, top_x, top_rad = mapstat_comr_1(max_map, 0.5)
+            bot_y, bot_x, bot_rad = mapstat_comr_1(min_map, 0.5)
+            gt_top_y, gt_top_x, gt_top_rad = mapstat_comr_1(gt_max_map, 0.5)
+            gt_bot_y, gt_bot_x, gt_bot_rad = mapstat_comr_1(gt_min_map, 0.5)
             
-                
-top_y, top_x, top_rad_10 = mapstat_comr_1(max_map, 0.1)
-_, _, top_rad_50 = mapstat_comr_1(max_map, 0.5)
-_, _, top_rad_90 = mapstat_comr_1(max_map, 0.9)
-
-bot_y, bot_x, bot_rad_10 = mapstat_comr_1(min_map, 0.1)
-_, _, bot_rad_50 = mapstat_comr_1(min_map, 0.5)
-_, _, bot_rad_90 = mapstat_comr_1(min_map, 0.9)
+            # Compute error distances of COM
+            top_err_dist = math.sqrt((top_x - gt_top_x) ** 2 + (top_y - gt_top_y) ** 2)
+            bot_err_dist = math.sqrt((bot_x - gt_bot_x) ** 2 + (bot_y - gt_bot_y) ** 2)
+            
+            with open(com_txt_path, 'a') as com_f:
+                com_f.write(f"{layer_name} {unit_i} {top_err_dist:.4f} {bot_err_dist:.4f}\n")
+            
+            # Compute hot spot
+            top_y, top_x = get_hot_spot(max_map)
+            bot_y, bot_x = get_hot_spot(min_map)
+            gt_top_y, gt_top_x = get_hot_spot(gt_max_map)
+            gt_bot_y, gt_bot_x = get_hot_spot(gt_min_map)
+            
+            # Compute error distances of hot spot
+            top_err_dist = math.sqrt((top_x - gt_top_x) ** 2 + (top_y - gt_top_y) ** 2)
+            bot_err_dist = math.sqrt((bot_x - gt_bot_x) ** 2 + (bot_y - gt_bot_y) ** 2)
+            
+            with open(hot_spot_txt_path, 'a') as com_f:
+                com_f.write(f"{layer_name} {unit_i} {top_err_dist:.4f} {bot_err_dist:.4f}\n")
