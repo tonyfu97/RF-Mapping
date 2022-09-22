@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 sys.path.append('../../..')
-from src.rf_mapping.gaussian_fit import gaussian_fit, theta_to_ori
+from src.rf_mapping.gaussian_fit import theta_to_ori
 from src.rf_mapping.gaussian_fit import GaussianFitParamFormat as ParamFormat
 from src.rf_mapping.hook import ConvUnitCounter
 from src.rf_mapping.spatial import get_rf_sizes
@@ -37,8 +37,9 @@ this_is_a_test_run = False
 batch_size = 10
 conv_i_to_run = 1  # conv_i = 1 means Conv2
 rfmp_name = 'rfmp4a'
-num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 5000, 10000]
+num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 5000]
 fxvar_thres = 0.7
+num_stim_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
 source_dir = os.path.join(c.REPO_DIR, 'results', 'test_num_stim')
 result_dir = source_dir
@@ -205,8 +206,7 @@ with PdfPages(pdf_path) as pdf:
         gt_t_gaussian_df, gt_b_gaussian_df = load_gt_gaussian_dfs(model_name)
 
         # Extract mux and muy and filtering
-        t_mux = pad_missing_layers(t_mux)
-        t_muy = pad_missing_layers(t_muy)
+        top_df = pad_missing_layers(top_df)
         gt_t_mux = gt_t_gaussian_df.loc[(gt_t_gaussian_df.LAYER == layer_name) & (gt_t_gaussian_df.FXVAR > fxvar_thres) & (top_df.FXVAR > fxvar_thres), 'MUX']
         gt_t_muy = gt_t_gaussian_df.loc[(gt_t_gaussian_df.LAYER == layer_name) & (gt_t_gaussian_df.FXVAR > fxvar_thres) & (top_df.FXVAR > fxvar_thres), 'MUY']
         t_mux = top_df.loc[(top_df.LAYER == layer_name) & (gt_t_gaussian_df.FXVAR > fxvar_thres) & (top_df.FXVAR > fxvar_thres), 'MUX']
@@ -226,7 +226,7 @@ with PdfPages(pdf_path) as pdf:
     plt.subplot(1,6,2)
     plt.plot(num_stim_list, num_units_list, '.-', markersize=20)
     plt.ylabel(f'number of units with fxvar above {fxvar_thres}', fontsize=16)
-    plt.ylim([0, 192])
+    plt.ylim([0, 384])
     
     plt.subplot(1,6,3)
     plt.plot(num_stim_list, avg_corr_list, '.-', markersize=20)

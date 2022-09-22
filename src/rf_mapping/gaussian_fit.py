@@ -104,7 +104,7 @@ if __name__ == '__main__':
 #                                GAUSSIAN_FIT                                 #
 #                                                                             #
 ###############################################################################
-def gaussian_fit(image, initial_guess=None, plot=True, show=False):
+def gaussian_fit(image, initial_guess=None, plot=True, show=False, cmap=plt.cm.jet):
     """
     Fit a 2D gaussian to an input image.
 
@@ -174,7 +174,7 @@ def gaussian_fit(image, initial_guess=None, plot=True, show=False):
     if plot:
         image_fitted = twoD_Gaussian((x, y), *param_estimate)
         # fig, ax = plt.subplots(1, 1)
-        plt.imshow(image, cmap=plt.cm.jet)
+        plt.imshow(image, cmap=cmap)
         # plt.colorbar()
         plt.contour(x, y, image_fitted.reshape(y_size, x_size), 9, colors='w')
 

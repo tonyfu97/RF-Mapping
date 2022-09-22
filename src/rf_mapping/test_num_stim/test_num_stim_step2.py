@@ -16,6 +16,7 @@ from tqdm import tqdm
 from scipy.stats import pearsonr
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.patches import Circle
 
 sys.path.append('../../..')
 from src.rf_mapping.gaussian_fit import (gaussian_fit,
@@ -39,8 +40,9 @@ image_shape = (227, 227)
 this_is_a_test_run = False
 batch_size = 10
 conv_i_to_run = 1  # conv_i = 1 means Conv2
-rfmp_name = 'rfmp4c7o'
-num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 5000, 10000]
+rfmp_name = 'rfmp4a'
+num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 5000]
+num_stim_list = [0, 0.1, 0.25, 0.5, 0.75, 0.9]
 
 source_dir = os.path.join(c.REPO_DIR, 'results', 'test_num_stim')
 result_dir = source_dir
@@ -204,29 +206,7 @@ for num_stim in num_stim_list:
             if this_is_a_test_run and unit_i >= 5:
                 break
 
-            # Fit 2D Gaussian, and plot them.
-            plt.figure(figsize=(20, 10))
-            plt.suptitle(f"Elliptical Gaussian fit ({layer_name} no.{unit_i})", fontsize=20)
-
-            plt.subplot(1, 2, 1)
-            params, sems = gaussian_fit(max_map, plot=True, show=False)
-            fxvar = calc_f_explained_var(max_map, params)
-            with open(top_txt_path, 'a') as top_f:
-                write_txt(top_f, layer_name, unit_i, params, fxvar, rf_size, max_bar_counts[unit_i])
-            radius = geo_mean(params[ParamFormat.SIGMA_1_IDX], params[ParamFormat.SIGMA_2_IDX])
-            plt.title(f"max {radius:.2f}", fontsize=18)
-
-            plt.subplot(1, 2, 2)
-            params, sems = gaussian_fit(min_map, plot=True, show=False)
-            fxvar = calc_f_explained_var(min_map, params)
-            with open(bot_txt_path, 'a') as bot_f:
-                write_txt(bot_f, layer_name, unit_i, params, fxvar, rf_size, min_bar_counts[unit_i])
-            radius = geo_mean(params[ParamFormat.SIGMA_1_IDX], params[ParamFormat.SIGMA_2_IDX])
-            plt.title(f"min {radius:.2f}", fontsize=18)
-
-            pdf.savefig()
-            if this_is_a_test_run: plt.show()
-            plt.close()
+            cy = cx = 0
 
             # Direct correlation of barmap and GT map.
             gt_max_map = gt_max_maps[unit_i]
@@ -250,6 +230,10 @@ for num_stim in num_stim_list:
             
             with open(com_txt_path, 'a') as com_f:
                 com_f.write(f"{layer_name} {unit_i} {top_err_dist:.4f} {bot_err_dist:.4f}\n")
+            top_com_mark = Circle((top_x + cx, top_y + cy), radius=1, color='green', label='com')
+            bot_com_mark = Circle((bot_x + cx, bot_y + cy), radius=1, color='green', label='com')
+            gt_top_com_mark = Circle((gt_top_x + cx, gt_top_y + cy), radius=1, color='green', label='com')
+            gt_bot_com_mark = Circle((gt_bot_x + cx, gt_bot_y + cy), radius=1, color='green', label='com')
             
             # Compute hot spot
             top_y, top_x = get_hot_spot(max_map)
@@ -261,5 +245,73 @@ for num_stim in num_stim_list:
             top_err_dist = math.sqrt((top_x - gt_top_x) ** 2 + (top_y - gt_top_y) ** 2)
             bot_err_dist = math.sqrt((bot_x - gt_bot_x) ** 2 + (bot_y - gt_bot_y) ** 2)
             
-            with open(hot_spot_txt_path, 'a') as com_f:
-                com_f.write(f"{layer_name} {unit_i} {top_err_dist:.4f} {bot_err_dist:.4f}\n")
+            with open(hot_spot_txt_path, 'a') as hot_spot_f:
+                hot_spot_f.write(f"{layer_name} {unit_i} {top_err_dist:.4f} {bot_err_dist:.4f}\n")
+            top_hot_spot_mark = Circle((top_x + cx, top_y + cy), radius=1, color='cyan', label='hotspot')
+            bot_hot_spot_mark = Circle((bot_x + cx, bot_y + cy), radius=1, color='cyan', label='hotspot')
+            gt_top_hot_spot_mark = Circle((gt_top_x + cx, gt_top_y + cy), radius=1, color='cyan', label='hotspot')
+            gt_bot_hot_spot_mark = Circle((gt_bot_x + cx, gt_bot_y + cy), radius=1, color='cyan', label='hotspot')
+            
+            # Fit 2D Gaussian, and plot them.
+            plt.figure(figsize=(20, 20))
+            plt.suptitle(f"Elliptical Gaussian fit ({layer_name} no.{unit_i})", fontsize=20)
+            
+            plt.subplot(2, 2, 1)
+            params, sems = gaussian_fit(gt_max_map, plot=True, show=False, cmap=plt.cm.gray)
+            fxvar = calc_f_explained_var(gt_max_map, params)
+            radius = geo_mean(params[ParamFormat.SIGMA_1_IDX], params[ParamFormat.SIGMA_2_IDX])
+            plt.title(f"GT max {radius:.2f}", fontsize=18)
+            gt_top_gaussian_mark = Circle((params[ParamFormat.MU_X_IDX] + cx, params[ParamFormat.MU_Y_IDX] + cy),
+                                        radius=1, color='red', label='gaussian')
+            ax = plt.gca()
+            for p in [gt_top_gaussian_mark, gt_top_com_mark, gt_top_hot_spot_mark]:
+                ax.add_patch(p)
+            plt.legend()
+
+
+            plt.subplot(2, 2, 2)
+            params, sems = gaussian_fit(max_map, plot=True, show=False, cmap=plt.cm.gray)
+            fxvar = calc_f_explained_var(max_map, params)
+            with open(top_txt_path, 'a') as top_f:
+                write_txt(top_f, layer_name, unit_i, params, fxvar, rf_size, max_bar_counts[unit_i])
+            radius = geo_mean(params[ParamFormat.SIGMA_1_IDX], params[ParamFormat.SIGMA_2_IDX])
+            plt.title(f"{rfmp_name} max {radius:.2f}", fontsize=18)
+            top_gaussian_mark = Circle((params[ParamFormat.MU_X_IDX] + cx, params[ParamFormat.MU_Y_IDX] + cy),
+                                        radius=1, color='red', label='gaussian')
+            ax = plt.gca()
+            for p in [top_gaussian_mark, top_com_mark, top_hot_spot_mark]:
+                ax.add_patch(p)
+            plt.legend()
+            
+
+            plt.subplot(2, 2, 3)
+            params, sems = gaussian_fit(gt_min_map, plot=True, show=False, cmap=plt.cm.gray)
+            fxvar = calc_f_explained_var(gt_min_map, params)
+            radius = geo_mean(params[ParamFormat.SIGMA_1_IDX], params[ParamFormat.SIGMA_2_IDX])
+            plt.title(f"GT min {radius:.2f}", fontsize=18)
+            gt_bot_gaussian_mark = Circle((params[ParamFormat.MU_X_IDX] + cx, params[ParamFormat.MU_Y_IDX] + cy),
+                                        radius=1, color='red', label='gaussian')
+            ax = plt.gca()
+            for p in [gt_bot_gaussian_mark, gt_bot_com_mark, gt_bot_hot_spot_mark]:
+                ax.add_patch(p)
+            plt.legend()
+            
+
+            plt.subplot(2, 2, 4)
+            params, sems = gaussian_fit(min_map, plot=True, show=False, cmap=plt.cm.gray)
+            fxvar = calc_f_explained_var(min_map, params)
+            with open(bot_txt_path, 'a') as bot_f:
+                write_txt(bot_f, layer_name, unit_i, params, fxvar, rf_size, min_bar_counts[unit_i])
+            radius = geo_mean(params[ParamFormat.SIGMA_1_IDX], params[ParamFormat.SIGMA_2_IDX])
+            plt.title(f"{rfmp_name} min {radius:.2f}", fontsize=18)
+            bot_gaussian_mark = Circle((params[ParamFormat.MU_X_IDX] + cx, params[ParamFormat.MU_Y_IDX] + cy),
+                                        radius=1, color='red', label='gaussian')
+            ax = plt.gca()
+            for p in [bot_gaussian_mark, bot_com_mark, bot_hot_spot_mark]:
+                ax.add_patch(p)
+            plt.legend()
+
+
+            pdf.savefig()
+            if this_is_a_test_run: plt.show()
+            plt.close()
