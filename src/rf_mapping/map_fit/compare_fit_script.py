@@ -34,8 +34,8 @@ model_name = 'alexnet'
 is_random = False
 this_is_a_test_run = False
 map1_name = 'gt'                # ['gt', 'occlude']
-map2_name = 'rfmp4c7o'            # ['rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
-fit_name = 'gaussian_fit'       # ['gaussian_fit', 'com', 'hot_spot']
+map2_name = 'rfmp4a'            # ['rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
+fit_name = 'com'       # ['gaussian_fit', 'com', 'hot_spot']
 fxvar_thres = 0.8
 
 

@@ -24,8 +24,8 @@ from src.rf_mapping.reproducibility import set_seeds
 import src.rf_mapping.constants as c
 
 # Please specify some details here:
-set_seeds()
-model = models.alexnet(pretrained=False).to(c.DEVICE)
+# set_seeds()
+model = models.alexnet(pretrained=True).to(c.DEVICE)
 model_name = 'alexnet'
 # model = models.vgg16(pretrained=True).to(c.DEVICE)
 # model_name = "vgg16"
@@ -35,8 +35,8 @@ num_images = 50000
 batch_size = 32
 top_n = 100
 yn, xn = (227, 227)
-this_is_a_test_run = False
-is_random = True
+this_is_a_test_run = True
+is_random = False
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR
@@ -188,34 +188,47 @@ while (img_i < num_images):
     img_i += real_batch_size
 
 print("Sorting responses...")
-sorted_activations = []
+all_sorted_top_n_img_indices = []
+all_sorted_responses = []
 for layer_i in tqdm(range(num_layers)):
     num_units =  all_activations[layer_i].shape[1]
     top_n_img_idx = np.zeros((num_units, top_n, 4), dtype=int)
+    sorted_responses = np.zeros((num_units, top_n, 2))
     for unit_i in range(num_units):
         # Top N patches:
         sorted_img_index = all_activations[layer_i][:,unit_i,2].argsort()
         sorted_img_index = np.flip(sorted_img_index)  # Make it descending
         top_n_img_idx[unit_i, :, 0] = all_activations[layer_i][:,unit_i,0][sorted_img_index][:top_n]
         top_n_img_idx[unit_i, :, 1] = all_activations[layer_i][:,unit_i,3][sorted_img_index][:top_n]
+        sorted_responses[unit_i, :, 0] = all_activations[layer_i][:,unit_i,2].sort() / 100000
         
         # Bottom N patches:
         sorted_img_index = all_activations[layer_i][:,unit_i,4].argsort()
         top_n_img_idx[unit_i, :, 2] = all_activations[layer_i][:,unit_i,0][sorted_img_index][:top_n]
         top_n_img_idx[unit_i, :, 3] = all_activations[layer_i][:,unit_i,5][sorted_img_index][:top_n]
+        sorted_responses[unit_i, :, 1] = all_activations[layer_i][:,unit_i,4].sort() / 100000
 
-    sorted_activations.append(top_n_img_idx)
+    all_sorted_top_n_img_indices.append(top_n_img_idx)
+    all_sorted_responses.append(sorted_responses)
 
 
 print("Saving responses...")
-delete_all_npy_files(result_dir)
+delete_all_npy_files()  # TODO: DELETE LATER, already has os.path.exist() below
 for layer_i in tqdm(range(num_layers)):
-    result_path = os.path.join(result_dir, f"conv{layer_i+1}.npy")
-    print(result_path)
-    np.save(result_path, sorted_activations[layer_i])
+    result_idx_path = os.path.join(result_dir, f"conv{layer_i+1}.npy")
+    if os.path.exists(result_idx_path):
+        os.remove(result_idx_path)
+    print(result_idx_path)
+    np.save(result_idx_path, all_sorted_top_n_img_indices[layer_i])
+
+    result_response_path = os.path.join(result_dir, f"conv{layer_i+1}_responses.npy")
+    if os.path.exists(result_response_path):
+        os.remove(result_response_path)
+    print(result_response_path)
+    np.save(result_response_path, all_sorted_top_n_img_indices[layer_i])
 
 
-num_bins = 40
+num_bins = 30
 pdf_path = os.path.join(result_dir, f"{model_name}_summary.pdf")
 with PdfPages(pdf_path) as pdf:
     plt.figure(figsize=(num_layers*5, 10))

@@ -11,16 +11,11 @@ from itertools import permutations
 import numpy as np
 import torch
 import torch.nn as nn
-# from torchvision.models import VGG16_Weights
 from torchvision import models
-from tqdm import tqdm
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 
-sys.path.append('../..')
+sys.path.append('../../..')
 from src.rf_mapping.image import preprocess_img_to_tensor
 from src.rf_mapping.hook import HookFunctionBase, ConvUnitCounter
-from src.rf_mapping.files import delete_all_npy_files
 import src.rf_mapping.constants as c
 
 # Please specify some details here:
@@ -41,13 +36,13 @@ result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_na
 ###############################################################################
 
 # Script guard.
-# if __name__ == "__main__":
-#     user_input = input("This code takes time to run. Are you sure? "\
-#                        "Enter 'y' to proceed. Type any other key to stop: ")
-#     if user_input == 'y':
-#         pass
-#     else: 
-#         raise KeyboardInterrupt("Interrupted by user")
+if __name__ == "__main__":
+    user_input = input("This code takes time to run. Are you sure? "\
+                       "Enter 'y' to proceed. Type any other key to stop: ")
+    if user_input == 'y':
+        pass
+    else: 
+        raise KeyboardInterrupt("Interrupted by user")
 
 
 class ColorRotationInspector(HookFunctionBase):

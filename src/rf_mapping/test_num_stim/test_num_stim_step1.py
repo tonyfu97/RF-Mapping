@@ -7,7 +7,6 @@ THIS SCRIPT TAKES A LOT OF TIME TO RUN!
 
 Tony Fu, August 18th, 2022
 """
-from doctest import REPORT_NDIFF
 import os
 import sys
 from time import time
@@ -38,8 +37,8 @@ model_name = 'alexnet'
 # model_name = "resnet18"
 this_is_a_test_run = False
 batch_size = 10
-conv_i_to_run = 1  # conv_i = 1 means Conv2
-rfmp_name = 'rfmp4a'
+conv_i_to_run = 4  # conv_i = 1 means Conv2
+rfmp_name = 'rfmp4c7o'
 num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 5000]
 response_thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
@@ -344,7 +343,7 @@ def rfmp4a_run_01b_test_num_stim(model, model_name, result_dir, _debug=False, ba
 
 
 def rfmp4c7o_run_01_test_num_stim(model, model_name, result_dir, _debug=False, batch_size=100,
-                                  num_bars_list=[], conv_i_to_run=None):
+                                  num_bars_list=[], conv_i_to_run=None, response_thresholds=[]):
     """
     Map the RF of all conv layers in model using RF mapping paradigm 4c7o,
     which is like paradigm 4a, but with 6 additional colors.
@@ -432,15 +431,17 @@ def rfmp4c7o_run_01_test_num_stim(model, model_name, result_dir, _debug=False, b
         record_center_responses(max_center_reponses_path, center_responses, top_n, is_top=True)
         record_center_responses(min_center_reponses_path, center_responses, top_n, is_top=False)
         
-        for num_bars in num_bars_list:
-            
+        # for num_bars in num_bars_list:
+        for response_thr in response_thresholds:
+            num_bars = 0
             start = time()
             
-            num_stim_result_dir = os.path.join(result_dir, str(num_bars))
+            # num_stim_result_dir = os.path.join(result_dir, str(num_bars))
+            num_stim_result_dir = os.path.join(result_dir, str(response_thr))
             if not os.path.exists(num_stim_result_dir):
                 os.makedirs(num_stim_result_dir)
             print(f"Result directory: {num_stim_result_dir}...")
-            weighted_counts_path = os.path.join(result_dir, f"{model_name}_rfmp4c7o_weighted_counts.txt")
+            weighted_counts_path = os.path.join(num_stim_result_dir, f"{model_name}_rfmp4c7o_weighted_counts.txt")
             # non_overlap_counts_path = os.path.join(result_dir, f"{model_name}_rfmp4c7o_non_overlap_counts.txt")
             if os.path.exists(weighted_counts_path):
                 os.remove(weighted_counts_path)
@@ -465,6 +466,7 @@ def rfmp4c7o_run_01_test_num_stim(model, model_name, result_dir, _debug=False, b
                                         [_debug for _ in range(real_batch_size)],
                                         [True for _ in range(real_batch_size)],
                                         [num_bars for _ in range(real_batch_size)],
+                                        [response_thr for _ in range(real_batch_size)],
                                         )
                 # Crop and save maps to layer-level array
                 for result_i, result in enumerate(results):
@@ -506,7 +508,8 @@ def rfmp4c7o_run_01_test_num_stim(model, model_name, result_dir, _debug=False, b
             
             speed_txt_path = os.path.join(result_dir, f"speed.txt")
             with open(speed_txt_path, 'a') as f:
-                f.write(f"{num_bars} {total_time}\n")
+                # f.write(f"{num_bars} {total_time}\n")
+                f.write(f"{response_thr} {total_time}\n")
 
 
 ###############################    RFMP_SIN1    ###############################
@@ -845,7 +848,8 @@ if __name__ == '__main__':
                         response_thresholds=response_thresholds)
     elif rfmp_name == 'rfmp4c7o':
         rfmp4c7o_run_01_test_num_stim(model, model_name, this_result_dir, _debug=this_is_a_test_run,
-                        batch_size=batch_size, num_bars_list=num_stim_list, conv_i_to_run=conv_i_to_run)
+                        batch_size=batch_size, num_bars_list=num_stim_list, conv_i_to_run=conv_i_to_run,
+                        response_thresholds=response_thresholds)
     elif rfmp_name == 'rfmp_sin1':
         sin1_run_01b_test_num_stim(model, model_name, this_result_dir, _debug=this_is_a_test_run,
                         batch_size=batch_size, num_stim_list=num_stim_list, conv_i_to_run=conv_i_to_run)

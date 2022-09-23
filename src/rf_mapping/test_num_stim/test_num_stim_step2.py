@@ -39,10 +39,12 @@ model_name = 'alexnet'
 image_shape = (227, 227)
 this_is_a_test_run = False
 batch_size = 10
-conv_i_to_run = 1  # conv_i = 1 means Conv2
-rfmp_name = 'rfmp4a'
+conv_i_to_run = 2  # conv_i = 1 means Conv2
+rfmp_name = 'rfmp4c7o' 
 num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 5000]
-num_stim_list = [0, 0.1, 0.25, 0.5, 0.75, 0.9]
+num_stim_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+num_stim_list = [0.6, 0.7, 0.8, 0.9]
+
 
 source_dir = os.path.join(c.REPO_DIR, 'results', 'test_num_stim')
 result_dir = source_dir
@@ -161,13 +163,14 @@ for num_stim in num_stim_list:
     max_bar_counts = []
     min_bar_counts = []
     stim_counts_path = os.path.join(source_dir, rfmp_name, model_name, layer_name, str(num_stim), f"{model_name}_{rfmp_name}_weighted_counts.txt")
-    with open(stim_counts_path) as count_f:
-        count_lines = count_f.readlines()
-        # Each line is made of: [layer_name unit num_max_bars num_min_bars]
-        for line in count_lines:
-            if line.split(' ')[0] == layer_name:
-                max_bar_counts.append(int(line.split(' ')[2]))
-                min_bar_counts.append(int(line.split(' ')[3]))
+    print(f"Saving results at {stim_counts_path}")
+    # with open(stim_counts_path) as count_f:
+    #     count_lines = count_f.readlines()
+    #     # Each line is made of: [layer_name unit num_max_bars num_min_bars]
+    #     for line in count_lines:
+    #         if line.split(' ')[0] == layer_name:
+    #             max_bar_counts.append(int(line.split(' ')[2]))
+    #             min_bar_counts.append(int(line.split(' ')[3]))
 
     # Load bar maps:
     gt_max_maps = load_maps('gt', layer_name, -1, 'max')
@@ -273,7 +276,8 @@ for num_stim in num_stim_list:
             params, sems = gaussian_fit(max_map, plot=True, show=False, cmap=plt.cm.gray)
             fxvar = calc_f_explained_var(max_map, params)
             with open(top_txt_path, 'a') as top_f:
-                write_txt(top_f, layer_name, unit_i, params, fxvar, rf_size, max_bar_counts[unit_i])
+                # write_txt(top_f, layer_name, unit_i, params, fxvar, rf_size, max_bar_counts[unit_i])
+                write_txt(top_f, layer_name, unit_i, params, fxvar, rf_size, 0)
             radius = geo_mean(params[ParamFormat.SIGMA_1_IDX], params[ParamFormat.SIGMA_2_IDX])
             plt.title(f"{rfmp_name} max {radius:.2f}", fontsize=18)
             top_gaussian_mark = Circle((params[ParamFormat.MU_X_IDX] + cx, params[ParamFormat.MU_Y_IDX] + cy),
@@ -301,7 +305,8 @@ for num_stim in num_stim_list:
             params, sems = gaussian_fit(min_map, plot=True, show=False, cmap=plt.cm.gray)
             fxvar = calc_f_explained_var(min_map, params)
             with open(bot_txt_path, 'a') as bot_f:
-                write_txt(bot_f, layer_name, unit_i, params, fxvar, rf_size, min_bar_counts[unit_i])
+                # write_txt(bot_f, layer_name, unit_i, params, fxvar, rf_size, min_bar_counts[unit_i])
+                write_txt(bot_f, layer_name, unit_i, params, fxvar, rf_size, 0)
             radius = geo_mean(params[ParamFormat.SIGMA_1_IDX], params[ParamFormat.SIGMA_2_IDX])
             plt.title(f"{rfmp_name} min {radius:.2f}", fontsize=18)
             bot_gaussian_mark = Circle((params[ParamFormat.MU_X_IDX] + cx, params[ParamFormat.MU_Y_IDX] + cy),

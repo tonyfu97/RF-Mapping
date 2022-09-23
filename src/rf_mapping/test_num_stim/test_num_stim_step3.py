@@ -169,8 +169,10 @@ def pad_missing_layers(df):
 layer_name = f"conv{conv_i_to_run + 1}"
 rf_size = rf_sizes[conv_i_to_run][0]
 
+# pdf_path = os.path.join(result_dir, rfmp_name, model_name, layer_name,
+#                         f"{rfmp_name}_{model_name}_{layer_name}_num_stim.pdf")
 pdf_path = os.path.join(result_dir, rfmp_name, model_name, layer_name,
-                        f"{rfmp_name}_{model_name}_{layer_name}_num_stim.pdf")
+                        f"{rfmp_name}_{model_name}_{layer_name}_r_thres.pdf")
 with PdfPages(pdf_path) as pdf:
     avg_radius_list = []
     num_units_list = []
@@ -186,7 +188,7 @@ with PdfPages(pdf_path) as pdf:
         sd2data = top_df.loc[(top_df.LAYER == layer_name) & (top_df.FXVAR > fxvar_thres), 'SD2']
 
         radii = geo_mean(sd1data, sd2data)
-        radii = radii[radii < rf_size]
+        radii = radii[radii < rf_size/2]  # Remove radius that are too big (debatable?)
         avg_radius_list.append(np.mean(radii))
         num_units_list.append(len(radii))
         
@@ -217,6 +219,7 @@ with PdfPages(pdf_path) as pdf:
         avg_gaussian_fit_err_dist_list.append(np.mean(gaussian_fit_err_dists))
 
     plt.figure(figsize=(36, 6))
+    plt.suptitle(f"{model_name} {layer_name} {rfmp_name}", fontsize=20)
     
     plt.subplot(1,6,1)
     plt.plot(num_stim_list, avg_radius_list, '.-', markersize=20)
