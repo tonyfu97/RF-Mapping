@@ -23,8 +23,8 @@ from src.rf_mapping.reproducibility import set_seeds
 
 
 # Please specify some details here:
-set_seeds()
-model = models.alexnet(pretrained=False).to(c.DEVICE)
+# set_seeds()
+model = models.alexnet(pretrained=True).to(c.DEVICE)
 model_name = 'alexnet'
 # model = models.vgg16(pretrained=True).to(c.DEVICE)
 # model_name = "vgg16"
@@ -34,7 +34,7 @@ model_name = 'alexnet'
 this_is_a_test_run = False
 is_random = False
 map_name = 'pasu'
-sigma_rf_ratio = 1/60
+sigma_rf_ratio = 1/30
 
 
 ###############################################################################

@@ -62,15 +62,6 @@ rfmp4a_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', model_name
 rfmp4c7o_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4c7o', 'mapping', model_name)
 
 
-def config_plot(limits):
-    line = np.linspace(min(limits), max(limits), 100)
-    plt.plot(line, line, 'k', alpha=0.4)
-    plt.xlim(limits)
-    plt.ylim(limits)
-    ax = plt.gca()
-    ax.set_aspect('equal')
-
-
 pdf_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, f"{top_n_r}_avg_cri.pdf")
 with PdfPages(pdf_path) as pdf:
     plt.figure(figsize=(num_layers*5, 10))
@@ -82,7 +73,7 @@ with PdfPages(pdf_path) as pdf:
         top_rfmp4a_df = pd.read_csv(top_rfmp4a_path, sep=" ", header=None)
         top_rfmp4a_df.columns = [e.name for e in CR]
 
-        # Load Rfmp4a center responses
+        # Load Rfmp4c7o center responses
         top_rfmp4c7o_path = os.path.join(rfmp4c7o_dir, f'{layer_name}_top5000_responses.txt')
         top_rfmp4c7o_df = pd.read_csv(top_rfmp4c7o_path, sep=" ", header=None)
         top_rfmp4c7o_df.columns = [e.name for e in CR]
@@ -109,8 +100,9 @@ with PdfPages(pdf_path) as pdf:
         avg_top_responses_diff -= avg_top_responses_diff.min() - 1
         layer_cri = cri_df.loc[(cri_df.LAYER == layer_name), 'CRI'].to_numpy()
         
-        avg_top_responses_diff = np.log(avg_top_responses_diff)
-        layer_cri = np.log(layer_cri)
+        # Log-transform the two axis before correlations.
+        # avg_top_responses_diff = np.log(avg_top_responses_diff)
+        # layer_cri = np.log(layer_cri)
 
         plt.subplot(2, num_layers, conv_i+1+num_layers)
         plt.scatter(avg_top_responses_diff, layer_cri)

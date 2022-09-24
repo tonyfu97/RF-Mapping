@@ -14,6 +14,7 @@ import torch.nn as nn
 from torchvision import models
 from tqdm import tqdm
 from scipy.stats import pearsonr
+from scipy.ndimage.filters import gaussian_filter
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.patches import Circle
@@ -44,6 +45,7 @@ rfmp_name = 'rfmp4c7o'
 num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 5000]
 num_stim_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 num_stim_list = [0.6, 0.7, 0.8, 0.9]
+hot_spot_sigma_rf_ratio = 1/30
 
 
 source_dir = os.path.join(c.REPO_DIR, 'results', 'test_num_stim')
@@ -149,8 +151,9 @@ def geo_mean(sd1, sd2):
     return np.sqrt(np.power(sd1, 2) + np.power(sd2, 2))
 
 
-def get_hot_spot(map):
-    return np.unravel_index(np.argmax(map), map.shape)
+def get_hot_spot(map, rf_size):
+    smoothed_map = gaussian_filter(map, sigma=rf_size*hot_spot_sigma_rf_ratio)
+    return np.unravel_index(np.argmax(smoothed_map ), map.shape)
 
 ###############################################################################
 
@@ -239,10 +242,10 @@ for num_stim in num_stim_list:
             gt_bot_com_mark = Circle((gt_bot_x + cx, gt_bot_y + cy), radius=1, color='green', label='com')
             
             # Compute hot spot
-            top_y, top_x = get_hot_spot(max_map)
-            bot_y, bot_x = get_hot_spot(min_map)
-            gt_top_y, gt_top_x = get_hot_spot(gt_max_map)
-            gt_bot_y, gt_bot_x = get_hot_spot(gt_min_map)
+            top_y, top_x = get_hot_spot(max_map, rf_size)
+            bot_y, bot_x = get_hot_spot(min_map, rf_size)
+            gt_top_y, gt_top_x = get_hot_spot(gt_max_map, rf_size)
+            gt_bot_y, gt_bot_x = get_hot_spot(gt_min_map, rf_size)
             
             # Compute error distances of hot spot
             top_err_dist = math.sqrt((top_x - gt_top_x) ** 2 + (top_y - gt_top_y) ** 2)

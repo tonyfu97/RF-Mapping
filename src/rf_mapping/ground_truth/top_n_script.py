@@ -35,7 +35,7 @@ num_images = 50000
 batch_size = 32
 top_n = 100
 yn, xn = (227, 227)
-this_is_a_test_run = False
+this_is_a_test_run = True
 is_random = False
 
 # Please double-check the directories:
@@ -143,7 +143,7 @@ layer_indices, nums_units = unit_counter.count()
 
 # Initialize arrays:
 all_img_indicies = []
-all_ressponses = []
+all_responses = []
 num_layers = len(layer_indices)
 for num_units in nums_units:
     all_img_indicies.append(np.zeros((num_images, num_units, 3), dtype=int))
@@ -152,7 +152,7 @@ for num_units in nums_units:
     # 1. Max image patch location (a flatten index)
     # 2. Min image patch location (a flatten index)
     
-    all_ressponses.append(np.zeros((num_images, num_units, 2), dtype=float))
+    all_responses.append(np.zeros((num_images, num_units, 2), dtype=float))
     # There are 2 columns:
     # 0. Max responses of the given image and unit
     # 1. Min responses of the given image and unit
@@ -190,39 +190,38 @@ while (img_i < num_images):
         
         all_img_indicies[layer_i][img_i:img_i+real_batch_size, :, 0] = np.tile(np.arange(img_i, img_i+real_batch_size), (num_units, 1)).T
         # all_activations[layer_i][img_i:img_i+real_batch_size, :, 1] = np.tile(np.arange(num_units), (real_batch_size, 1))
-        all_ressponses[layer_i][img_i:img_i+real_batch_size, :, 0] = layer_max_activations
+        all_responses[layer_i][img_i:img_i+real_batch_size, :, 0] = layer_max_activations
         all_img_indicies[layer_i][img_i:img_i+real_batch_size, :, 1] = layer_max_indices
-        all_ressponses[layer_i][img_i:img_i+real_batch_size, :, 1] = layer_min_activations
+        all_responses[layer_i][img_i:img_i+real_batch_size, :, 1] = layer_min_activations
         all_img_indicies[layer_i][img_i:img_i+real_batch_size, :, 2] = layer_min_indices
 
     img_i += real_batch_size
 
 print("Sorting responses...")
 all_sorted_top_n_img_indices = []
-all_sorted_responses = []
+all_unsorted_responses = []
 for layer_i in tqdm(range(num_layers)):
     num_units =  all_img_indicies[layer_i].shape[1]
     top_n_img_idx = np.zeros((num_units, top_n, 4), dtype=int)
-    sorted_responses = np.zeros((num_units, top_n, 2))
+    unsorted_responses = np.zeros((num_units, num_images, 2))
     for unit_i in range(num_units):
         # Top N patches:
-        sorted_img_index = all_ressponses[layer_i][:,unit_i,0].argsort()
+        sorted_img_index = all_responses[layer_i][:,unit_i,0].argsort()
         sorted_img_index = np.flip(sorted_img_index)  # Make it descending
         top_n_img_idx[unit_i, :, 0] = all_img_indicies[layer_i][:,unit_i,0][sorted_img_index][:top_n]
         top_n_img_idx[unit_i, :, 1] = all_img_indicies[layer_i][:,unit_i,1][sorted_img_index][:top_n]
-        sorted_responses[unit_i, :, 0] = all_ressponses[layer_i][:,unit_i,0].sort()
+        unsorted_responses[unit_i, :, 0] = all_responses[layer_i][:,unit_i,0]
         
         # Bottom N patches:
-        sorted_img_index = all_ressponses[layer_i][:,unit_i,1].argsort()
+        sorted_img_index = all_responses[layer_i][:,unit_i,1].argsort()
         top_n_img_idx[unit_i, :, 2] = all_img_indicies[layer_i][:,unit_i,0][sorted_img_index][:top_n]
         top_n_img_idx[unit_i, :, 3] = all_img_indicies[layer_i][:,unit_i,2][sorted_img_index][:top_n]
-        sorted_responses[unit_i, :, 1] = all_ressponses[layer_i][:,unit_i,1].sort()
+        unsorted_responses[unit_i, :, 1] = all_responses[layer_i][:,unit_i,1]
 
     all_sorted_top_n_img_indices.append(top_n_img_idx)
-    all_sorted_responses.append(sorted_responses)
+    all_unsorted_responses.append(unsorted_responses)
 
 
-delete_all_npy_files(result_dir)  # TODO: DELETE LATER, already has os.path.exist() below
 for layer_i in tqdm(range(num_layers)):
     result_idx_path = os.path.join(result_dir, f"conv{layer_i+1}.npy")
     if os.path.exists(result_idx_path):
