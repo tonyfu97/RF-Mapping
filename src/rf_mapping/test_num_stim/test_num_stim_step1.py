@@ -47,13 +47,13 @@ result_dir = os.path.join(c.REPO_DIR, 'results', 'test_num_stim', rfmp_name)
 ###############################################################################
 
 # Script guard
-# if __name__ == "__main__":
-#     print("Look for a prompt.")
-#     user_input = input("This code may take time to run. Are you sure? [y/n] ")
-#     if user_input == 'y':
-#         pass
-#     else:
-#         raise KeyboardInterrupt("Interrupted by user")
+if __name__ == "__main__":
+    print("Look for a prompt.")
+    user_input = input("This code may take time to run. Are you sure? [y/n] ")
+    if user_input == 'y':
+        pass
+    else:
+        raise KeyboardInterrupt("Interrupted by user")
 
 layer_name = f"conv{conv_i_to_run+1}"
 
@@ -122,7 +122,7 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
                                            params['len'], params['wid'], 
                                            params['aa'],
                                            params['r1'], params['g1'], params['b1'],
-                                           params['r0'], params['g0'], params['b0'])
+                                           -1, -1, -1)
         else:
             new_bar = bar.stimfr_bar(params['xn'], params['yn'],
                                 params['x0'], params['y0'],
@@ -130,7 +130,7 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
                                 0.5, 1, 0)
         # if (response - r_min) > r_range * response_thr:
         # if num_weighted_max_bars < num_bars:
-        if (response > max(r_max * response_thr, 0)) and num_weighted_max_bars < 5000:
+        if (response > max(r_max * response_thr, 0)): #and num_weighted_max_bars < 5000:
             # has_included = add_non_overlap_map(new_bar, non_overlap_max_map, stim_thr)
             # add_weighted_map(new_bar, weighted_max_map, (response - r_min)/r_range)
             add_weighted_map(new_bar, weighted_max_map, response)
@@ -151,7 +151,7 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
                                            params['len'], params['wid'], 
                                            params['aa'],
                                            params['r1'], params['g1'], params['b1'],
-                                           params['r0'], params['g0'], params['b0'])
+                                           -1, -1, -1)
         else:
             new_bar = bar.stimfr_bar(params['xn'], params['yn'],
                                 params['x0'], params['y0'],
@@ -159,7 +159,7 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
                                 0.5, 1, 0) 
         # if (response - r_min) < r_range * (1 - response_thr):
         # if num_weighted_min_bars < num_bars:
-        if (response < min(r_min * response_thr, 0)) and num_weighted_min_bars < 5000:
+        if (response < min(r_min * response_thr, 0)): # and num_weighted_min_bars < 5000:
             # has_included = add_non_overlap_map(new_bar, non_overlap_min_map, stim_thr)
             # add_weighted_map(new_bar, weighted_min_map, (r_max - response)/r_range)
             add_weighted_map(new_bar, weighted_min_map, -response)

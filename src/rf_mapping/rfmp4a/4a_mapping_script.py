@@ -8,10 +8,7 @@ Tony Fu, July 13th, 2022
 import os
 import sys
 
-import numpy as np
 from torchvision import models
-# from torchvision.models import AlexNet_Weights, VGG16_Weights
-import matplotlib.pyplot as plt
 
 sys.path.append('../../..')
 from src.rf_mapping.bar import rfmp4a_run_01b
@@ -44,7 +41,7 @@ else:
 #         raise KeyboardInterrupt("Interrupted by user")
 
 if __name__ == "__main__":
-    rfmp4a_run_01b(model, model_name, result_dir, _debug=this_is_a_test_run)
+    rfmp4a_run_01b(model, model_name, result_dir, _debug=this_is_a_test_run, response_thres=0.5)
 
 """
 Tony - Below is the old way of running the rfmp4a. This old way uses the full

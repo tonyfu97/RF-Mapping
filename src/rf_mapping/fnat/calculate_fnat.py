@@ -30,23 +30,28 @@ model_name = 'alexnet'
 
 top_n_r = 1
 this_is_a_test_run = True
-rfmp_name = 'rfmp4a'
+rfmp_name = 'rfmp4c7o'
 
 # Please double-check the directories:
 gt_response_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n', model_name)
 rfmp_response_dir = os.path.join(c.REPO_DIR, 'results', rfmp_name, 'mapping', model_name)
-result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'fnat', rfmp_name, model_name)
+result_dir = os.path.join(c.REPO_DIR, 'results', 'fnat', rfmp_name, model_name)
+
+# Txt file to save fnat
+fnat_txt_path = os.path.join(result_dir, f"{rfmp_name}_fnat_{top_n_r}_avg.txt")
+if os.path.exists(fnat_txt_path):
+    os.remove(fnat_txt_path)
 
 ###############################################################################
 
 # Script guard.
-if __name__ == "__main__":
-    user_input = input("This code takes time to run. Are you sure? "\
-                       "Enter 'y' to proceed. Type any other key to stop: ")
-    if user_input == 'y':
-        pass
-    else: 
-        raise KeyboardInterrupt("Interrupted by user")
+# if __name__ == "__main__":
+#     user_input = input("This code takes time to run. Are you sure? "\
+#                        "Enter 'y' to proceed. Type any other key to stop: ")
+#     if user_input == 'y':
+#         pass
+#     else: 
+#         raise KeyboardInterrupt("Interrupted by user")
 
 
 # Get info of conv layers.
@@ -56,16 +61,18 @@ _, rf_sizes = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
 num_layers = len(rf_sizes)
 
 
-def config_plot(limits):
-    line = np.linspace(min(limits), max(limits), 100)
-    plt.plot(line, line, 'k', alpha=0.4)
-    plt.xlim(limits)
-    plt.ylim(limits)
-    ax = plt.gca()
-    ax.set_aspect('equal')
+def config_plot(x, y):
+    padding = 5
+    rmin = min(x.min(), y.min()) - padding
+    rmax = max(x.max(), y.max()) + padding
+
+    plt.plot([rmin, rmax], [rmin, rmax], 'k', alpha=0.4)
+    plt.xlim((rmin, rmax))
+    plt.ylim((rmin, rmax))
+    plt.gca().set_aspect('equal')
 
 
-pdf_path = os.path.join(result_dir, f"{top_n_r}_avg_fnat.pdf")
+pdf_path = os.path.join(result_dir, f"{rfmp_name}_fnat_{top_n_r}_avg.pdf")
 with PdfPages(pdf_path) as pdf:
     plt.figure(figsize=(num_layers*5, 10))
     for conv_i in range(num_layers):
@@ -82,10 +89,15 @@ with PdfPages(pdf_path) as pdf:
         
         # Average the top- and bottom-N resposnes for each unit
         top_rfmp_responses = top_rfmp_df.loc[(top_rfmp_df.RANK < top_n_r), ['UNIT', 'R']]
-        avg_top_rfmp_responses = top_rfmp_responses.groupby('UNIT').mean()
+        avg_top_rfmp_responses = top_rfmp_responses.groupby('UNIT').mean().to_numpy()
+        avg_top_rfmp_responses = np.squeeze(avg_top_rfmp_responses, axis=1)
         
         bot_rfmp_responses = bot_rfmp_df.loc[(bot_rfmp_df.RANK < top_n_r), ['UNIT', 'R']]
-        avg_bot_rfmp_responses = bot_rfmp_responses.groupby('UNIT').mean()
+        avg_bot_rfmp_responses = bot_rfmp_responses.groupby('UNIT').mean().to_numpy()
+        avg_bot_rfmp_responses = np.squeeze(avg_bot_rfmp_responses, axis=1)
+        
+        print(f"avg top rfmp has {np.sum(avg_top_rfmp_responses < 0):3} units less than zeros!")
+        # print(f"avg bot rfmp has {np.sum(avg_bot_rfmp_responses < 0)} units less than zeros!")
         
         # Load the GT responses.
         gt_response_path = os.path.join(gt_response_dir, f"{layer_name}_responses.npy")
@@ -95,24 +107,39 @@ with PdfPages(pdf_path) as pdf:
         # 1. Min responses of the given image and unit
         
         # Average the top- and bottom-N responses for each unit
-        avg_top_gt_responses = np.mean(gt_responses[:top_n_r, :, 0], axis=0)
-        avg_bot_gt_responses = np.mean(gt_responses[:top_n_r, :, 1], axis=0)
+        avg_top_gt_responses = np.mean(gt_responses[:, :top_n_r, 0], axis=1)
+        avg_bot_gt_responses = np.mean(gt_responses[:, :top_n_r, 1], axis=1)
         
         plt.subplot(2, num_layers, conv_i+1)
         plt.scatter(avg_top_gt_responses, avg_top_rfmp_responses)
-        config_plot((-100,100))
+        config_plot(avg_top_gt_responses, avg_top_rfmp_responses)
         plt.xlabel(f"GT")
         plt.ylabel(f"{rfmp_name}")
         r_val, _ = pearsonr(avg_top_gt_responses, avg_top_rfmp_responses)
-        plt.title(f"{layer_name}, r = {r_val:.4f}")
+        plt.title(f"{layer_name}, top, r = {r_val:.4f}")
 
         plt.subplot(2, num_layers, conv_i+1+num_layers)
         plt.scatter(avg_bot_gt_responses, avg_bot_rfmp_responses)
-        config_plot((-100,100))
+        config_plot(avg_bot_gt_responses, avg_bot_rfmp_responses)
         plt.xlabel(f"GT")
         plt.ylabel(f"{rfmp_name}")
         r_val, _ = pearsonr(avg_bot_gt_responses, avg_bot_rfmp_responses)
-        plt.title(f"{layer_name}, r = {r_val:.4f}")
+        plt.title(f"{layer_name}, bottom, r = {r_val:.4f}")
+        
+        # Compuate fnat
+        top_fnat = avg_top_rfmp_responses / avg_top_gt_responses
+        bot_fnat = avg_bot_rfmp_responses / avg_bot_gt_responses
+        
+        # Remove avg_gt_r that is less than 1 (or greater than -1 for bottom)
+        top_fnat[avg_top_gt_responses < 1] = np.NaN
+        top_fnat[avg_top_rfmp_responses < 1] = np.NaN
+        bot_fnat[avg_bot_gt_responses > -1] = np.NaN
+        bot_fnat[avg_bot_rfmp_responses > -1] = np.NaN
+        
+        # Save fnat in a txt file
+        with open(fnat_txt_path, 'a') as f:
+            for unit_i, (t, b) in enumerate(zip(top_fnat, bot_fnat)):
+                f.write(f"{layer_name} {unit_i} {t:.4f} {b:.4f}\n")
         
     pdf.savefig()
     plt.show()

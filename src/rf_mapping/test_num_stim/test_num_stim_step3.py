@@ -34,9 +34,7 @@ model_name = 'alexnet'
 # model_name = "resnet18"
 image_shape = (227, 227)
 this_is_a_test_run = False
-batch_size = 10
-conv_i_to_run = 1  # conv_i = 1 means Conv2
-rfmp_name = 'rfmp4a'
+rfmp_name = 'rfmp4c7o'
 num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 5000]
 fxvar_thres = 0.7
 num_stim_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
@@ -50,6 +48,10 @@ result_dir = source_dir
 unit_counter = ConvUnitCounter(model)
 layer_indices, nums_units = unit_counter.count()
 _, rf_sizes = get_rf_sizes(model, image_shape, layer_type=nn.Conv2d)
+num_layers = len(rf_sizes)
+
+top_face_color = 'orange'
+bot_face_color = 'silver'
 
 
 # Helper functions.
@@ -166,43 +168,78 @@ def pad_missing_layers(df):
     return pd.merge(gt_no_data, df, how='left')
 
 
-layer_name = f"conv{conv_i_to_run + 1}"
-rf_size = rf_sizes[conv_i_to_run][0]
+###############################################################################
 
-# pdf_path = os.path.join(result_dir, rfmp_name, model_name, layer_name,
-#                         f"{rfmp_name}_{model_name}_{layer_name}_num_stim.pdf")
-pdf_path = os.path.join(result_dir, rfmp_name, model_name, layer_name,
-                        f"{rfmp_name}_{model_name}_{layer_name}_r_thres.pdf")
-with PdfPages(pdf_path) as pdf:
-    avg_radius_list = []
-    num_units_list = []
-    avg_corr_list = []
-    avg_com_err_dist_list = []
-    avg_hot_spot_err_dist_list = []
-    avg_gaussian_fit_err_dist_list = []
+
+top_avg_radius_dict = {}
+top_num_units_dict = {}
+top_avg_corr_dict = {}
+top_avg_com_err_dist_dict = {}
+top_avg_hot_spot_err_dist_dict = {}
+top_avg_gaussian_fit_err_dist_dict = {}
+
+bot_avg_radius_dict = {}
+bot_num_units_dict = {}
+bot_avg_corr_dict = {}
+bot_avg_com_err_dist_dict = {}
+bot_avg_hot_spot_err_dist_dict = {}
+bot_avg_gaussian_fit_err_dist_dict = {}
+
+for conv_i, rf_size in enumerate(rf_sizes):
+    # skipping Conv1
+    if conv_i == 0:
+        continue
+
+    layer_name = f"conv{conv_i + 1}"
+    rf_size = rf_size[0]
+    
+    top_avg_radius_dict[conv_i] = []
+    top_num_units_dict[conv_i] = []
+    top_avg_corr_dict[conv_i] = []
+    top_avg_com_err_dist_dict[conv_i] = []
+    top_avg_hot_spot_err_dist_dict[conv_i] = []
+    top_avg_gaussian_fit_err_dist_dict[conv_i] = []
+    
+    bot_avg_radius_dict[conv_i] = []
+    bot_num_units_dict[conv_i] = []
+    bot_avg_corr_dict[conv_i] = []
+    bot_avg_com_err_dist_dict[conv_i] = []
+    bot_avg_hot_spot_err_dist_dict[conv_i] = []
+    bot_avg_gaussian_fit_err_dist_dict[conv_i] = []
+    
     for num_stim in num_stim_list:
         # Load Gaussian fit results
         top_df, bot_df = load_gaussian_fit_df(rfmp_name, model_name, layer_name, num_stim)
 
-        sd1data = top_df.loc[(top_df.LAYER == layer_name) & (top_df.FXVAR > fxvar_thres), 'SD1']
-        sd2data = top_df.loc[(top_df.LAYER == layer_name) & (top_df.FXVAR > fxvar_thres), 'SD2']
+        top_sd1data = top_df.loc[(top_df.LAYER == layer_name) & (top_df.FXVAR > fxvar_thres), 'SD1']
+        top_sd2data = top_df.loc[(top_df.LAYER == layer_name) & (top_df.FXVAR > fxvar_thres), 'SD2']
+        bot_sd1data = bot_df.loc[(bot_df.LAYER == layer_name) & (bot_df.FXVAR > fxvar_thres), 'SD1']
+        bot_sd2data = bot_df.loc[(bot_df.LAYER == layer_name) & (bot_df.FXVAR > fxvar_thres), 'SD2']
 
-        radii = geo_mean(sd1data, sd2data)
-        radii = radii[radii < rf_size/2]  # Remove radius that are too big (debatable?)
-        avg_radius_list.append(np.mean(radii))
-        num_units_list.append(len(radii))
+        top_radii = geo_mean(top_sd1data, top_sd2data)
+        # top_radii = top_radii[top_radii < rf_size/2]  # Remove radius that are too big (debatable?)
+        bot_radii = geo_mean(bot_sd1data, bot_sd2data)
+        # bot_radii = top_radii[bot_radii < rf_size/2]  # Remove radius that are too big (debatable?)
+        
+        top_avg_radius_dict[conv_i].append(np.mean(top_radii))
+        top_num_units_dict[conv_i].append(len(top_radii))
+        bot_avg_radius_dict[conv_i].append(np.mean(bot_radii))
+        bot_num_units_dict[conv_i].append(len(bot_radii))
         
         # Load map correlations.
         corr_df = load_corr_df(rfmp_name, model_name, layer_name, num_stim)
-        avg_corr_list.append(np.mean(corr_df['TOP_CORR']))
+        top_avg_corr_dict[conv_i].append(np.mean(corr_df['TOP_CORR']))
+        bot_avg_corr_dict[conv_i].append(np.mean(corr_df['BOT_CORR']))
         
         # Load COM error distances
         com_df = load_com_df(rfmp_name, model_name, layer_name, num_stim)
-        avg_com_err_dist_list.append(np.mean(com_df['TOP_ERR_DIST']))
+        top_avg_com_err_dist_dict[conv_i].append(np.mean(com_df['TOP_ERR_DIST']))
+        bot_avg_com_err_dist_dict[conv_i].append(np.mean(com_df['BOT_ERR_DIST']))
         
         # Load hot spot error distances.
         hot_spot_df = load_hot_spot_df(rfmp_name, model_name, layer_name, num_stim)
-        avg_hot_spot_err_dist_list.append(np.mean(hot_spot_df['TOP_ERR_DIST']))
+        top_avg_hot_spot_err_dist_dict[conv_i].append(np.mean(hot_spot_df['TOP_ERR_DIST']))
+        bot_avg_hot_spot_err_dist_dict[conv_i].append(np.mean(hot_spot_df['BOT_ERR_DIST']))
         
         # Load GT coordinates
         gt_t_gaussian_df, gt_b_gaussian_df = load_gt_gaussian_dfs(model_name)
@@ -214,38 +251,141 @@ with PdfPages(pdf_path) as pdf:
         t_mux = top_df.loc[(top_df.LAYER == layer_name) & (gt_t_gaussian_df.FXVAR > fxvar_thres) & (top_df.FXVAR > fxvar_thres), 'MUX']
         t_muy = top_df.loc[(top_df.LAYER == layer_name) & (gt_t_gaussian_df.FXVAR > fxvar_thres) & (top_df.FXVAR > fxvar_thres), 'MUY']
         
+        bot_df = pad_missing_layers(bot_df)
+        gt_b_mux = gt_b_gaussian_df.loc[(gt_b_gaussian_df.LAYER == layer_name) & (gt_b_gaussian_df.FXVAR > fxvar_thres) & (bot_df.FXVAR > fxvar_thres), 'MUX']
+        gt_b_muy = gt_b_gaussian_df.loc[(gt_b_gaussian_df.LAYER == layer_name) & (gt_b_gaussian_df.FXVAR > fxvar_thres) & (bot_df.FXVAR > fxvar_thres), 'MUY']
+        b_mux = top_df.loc[(bot_df.LAYER == layer_name) & (gt_b_gaussian_df.FXVAR > fxvar_thres) & (bot_df.FXVAR > fxvar_thres), 'MUX']
+        b_muy = top_df.loc[(bot_df.LAYER == layer_name) & (gt_b_gaussian_df.FXVAR > fxvar_thres) & (bot_df.FXVAR > fxvar_thres), 'MUY']
+        
         # and compute error distances.
-        gaussian_fit_err_dists = np.sqrt(np.square(gt_t_mux - t_mux) + np.square(gt_t_muy - t_muy))
-        avg_gaussian_fit_err_dist_list.append(np.mean(gaussian_fit_err_dists))
+        top_gaussian_fit_err_dists = np.sqrt(np.square(gt_t_mux - t_mux) + np.square(gt_t_muy - t_muy))
+        top_avg_gaussian_fit_err_dist_dict[conv_i].append(np.mean(top_gaussian_fit_err_dists))
+        bot_gaussian_fit_err_dists = np.sqrt(np.square(gt_b_mux - b_mux) + np.square(gt_b_muy - b_muy))
+        bot_avg_gaussian_fit_err_dist_dict[conv_i].append(np.mean(bot_gaussian_fit_err_dists))
 
-    plt.figure(figsize=(36, 6))
-    plt.suptitle(f"{model_name} {layer_name} {rfmp_name}", fontsize=20)
+
+# pdf_path = os.path.join(result_dir, rfmp_name, model_name, layer_name,
+#                         f"{rfmp_name}_{model_name}_{layer_name}_num_stim.pdf")
+pdf_path = os.path.join(result_dir, rfmp_name, model_name,
+                        f"{rfmp_name}_{model_name}_{layer_name}_r_thres.pdf")
+with PdfPages(pdf_path) as pdf:
+    for conv_i in range(num_layers):
+        # skipping Conv1
+        if conv_i == 0:
+            continue
+
+        plt.figure(figsize=(36, 6))
+        plt.suptitle(f"{model_name} {layer_name} {rfmp_name} (top)", fontsize=20)
+        
+        plt.subplot(1,6,1)
+        plt.plot(num_stim_list, top_avg_radius_dict[conv_i], '.-', markersize=20)
+        plt.xlabel('number of stimuli included', fontsize=16)
+        plt.ylabel('average radius (pix)', fontsize=16)
+        
+        plt.subplot(1,6,2)
+        plt.plot(num_stim_list, top_num_units_dict[conv_i], '.-', markersize=20)
+        plt.ylabel(f'number of units with fxvar above {fxvar_thres}', fontsize=16)
+        plt.ylim([0, 384])
+        
+        plt.subplot(1,6,3)
+        plt.plot(num_stim_list, top_avg_corr_dict[conv_i], '.-', markersize=20)
+        plt.ylabel(f'average direct correlation', fontsize=16)
+        
+        plt.subplot(1,6,4)
+        plt.plot(num_stim_list, top_avg_com_err_dist_dict[conv_i], '.-', markersize=20)
+        plt.ylabel(f'average COM error distance (pix)', fontsize=16)
+        
+        plt.subplot(1,6,5)
+        plt.plot(num_stim_list, top_avg_hot_spot_err_dist_dict[conv_i], '.-', markersize=20)
+        plt.ylabel(f'average hot spot error distance (pix)', fontsize=16)
+        
+        plt.subplot(1,6,6)
+        plt.plot(num_stim_list, top_avg_gaussian_fit_err_dist_dict[conv_i], '.-', markersize=20)
+        plt.ylabel(f'average gaussian fit error distance (pix)', fontsize=16)
+        
+        pdf.savefig()
+        plt.show()
+        plt.close()
+        
+        plt.figure(figsize=(36, 6))
+        plt.suptitle(f"{model_name} {layer_name} {rfmp_name} (bottom)", fontsize=20)
+        
+        plt.subplot(1,6,1)
+        plt.plot(num_stim_list, bot_avg_radius_dict[conv_i], '.-', markersize=20)
+        plt.xlabel('number of stimuli included', fontsize=16)
+        plt.ylabel('average radius (pix)', fontsize=16)
+        
+        plt.subplot(1,6,2)
+        plt.plot(num_stim_list, bot_num_units_dict[conv_i], '.-', markersize=20)
+        plt.ylabel(f'number of units with fxvar above {fxvar_thres}', fontsize=16)
+        plt.ylim([0, 384])
+        
+        plt.subplot(1,6,3)
+        plt.plot(num_stim_list, bot_avg_corr_dict[conv_i], '.-', markersize=20)
+        plt.ylabel(f'average direct correlation', fontsize=16)
+        
+        plt.subplot(1,6,4)
+        plt.plot(num_stim_list, bot_avg_com_err_dist_dict[conv_i], '.-', markersize=20)
+        plt.ylabel(f'average COM error distance (pix)', fontsize=16)
+        
+        plt.subplot(1,6,5)
+        plt.plot(num_stim_list, bot_avg_hot_spot_err_dist_dict[conv_i], '.-', markersize=20)
+        plt.ylabel(f'average hot spot error distance (pix)', fontsize=16)
+        
+        plt.subplot(1,6,6)
+        plt.plot(num_stim_list, bot_avg_gaussian_fit_err_dist_dict[conv_i], '.-', markersize=20)
+        plt.ylabel(f'average gaussian fit error distance (pix)', fontsize=16)
+        
+        pdf.savefig()
+        plt.show()
+        plt.close()
+
+
+pdf_path = os.path.join(result_dir, rfmp_name, model_name,
+                        f"{rfmp_name}_{model_name}_figure_r_thresholds.pdf")
+with PdfPages(pdf_path) as pdf:
     
-    plt.subplot(1,6,1)
-    plt.plot(num_stim_list, avg_radius_list, '.-', markersize=20)
-    plt.xlabel('number of stimuli included', fontsize=16)
-    plt.ylabel('average radius (pix)', fontsize=16)
-    
-    plt.subplot(1,6,2)
-    plt.plot(num_stim_list, num_units_list, '.-', markersize=20)
-    plt.ylabel(f'number of units with fxvar above {fxvar_thres}', fontsize=16)
-    plt.ylim([0, 384])
-    
-    plt.subplot(1,6,3)
-    plt.plot(num_stim_list, avg_corr_list, '.-', markersize=20)
-    plt.ylabel(f'average direct correlation', fontsize=16)
-    
-    plt.subplot(1,6,4)
-    plt.plot(num_stim_list, avg_com_err_dist_list, '.-', markersize=20)
-    plt.ylabel(f'average COM error distance (pix)', fontsize=16)
-    
-    plt.subplot(1,6,5)
-    plt.plot(num_stim_list, avg_hot_spot_err_dist_list, '.-', markersize=20)
-    plt.ylabel(f'average hot spot error distance (pix)', fontsize=16)
-    
-    plt.subplot(1,6,6)
-    plt.plot(num_stim_list, avg_gaussian_fit_err_dist_list, '.-', markersize=20)
-    plt.ylabel(f'average gaussian fit error distance (pix)', fontsize=16)
+    fig, axes = plt.subplots(2, num_layers-1)
+    fig.set_size_inches((num_layers-1)*7,12)
+    fig.suptitle(f"Finding the optimal response threshold percentages for {model_name} {rfmp_name}",
+                 fontsize=24)
+
+    for conv_i in range(1, num_layers):
+        # Top row
+        ax1 = axes[0][conv_i-1]
+        ax2 = axes[0][conv_i-1].twinx()
+        ax1.plot(num_stim_list, top_avg_corr_dict[conv_i], 'r.-', markersize=20)
+        ax2.plot(num_stim_list, top_avg_hot_spot_err_dist_dict[conv_i], 'b.-', markersize=20)
+        
+        ax1.set_ylim([0.2, 0.9])
+        ax1.set_title(f"conv{conv_i+1}", fontsize=20)
+        ax1.set_facecolor(top_face_color)
+        ax1.tick_params(axis='y', colors='red')
+        ax2.tick_params(axis='y', colors='blue')
+
+        if conv_i == 1:
+            ax1.set_ylabel('Direct map correlation\n(top)', color='r', fontsize=16)
+            ax2.set_ylabel('Avg hot spot error distance (pix)', color='b', fontsize=16)
+        else:
+            ax1.set_yticks([])
+        
+        # Bottom row
+        ax1 = axes[1][conv_i-1]
+        ax2 = axes[1][conv_i-1].twinx()
+        ax1.plot(num_stim_list, bot_avg_corr_dict[conv_i], 'r.-', markersize=20)
+        ax2.plot(num_stim_list, bot_avg_hot_spot_err_dist_dict[conv_i], 'b.-', markersize=20)
+        
+        ax1.set_ylim([0.2, 0.9])
+        ax1.set_facecolor(bot_face_color)
+        ax1.tick_params(axis='y', colors='red')
+        ax2.tick_params(axis='y', colors='blue')
+
+        if conv_i == 1:
+            ax1.set_xlabel('r threshold percentage', fontsize=16)
+            ax1.set_ylabel('Direct map correlation\n(top)', color='r', fontsize=16)
+            ax2.set_ylabel('Avg hot spot error distance (pix)', color='b', fontsize=16)
+        else:
+            ax1.set_yticks([])
     
     pdf.savefig()
     plt.show()

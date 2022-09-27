@@ -40,11 +40,10 @@ model_name = 'alexnet'
 image_shape = (227, 227)
 this_is_a_test_run = False
 batch_size = 10
-conv_i_to_run = 2  # conv_i = 1 means Conv2
+conv_i_to_run =  4# conv_i = 1 means Conv2
 rfmp_name = 'rfmp4c7o' 
-num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 5000]
+# num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 5000]
 num_stim_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-num_stim_list = [0.6, 0.7, 0.8, 0.9]
 hot_spot_sigma_rf_ratio = 1/30
 
 

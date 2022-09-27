@@ -5,12 +5,10 @@ Tony Fu, Jun 25, 2022
 """
 import os
 import sys
-from unittest import result
 
 import numpy as np
 import torch
 import torch.nn as nn
-# from torchvision.models import VGG16_Weights
 from torchvision import models
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -19,12 +17,9 @@ from matplotlib.backends.backend_pdf import PdfPages
 sys.path.append('../../..')
 from src.rf_mapping.image import preprocess_img_to_tensor
 from src.rf_mapping.hook import HookFunctionBase, ConvUnitCounter
-from src.rf_mapping.files import delete_all_npy_files
-from src.rf_mapping.reproducibility import set_seeds
 import src.rf_mapping.constants as c
 
 # Please specify some details here:
-# set_seeds()
 model = models.alexnet(pretrained=True).to(c.DEVICE)
 model_name = 'alexnet'
 # model = models.vgg16(pretrained=True).to(c.DEVICE)
@@ -40,7 +35,6 @@ is_random = False
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR
-img_names = [f"{i}.npy" for i in range(num_images)]
 
 if is_random:
     result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n_random')
@@ -51,6 +45,7 @@ if this_is_a_test_run:
     result_dir = os.path.join(result_dir, 'test')
 else:
     result_dir = os.path.join(result_dir, model_name)
+
 
 ###############################################################################
 
@@ -233,7 +228,7 @@ for layer_i in tqdm(range(num_layers)):
     if os.path.exists(result_response_path):
         os.remove(result_response_path)
     print(result_response_path)
-    np.save(result_response_path, all_sorted_top_n_img_indices[layer_i])
+    np.save(result_response_path, all_unsorted_responses[layer_i])
 
 
 num_bins = 30
@@ -245,12 +240,12 @@ with PdfPages(pdf_path) as pdf:
     for layer_i in range(num_layers):
         layer_name = f"conv{layer_i+1}"
         plt.subplot(2, num_layers, layer_i+1)
-        plt.hist(img_max_activations[layer_i], bins=num_bins)
+        plt.hist(np.max(all_unsorted_responses[layer_i][:,:,0], axis=1), bins=num_bins)
         plt.xlabel("max responses", fontsize=14)
         plt.title(layer_name, fontsize=18)
         
         plt.subplot(2, num_layers, layer_i+1+num_layers)
-        plt.hist(img_min_activations[layer_i], bins=num_bins)
+        plt.hist(np.min(all_unsorted_responses[layer_i][:,:,1], axis=1), bins=num_bins)
         plt.xlabel("min responses", fontsize=14)
         plt.title(layer_name, fontsize=18)
 

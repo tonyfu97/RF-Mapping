@@ -592,7 +592,7 @@ def barmap_run_01b(splist, truncated_model, num_units, batch_size=100,
 #                                                                             #
 ###############################################################################
 def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False, 
-                 num_bars=500, response_thr=0.8, stim_thr=0.2):
+                 response_thr=0.5, stim_thr=0.2):
     """
     Parameters
     ----------
@@ -661,16 +661,15 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
                                            params['len'], params['wid'], 
                                            params['aa'],
                                            params['r1'], params['g1'], params['b1'],
-                                           params['r0'], params['g0'], params['b0'])
+                                           -1, -1, -1)
         else:
             new_bar = stimfr_bar(params['xn'], params['yn'],
                                 params['x0'], params['y0'],
                                 params['theta'], params['len'], params['wid'],
                                 0.5, 1, 0)
-        # if (response - r_min) > r_range * response_thr:
-        if num_weighted_max_bars < num_bars:
+        if (response > max(r_max * response_thr, 0)):
             has_included = add_non_overlap_map(new_bar, non_overlap_max_map, stim_thr)
-            add_weighted_map(new_bar, weighted_max_map, (response - r_min)/r_range)
+            add_weighted_map(new_bar, weighted_max_map, response)
             # counts the number of bars in each map
             num_weighted_max_bars += 1
             if has_included:
@@ -695,16 +694,15 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
                                            params['len'], params['wid'], 
                                            params['aa'],
                                            params['r1'], params['g1'], params['b1'],
-                                           params['r0'], params['g0'], params['b0'])
+                                           -1, -1, -1)
         else:
             new_bar = stimfr_bar(params['xn'], params['yn'],
                                 params['x0'], params['y0'],
                                 params['theta'], params['len'], params['wid'],
                                 0.5, 1, 0) 
-        # if (response - r_min) < r_range * (1 - response_thr):
-        if num_weighted_min_bars < num_bars:
+        if (response < min(r_min * response_thr, 0)): 
             has_included = add_non_overlap_map(new_bar, non_overlap_min_map, stim_thr)
-            add_weighted_map(new_bar, weighted_min_map, (r_max - response)/r_range)
+            add_weighted_map(new_bar, weighted_min_map, -response)
             # counts the number of bars in each map
             num_weighted_min_bars += 1
             if has_included:
@@ -724,7 +722,7 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
 #                                                                             #
 ###############################################################################
 def rfmp4a_run_01b(model, model_name, result_dir, _debug=False, batch_size=100,
-                   num_bars=500, conv_i_to_run=None):
+                   response_thres=0.5):
     """
     Map the RF of all conv layers in model using RF mapping paradigm 4a.
     
@@ -764,11 +762,6 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False, batch_size=100,
         os.remove(non_overlap_counts_path)
     
     for conv_i in range(len(layer_indices)):
-        # In case we would like to run only one layer...
-        if conv_i is not None:
-            if conv_i != conv_i_to_run:
-                continue
-
         layer_name = f"conv{conv_i + 1}"
         print(f"\n{layer_name}\n")
         # Get layer-specific info
@@ -813,7 +806,7 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False, batch_size=100,
                                        [i for i in np.arange(unit_i, unit_i + real_batch_size)],
                                        [_debug for _ in range(real_batch_size)],
                                        [False for _ in range(real_batch_size)],
-                                       [num_bars for _ in range(real_batch_size)],
+                                       [response_thres for _ in range(real_batch_size)],
                                        )
             # Crop and save maps to layer-level array
             for result_i, result in enumerate(results):
@@ -894,7 +887,7 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False, batch_size=100,
 #                                                                             #
 ###############################################################################
 def rfmp4c7o_run_01(model, model_name, result_dir, _debug=False, batch_size=100,
-                    num_bars=500, conv_i_to_run=None):
+                    response_thres=0.5):
     """
     Map the RF of all conv layers in model using RF mapping paradigm 4c7o,
     which is like paradigm 4a, but with 6 additional colors.
@@ -935,11 +928,6 @@ def rfmp4c7o_run_01(model, model_name, result_dir, _debug=False, batch_size=100,
         os.remove(non_overlap_counts_path)
     
     for conv_i in range(len(layer_indices)):
-        # In case we would like to run only one layer...
-        if conv_i is not None:
-            if conv_i != conv_i_to_run:
-                continue
-        
         layer_name = f"conv{conv_i + 1}"
         print(f"\n{layer_name}\n")
         # Get layer-specific info
@@ -984,7 +972,7 @@ def rfmp4c7o_run_01(model, model_name, result_dir, _debug=False, batch_size=100,
                                        [i for i in np.arange(unit_i, unit_i + real_batch_size)],
                                        [_debug for _ in range(real_batch_size)],
                                        [True for _ in range(real_batch_size)],
-                                       [num_bars for _ in range(real_batch_size)],
+                                       [response_thres for _ in range(real_batch_size)],
                                        )
             # Crop and save maps to layer-level array
             for result_i, result in enumerate(results):

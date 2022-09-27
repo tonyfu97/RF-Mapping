@@ -36,7 +36,7 @@ is_random = False
 this_is_a_test_run = False
 map1_name = 'gt'                # ['gt', 'occlude']
 map2_name = 'rfmp4a'            # ['rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
-fit_name = 'hot_spot'       # ['gaussian_fit', 'com', 'hot_spot']
+fit_name = 'gaussian_fit'       # ['gaussian_fit', 'com', 'hot_spot']
 fxvar_thres = 0.8
 
 
@@ -205,18 +205,13 @@ def config_plot(limits):
 
 ###############################################################################
 
-
 # Load the center of mass dataframes and pad the missing layers
 top_x_df1, top_y_df1, bot_x_df1, bot_y_df1 = get_top_bot_xy_dfs(map1_name, model_name, is_random, fit_name)
 top_x_df2, top_y_df2, bot_x_df2, bot_y_df2 = get_top_bot_xy_dfs(map2_name, model_name, is_random, fit_name)
 
-###############################################################################
-#                                                                             #
-#                                PDF 1. X-COORD                               #
-#                                                                             #
-###############################################################################
 result_dir = get_result_dir(map1_name, map2_name, model_name, this_is_a_test_run)
-pdf_path = os.path.join(result_dir, f"{model_name}_{map1_name}_{map2_name}_{fit_name}_x_coord.pdf")
+
+pdf_path = os.path.join(result_dir, f"{model_name}_{map1_name}_{map2_name}_{fit_name}.pdf")
 with PdfPages(pdf_path) as pdf:
     top_x_r_vals = []
     top_y_r_vals = []
@@ -311,7 +306,7 @@ with PdfPages(pdf_path) as pdf:
     x_str = [f"conv{num+1}" for num in x]
     plt.subplot(1,2,1)
     plt.plot(x, top_x_r_vals, 'b.-' ,markersize=20, label='x')
-    plt.plot(x, top_y_r_vals, 'r.-' ,markersize=20, label='y')
+    plt.plot(x, top_y_r_vals, 'g.-' ,markersize=20, label='y')
     plt.ylabel('r', fontsize=16)
     plt.title("Top", fontsize=20)
     plt.xticks(x,x_str, fontsize=16)
@@ -322,7 +317,7 @@ with PdfPages(pdf_path) as pdf:
     
     plt.subplot(1,2,2)
     plt.plot(x, bot_x_r_vals, 'b.-', markersize=20, label='x')
-    plt.plot(x, bot_y_r_vals, 'r.-', markersize=20, label='y')
+    plt.plot(x, bot_y_r_vals, 'g.-', markersize=20, label='y')
     plt.ylabel('r', fontsize=16)
     plt.title("Bottom", fontsize=20)
     plt.xticks(x,x_str, fontsize=16)
@@ -336,20 +331,12 @@ with PdfPages(pdf_path) as pdf:
     plt.close()
 
 
-
-###############################################################################
-#                                                                             #
-#                    PDF 2. DISTRIBUTION OF ERROR DISTANCES                   #
-#                                                                             #
-###############################################################################
-all_top_err_dist = np.array([])
-all_bot_err_dist = np.array([])
-
-pdf_path = os.path.join(result_dir, f"{model_name}_{map1_name}_{map2_name}_{fit_name}_err_dist.pdf")
-with PdfPages(pdf_path) as pdf:
     ###########################################################################
-    #                FIGURE 1. ERROR DISTANCE IN EACH LAYER                   #
+    #                FIGURE 3. ERROR DISTANCE IN EACH LAYER                   #
     ###########################################################################
+    all_top_err_dist = np.array([])
+    all_bot_err_dist = np.array([])
+    
     plt.figure(figsize=(20, 9))
     if fit_name == 'gaussian_fit':
         plt.suptitle(f"{model_name}: {map1_name} vs {map2_name} ({fit_name}, fxvar_threshold = {fxvar_thres})", fontsize=24)
@@ -390,7 +377,7 @@ with PdfPages(pdf_path) as pdf:
         # Plot the distribution of the error distance
         plt.subplot(2,num_layers - 1, conv_i)
         plt.hist(top_err_dist)
-        plt.title(f"{layer_name}", fontsize=16)
+        plt.title(f"{layer_name} (n = {len(top_err_dist)})", fontsize=16)
         if conv_i == 1:
             plt.ylabel(f"count", fontsize=16)
         plt.gca().set_facecolor(top_face_color)
@@ -406,103 +393,29 @@ with PdfPages(pdf_path) as pdf:
     plt.show()
     plt.close()
 
-
-# Save the error distances in dataframes:
-top_err_dist_df = top_x_df1.loc[(top_x_df1.LAYER != 'conv1'), ['LAYER', 'UNIT']]
-top_err_dist_df['ERR_DIST'] = all_top_err_dist
-
-bot_err_dist_df = bot_x_df1.loc[(bot_x_df1.LAYER != 'conv1'), ['LAYER', 'UNIT']]
-bot_err_dist_df['ERR_DIST'] = all_bot_err_dist
-
-# Load the color rotation index
-cri_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, 'cri.txt')
-cri_df = pd.read_csv(cri_path, sep=" ", header=None)
-cri_df.columns = ['LAYER', 'UNIT', 'CRI']
-
-# Merge the two pds
-top_cri_err_dist_df = pd.merge(top_err_dist_df, cri_df, how='left')
-bot_cri_err_dist_df = pd.merge(bot_err_dist_df, cri_df, how='left')
-
-max_map_corr_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations',
-                                model_name, f"max_map_r.txt")
-min_map_corr_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations',
-                                model_name, f"min_map_r.txt")
-max_map_corr_df = pd.read_csv(max_map_corr_path, sep=" ", header=0)
-min_map_corr_df = pd.read_csv(min_map_corr_path, sep=" ", header=0)
-
-
-# ###############################################################################
-# #                                                                             #
-# #                    PDF 3. MAP CORRELATIONS VS. ERROR DISTANCE               #
-# #                                                                             #
-# ###############################################################################
-# pdf_path = os.path.join(result_dir, f"{model_name}_{map1_name}_{map2_name}_{fit_name}_err_dist2.pdf")
-# with PdfPages(pdf_path) as pdf:
-#     # Merge the two pds
-#     top_err_dist_map_corr_df = pd.merge(top_err_dist_df, max_map_corr_df, how='left')
-#     bot_err_dist_map_corr_df = pd.merge(bot_err_dist_df, min_map_corr_df, how='left')
     
-#     # ###########################################################################
-#     # #             FIGURE 1. MAP CORRELATIONS VS. ERROR DISTANCE               #
-#     # ###########################################################################
-#     # Plot the relationship between error distance and map correlation
-#     plt.figure(figsize=(20, 10))
-#     plt.suptitle(f"Relation between error distance ({map1_name} vs {map2_name}: {fit_name}) and map correlation", fontsize=20)
-#     for conv_i, _ in enumerate(nums_units):
-#         if conv_i == 0:
-#             continue
-        
-#         layer_name = f"conv{conv_i+1}"
-        
-#         top_err_dist = top_err_dist_map_corr_df.loc[(top_err_dist_map_corr_df.LAYER == layer_name), 'ERR_DIST']
-#         top_map_corr = top_err_dist_map_corr_df.loc[(top_err_dist_map_corr_df.LAYER == layer_name), f"{map1_name}_vs_{map2_name}"]
-#         bot_err_dist = bot_err_dist_map_corr_df.loc[(bot_err_dist_map_corr_df.LAYER == layer_name), 'ERR_DIST']
-#         bot_map_corr = bot_err_dist_map_corr_df.loc[(bot_err_dist_map_corr_df.LAYER == layer_name), f"{map1_name}_vs_{map2_name}"]
-
-
-#         plt.subplot(2,num_layers - 1, conv_i)
-#         plt.scatter(top_err_dist, top_map_corr)
-#         rval, _ = pearsonr(top_err_dist, top_map_corr)
-#         if conv_i == 1:
-#             plt.ylabel("map correlation", fontsize=16)
-#         plt.gca().set_facecolor(top_face_color)
-#         plt.text(45,0.6,f'n = {len(top_err_dist)}\nr = {rval:.2f}', fontsize=16)
-#         plt.xlim([-5, 70])
-#         plt.ylim([-1.1, 1.1])
-#         plt.title(layer_name, fontsize=16)
-        
-#         plt.subplot(2,num_layers - 1, num_layers+conv_i-1)
-#         plt.scatter(bot_err_dist, bot_map_corr)
-#         rval, _ = pearsonr(bot_err_dist, bot_map_corr)
-#         plt.xlabel("error distance (pix)", fontsize=16)
-#         if conv_i == 1:
-#             plt.ylabel("map correlation", fontsize=16)
-#         plt.gca().set_facecolor(bot_face_color)
-#         plt.text(45,0.6,f'n = {len(bot_err_dist)}\nr = {rval:.2f}', fontsize=16)
-#         plt.xlim([-5, 70])
-#         plt.ylim([-1.1, 1.1])
-
-#     pdf.savefig()
-#     plt.show()
-#     plt.close()
-
-
-###############################################################################
-#                                                                             #
-#                                  PDF 4. CRI                                 #
-#                                                                             #
-###############################################################################
-top_err_dist_cri_r_val = []
-bot_err_dist_cri_r_val = []
-
-pdf_path = os.path.join(result_dir, f"{model_name}_{map1_name}_{map2_name}_{fit_name}_cri.pdf")
-with PdfPages(pdf_path) as pdf:
     ###########################################################################
-    #           FIGURE 1. ERROR DISTANCE VS. COLOR ROTATION INDEX             #
+    #           FIGURE 4. ERROR DISTANCE VS. COLOR ROTATION INDEX             #
     ###########################################################################
+    # Save the error distances in dataframes:
+    top_err_dist_df = top_x_df1.loc[(top_x_df1.LAYER != 'conv1'), ['LAYER', 'UNIT']]
+    top_err_dist_df['ERR_DIST'] = all_top_err_dist
+
+    bot_err_dist_df = bot_x_df1.loc[(bot_x_df1.LAYER != 'conv1'), ['LAYER', 'UNIT']]
+    bot_err_dist_df['ERR_DIST'] = all_bot_err_dist
+    
+    # Load the color rotation index
+    cri_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, 'cri.txt')
+    cri_df = pd.read_csv(cri_path, sep=" ", header=None)
+    cri_df.columns = ['LAYER', 'UNIT', 'CRI']
+    
+    # Merge the two pds
+    top_cri_err_dist_df = pd.merge(top_err_dist_df, cri_df, how='left')
+    bot_cri_err_dist_df = pd.merge(bot_err_dist_df, cri_df, how='left')
+    
     # Plot the relationship between error distance and CRI
     plt.figure(figsize=(20, 10))
-    plt.suptitle(f"Relation between CRI and error distance ({map1_name} vs {map2_name}: {fit_name})", fontsize=24)
+    plt.suptitle(f"Relation between error distance ({map1_name} vs {map2_name}: {fit_name}) and CRI", fontsize=20)
     for conv_i, _ in enumerate(nums_units):
         if conv_i == 0:
             continue
@@ -515,48 +428,91 @@ with PdfPages(pdf_path) as pdf:
         bot_cri      = bot_cri_err_dist_df.loc[(bot_cri_err_dist_df.LAYER == layer_name), 'CRI']
         
         plt.subplot(2,num_layers - 1, conv_i)
-        plt.scatter(top_cri, top_err_dist, alpha=0.4)
-        rval, _ = pearsonr(top_cri, top_err_dist)
-        top_err_dist_cri_r_val.append(rval)
+        plt.scatter(top_err_dist, top_cri)
+        rval, _ = pearsonr(top_err_dist, top_cri)
         if conv_i == 1:
-            plt.ylabel(f"error distance (pix)\n({fit_name})", fontsize=18)
+            plt.ylabel("CRI", fontsize=16)
         plt.gca().set_facecolor(top_face_color)
-        plt.text(1,45,f'n = {len(top_err_dist)}\nr = {rval:.2f}', fontsize=18)
-        plt.title(layer_name, fontsize=18)
-        plt.ylim([-5, 70])
-        plt.xlim([-0.5, 2])
+        plt.text(45,1,f'n = {len(top_err_dist)}\nr = {rval:.2f}', fontsize=16)
+        plt.title(layer_name, fontsize=16)
+        plt.xlim([-5, 70])
+        plt.ylim([-0.5, 2])
         
         
         plt.subplot(2,num_layers - 1, num_layers+conv_i-1)
-        plt.scatter(bot_cri, bot_err_dist, alpha=0.4)
-        rval, _ = pearsonr(bot_cri, bot_err_dist)
-        bot_err_dist_cri_r_val.append(rval)
+        plt.scatter(bot_err_dist, bot_cri)
+        rval, _ = pearsonr(bot_err_dist, bot_cri)
+        plt.xlabel("error distance (pix)", fontsize=16)
         if conv_i == 1:
-            plt.ylabel(f"error distance (pix)\n({fit_name})", fontsize=18)
-        plt.xlabel("CRI", fontsize=16)
+            plt.ylabel("CRI", fontsize=16)
         plt.gca().set_facecolor(bot_face_color)
-        plt.text(1,45,f'n = {len(bot_err_dist)}\nr = {rval:.2f}', fontsize=18)
-        plt.ylim([-5, 70])
-        plt.xlim([-0.5, 2])
+        plt.text(45,1,f'n = {len(bot_err_dist)}\nr = {rval:.2f}', fontsize=16)
+        plt.xlim([-5, 70])
+        plt.ylim([-0.5, 2])
         
-    # pdf.savefig()
-    # plt.show()
-    # plt.close()
+    pdf.savefig()
+    plt.show()
+    plt.close()
     
-    
-    # plt.figure(figsize=(14, 7))
-    # plt.subplot(1, 2, 1)
-    # plt.plot(top_err_dist_cri_r_val, '.-', markersize=18)
-    # plt.xticks(np.arange(0, num_layers-1), [f"conv{i+1}" for i in range(1, num_layers)])
-    
-    # pdf.savefig()
-    # plt.show()
-    # plt.close()
 
-pdf_path = os.path.join(result_dir, f"{model_name}_{map1_name}_{map2_name}_cri.pdf")
-with PdfPages(pdf_path) as pdf:
     ###########################################################################
-    #                 FIGURE 2. MAP CORRELATIONS VS. CRI                      #
+    #             FIGURE 5. MAP CORRELATIONS VS. ERROR DISTANCE               #
+    ###########################################################################
+    max_map_corr_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations',
+                                 model_name, f"max_map_r.txt")
+    min_map_corr_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations',
+                                 model_name, f"min_map_r.txt")
+    max_map_corr_df = pd.read_csv(max_map_corr_path, sep=" ", header=0)
+    min_map_corr_df = pd.read_csv(min_map_corr_path, sep=" ", header=0)
+    
+    # Merge the two pds
+    top_err_dist_map_corr_df = pd.merge(top_err_dist_df, max_map_corr_df, how='left')
+    bot_err_dist_map_corr_df = pd.merge(bot_err_dist_df, min_map_corr_df, how='left')
+    
+    # Plot the relationship between error distance and map correlation
+    plt.figure(figsize=(20, 10))
+    plt.suptitle(f"Relation between error distance ({map1_name} vs {map2_name}: {fit_name}) and map correlation", fontsize=20)
+    for conv_i, _ in enumerate(nums_units):
+        if conv_i == 0:
+            continue
+        
+        layer_name = f"conv{conv_i+1}"
+        
+        top_err_dist = top_err_dist_map_corr_df.loc[(top_err_dist_map_corr_df.LAYER == layer_name), 'ERR_DIST']
+        top_map_corr = top_err_dist_map_corr_df.loc[(top_err_dist_map_corr_df.LAYER == layer_name), f"{map1_name}_vs_{map2_name}"]
+        bot_err_dist = bot_err_dist_map_corr_df.loc[(bot_err_dist_map_corr_df.LAYER == layer_name), 'ERR_DIST']
+        bot_map_corr = bot_err_dist_map_corr_df.loc[(bot_err_dist_map_corr_df.LAYER == layer_name), f"{map1_name}_vs_{map2_name}"]
+
+
+        plt.subplot(2,num_layers - 1, conv_i)
+        plt.scatter(top_err_dist, top_map_corr)
+        rval, _ = pearsonr(top_err_dist, top_map_corr)
+        if conv_i == 1:
+            plt.ylabel("map correlation", fontsize=16)
+        plt.gca().set_facecolor(top_face_color)
+        plt.text(45,0.6,f'n = {len(top_err_dist)}\nr = {rval:.2f}', fontsize=16)
+        plt.xlim([-5, 70])
+        plt.ylim([-1.1, 1.1])
+        plt.title(layer_name, fontsize=16)
+        
+        plt.subplot(2,num_layers - 1, num_layers+conv_i-1)
+        plt.scatter(bot_err_dist, bot_map_corr)
+        rval, _ = pearsonr(bot_err_dist, bot_map_corr)
+        plt.xlabel("error distance (pix)", fontsize=16)
+        if conv_i == 1:
+            plt.ylabel("map correlation", fontsize=16)
+        plt.gca().set_facecolor(bot_face_color)
+        plt.text(45,0.6,f'n = {len(bot_err_dist)}\nr = {rval:.2f}', fontsize=16)
+        plt.xlim([-5, 70])
+        plt.ylim([-1.1, 1.1])
+
+    pdf.savefig()
+    plt.show()
+    plt.close()
+    
+    
+    ###########################################################################
+    #                 FIGURE 6. MAP CORRELATIONS VS. CRI                      #
     ###########################################################################
     # Merge the two pds
     top_cri_map_corr_df = pd.merge(cri_df, max_map_corr_df, how='left')
@@ -564,19 +520,12 @@ with PdfPages(pdf_path) as pdf:
 
     # Plot the relationship between CRI and map correlation
     plt.figure(figsize=(20, 10))
-    plt.suptitle(f"Relation between CRI and map correlation ({map1_name} vs {map2_name})", fontsize=24)
+    plt.suptitle(f"Relation between CRI and map correlation ({map1_name} vs {map2_name})", fontsize=20)
     for conv_i, _ in enumerate(nums_units):
         if conv_i == 0:
             continue
         
         layer_name = f"conv{conv_i+1}"
-        
-        cri_thres = 0.5
-        print()
-        print(f"Units in {layer_name} that have top CRI larger than {cri_thres}: ")
-        print(top_cri_map_corr_df.loc[(top_cri_map_corr_df.LAYER == layer_name) & (top_cri_map_corr_df.CRI > cri_thres), 'UNIT'].to_numpy())
-        print(f"Units in {layer_name} that have bot CRI larger than {cri_thres}: ")
-        print(bot_cri_map_corr_df.loc[(bot_cri_map_corr_df.LAYER == layer_name) & (bot_cri_map_corr_df.CRI > cri_thres), 'UNIT'].to_numpy())
         
         top_cri = top_cri_map_corr_df.loc[(top_cri_map_corr_df.LAYER == layer_name), 'CRI']
         top_map_corr = top_cri_map_corr_df.loc[(top_cri_map_corr_df.LAYER == layer_name), f"{map1_name}_vs_{map2_name}"]
@@ -584,70 +533,52 @@ with PdfPages(pdf_path) as pdf:
         bot_map_corr = bot_cri_map_corr_df.loc[(bot_cri_map_corr_df.LAYER == layer_name), f"{map1_name}_vs_{map2_name}"]
 
         plt.subplot(2,num_layers - 1, conv_i)
-        plt.scatter(top_cri, top_map_corr, alpha=0.4)
+        plt.scatter(top_cri, top_map_corr)
         rval, _ = pearsonr(top_cri, top_map_corr)
-        plt.title(layer_name, fontsize=18)
+        plt.title(layer_name, fontsize=16)
         if conv_i == 1:
-            plt.xlabel("CRI (top)", fontsize=16)
-            plt.ylabel("Direct map correlation", fontsize=18)
+            plt.ylabel("map correlation", fontsize=16)
         plt.gca().set_facecolor(top_face_color)
-        plt.text(1,-0.75,f'n = {len(top_cri)}\nr = {rval:.2f}', fontsize=18)
+        plt.text(1,-0.75,f'n = {len(top_cri)}\nr = {rval:.2f}', fontsize=16)
         plt.xlim([-0.1, 2])
         plt.ylim([-1.1, 1.1])
-        plt.yticks([-1, -0.5, 0, 0.5, 1])
 
         plt.subplot(2,num_layers - 1, num_layers+conv_i-1)
-        plt.scatter(bot_cri, bot_map_corr, alpha=0.4)
+        plt.scatter(bot_cri, bot_map_corr)
         rval, _ = pearsonr(bot_cri, bot_map_corr)
+        plt.xlabel("CRI", fontsize=16)
         if conv_i == 1:
-            plt.xlabel("CRI (bottom)", fontsize=16)
-            plt.ylabel("Direct map correlation", fontsize=18)
+            plt.ylabel("map correlation", fontsize=16)
         plt.gca().set_facecolor(bot_face_color)
-        plt.text(1,-0.75,f'n = {len(bot_cri)}\nr = {rval:.2f}', fontsize=18)
+        plt.text(1,-0.75,f'n = {len(bot_cri)}\nr = {rval:.2f}', fontsize=16)
         plt.xlim([-0.1, 2])
         plt.ylim([-1.1, 1.1])
-        plt.yticks([-1, -0.5, 0, 0.5, 1])
 
     pdf.savefig()
     plt.show()
     plt.close()
-
-
-###############################################################################
-#                                                                             #
-#                                 PDF 5. FNAT                                 #
-#                                                                             #
-###############################################################################
-# Load the fnat
-top_n_r = 10
-fnat_path = os.path.join(c.REPO_DIR, 'results', 'fnat', map2_name, model_name, f"{map2_name}_fnat_{top_n_r}_avg.txt")
-fnat_df = pd.read_csv(fnat_path, sep=" ", header=None)
-fnat_df.columns = ['LAYER', 'UNIT', 'TOP_AVG_FNAT', 'BOT_AVG_FNAT']
-
-# Merge the two pds
-top_fnat_map_corr_df = pd.merge(fnat_df, max_map_corr_df, how='left')
-bot_fnat_map_corr_df = pd.merge(fnat_df, min_map_corr_df, how='left')
-
-pdf_path = os.path.join(result_dir, f"{model_name}_{map1_name}_{map2_name}_fnat.pdf")
-with PdfPages(pdf_path) as pdf:
+    
     ###########################################################################
-    #                  FIGURE 1. MAP CORRELATIONS VS. FNAT                    #
+    #                 FIGURE 7. MAP CORRELATIONS VS. FNAT                     #
     ###########################################################################
+    # Load the fnat
+    top_n_r = 10
+    fnat_path = os.path.join(c.REPO_DIR, 'results', 'fnat', map2_name, model_name, f"{map2_name}_fnat_{top_n_r}_avg.txt")
+    fnat_df = pd.read_csv(fnat_path, sep=" ", header=None)
+    fnat_df.columns = ['LAYER', 'UNIT', 'TOP_AVG_FNAT', 'BOT_AVG_FNAT']
+
+    # Merge the two pds
+    top_fnat_map_corr_df = pd.merge(fnat_df, max_map_corr_df, how='left')
+    bot_fnat_map_corr_df = pd.merge(fnat_df, min_map_corr_df, how='left')
+
     # Plot the relationship between fnat and map correlation
     plt.figure(figsize=(20, 10))
-    plt.suptitle(f"Relation between fnat and map correlation ({map1_name} vs {map2_name})", fontsize=24)
+    plt.suptitle(f"Relation between fnat and map correlation ({map1_name} vs {map2_name})", fontsize=20)
     for conv_i, _ in enumerate(nums_units):
         if conv_i == 0:
             continue
         
         layer_name = f"conv{conv_i+1}"
-        
-        fnat_thres = 1
-        print()
-        print(f"Units in {layer_name} that have top FNAT larger than {fnat_thres}: ")
-        print(top_fnat_map_corr_df.loc[(top_fnat_map_corr_df.LAYER == layer_name) & (top_fnat_map_corr_df.TOP_AVG_FNAT > fnat_thres), 'UNIT'].to_numpy())
-        print(f"Units in {layer_name} that have bot FNAT larger than {fnat_thres}: ")
-        print(bot_fnat_map_corr_df.loc[(bot_fnat_map_corr_df.LAYER == layer_name) & (bot_fnat_map_corr_df.BOT_AVG_FNAT > cri_thres), 'UNIT'].to_numpy())
         
         top_fnat = top_fnat_map_corr_df.loc[(top_fnat_map_corr_df.LAYER == layer_name) & ~(top_fnat_map_corr_df.TOP_AVG_FNAT.isnull()), 'TOP_AVG_FNAT']
         top_map_corr = top_fnat_map_corr_df.loc[(top_fnat_map_corr_df.LAYER == layer_name) & ~(top_fnat_map_corr_df.TOP_AVG_FNAT.isnull()), f"{map1_name}_vs_{map2_name}"]
@@ -655,29 +586,26 @@ with PdfPages(pdf_path) as pdf:
         bot_map_corr = bot_fnat_map_corr_df.loc[(bot_fnat_map_corr_df.LAYER == layer_name) & ~(bot_fnat_map_corr_df.BOT_AVG_FNAT.isnull()), f"{map1_name}_vs_{map2_name}"]
 
         plt.subplot(2,num_layers - 1, conv_i)
-        plt.scatter(top_fnat, top_map_corr, alpha=0.4)
+        plt.scatter(top_fnat, top_map_corr)
         rval, _ = pearsonr(top_fnat, top_map_corr)
         plt.title(layer_name, fontsize=16)
         if conv_i == 1:
-            plt.xlabel(f"fnat (top {top_n_r})", fontsize=18)
-            plt.ylabel("Direct map correlation", fontsize=18)
+            plt.ylabel("map correlation", fontsize=16)
         plt.gca().set_facecolor(top_face_color)
-        plt.text(2,-0.8,f'n = {len(top_fnat)}\nr = {rval:.2f}', fontsize=18)
+        plt.text(0,-0.75,f'n = {len(top_fnat)}\nr = {rval:.2f}', fontsize=16)
         plt.xlim([-1, 4])
         plt.ylim([-1.1, 1.1])
-        plt.yticks([-1, -0.5, 0, 0.5, 1])
 
         plt.subplot(2,num_layers - 1, num_layers+conv_i-1)
-        plt.scatter(bot_fnat, bot_map_corr, alpha=0.4)
+        plt.scatter(bot_fnat, bot_map_corr)
         rval, _ = pearsonr(bot_fnat, bot_map_corr)
+        plt.xlabel("fnat", fontsize=16)
         if conv_i == 1:
-            plt.xlabel(f"fnat (bottom {top_n_r})", fontsize=18)
-            plt.ylabel("Direct map correlation", fontsize=18)
+            plt.ylabel("map correlation", fontsize=16)
         plt.gca().set_facecolor(bot_face_color)
-        plt.text(2,-0.8,f'n = {len(bot_fnat)}\nr = {rval:.2f}', fontsize=18)
+        plt.text(0,-0.75,f'n = {len(bot_fnat)}\nr = {rval:.2f}', fontsize=16)
         plt.xlim([-1, 4])
         plt.ylim([-1.1, 1.1])
-        plt.yticks([-1, -0.5, 0, 0.5, 1])
 
     pdf.savefig()
     plt.show()
