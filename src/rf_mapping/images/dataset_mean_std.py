@@ -36,6 +36,10 @@ avg_std /= num_images
 print(f"avg_mean = {avg_mean}")
 print(f"avg_std = {avg_std}")
 
-# Results:
+# Results (old data):
 # avg_mean = [-0.01618503 -0.01468056 -0.01345447]
 # avg_std = [0.45679083 0.44849625 0.44975275]
+
+# Results (new data: already normalized, October 1st)
+# avg_mean = [-5.2506704e-05 -9.0828044e-06 -6.2262559e-05]
+# avg_std = [0.9999631  1.0000983  0.99994624]

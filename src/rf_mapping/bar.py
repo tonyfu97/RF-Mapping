@@ -660,7 +660,7 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
                                            params['theta'],
                                            params['len'], params['wid'], 
                                            params['aa'],
-                                           params['r1'], params['g1'], params['b1'],
+                                           max(params['r1'], 0), max(params['g1'], 0), max(params['b1'], 0),
                                            -1, -1, -1)
         else:
             new_bar = stimfr_bar(params['xn'], params['yn'],
@@ -693,7 +693,7 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
                                            params['theta'],
                                            params['len'], params['wid'], 
                                            params['aa'],
-                                           params['r1'], params['g1'], params['b1'],
+                                           max(params['r1'], 0), max(params['g1'], 0), max(params['b1'], 0),
                                            -1, -1, -1)
         else:
             new_bar = stimfr_bar(params['xn'], params['yn'],
@@ -1103,10 +1103,15 @@ def make_rfmp4a_grid_pdf(pdf_path, model):
 
 # Generate a RFMP4a grid pdf for AlexNet
 if __name__ == "__main__":
-    # model = models.resnet18()
+    
+    # model = models.alexnet(pretrained=True).to(c.DEVICE)
+    # model_name = 'alexnet'
+    # model = models.vgg16(pretrained=True).to(c.DEVICE)
+    # model_name = 'vgg16'
+    # model = models.resnet18(pretrained=True).to(c.DEVICE)
     # model_name = 'resnet18'
-    model = models.alexnet()
-    model_name = 'alexnet'
-    pdf_path = os.path.join(c.REPO_DIR,'results','rfmp4a','mapping', 'test',
-                            f'{model_name}_test_grid.pdf')
-    make_rfmp4a_grid_pdf(pdf_path, model)
+
+    # pdf_path = os.path.join(c.REPO_DIR,'results','rfmp4a','mapping', model_name,
+    #                         f'{model_name}_test_grid.pdf')
+    # make_rfmp4a_grid_pdf(pdf_path, model)
+    pass

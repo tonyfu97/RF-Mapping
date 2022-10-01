@@ -33,7 +33,7 @@ model_name = 'alexnet'
 
 this_is_a_test_run = False
 is_random = False
-map_name = 'pasu'
+map_name = 'occlude'
 sigma_rf_ratio = 1/30
 
 
@@ -77,6 +77,22 @@ def load_maps(map_name, layer_name, max_or_min, is_random, rf_size):
                                     f"{layer_name}_{max_or_min}.npy")
         maps = np.load(mapping_path)  # [unit, yn, xn]
         return smooth_maps(maps, sigma)
+    elif map_name == 'gt_composite':
+        top_mapping_path = os.path.join(mapping_dir,
+                                    'ground_truth',
+                                    f'backprop_sum{is_random_str}',
+                                    model_name,
+                                    'abs',
+                                    f"{layer_name}_max.npy")
+        bot_mapping_path = os.path.join(mapping_dir,
+                                    'ground_truth',
+                                    f'backprop_sum{is_random_str}',
+                                    model_name,
+                                    'abs',
+                                    f"{layer_name}_min.npy")
+        top_maps = np.load(top_mapping_path)  # [unit, yn, xn]
+        bot_maps = np.load(bot_mapping_path)  # [unit, yn, xn]
+        return smooth_maps(top_maps + bot_maps, sigma)
     elif map_name == 'occlude':
         mapping_path = os.path.join(mapping_dir,
                                     'occlude',
@@ -85,6 +101,20 @@ def load_maps(map_name, layer_name, max_or_min, is_random, rf_size):
                                     f"{layer_name}_{max_or_min}.npy")
         maps = np.load(mapping_path)  # [unit, yn, xn]
         return smooth_maps(maps, sigma)
+    elif map_name == 'occlude_composite':
+        top_mapping_path = os.path.join(mapping_dir,
+                                    'occlude',
+                                    'mapping',
+                                    model_name,
+                                    f"{layer_name}_max.npy")
+        bot_mapping_path = os.path.join(mapping_dir,
+                                    'occlude',
+                                    'mapping',
+                                    model_name,
+                                    f"{layer_name}_min.npy")
+        top_maps = np.load(top_mapping_path)  # [unit, yn, xn]
+        bot_maps = np.load(bot_mapping_path)  # [unit, yn, xn]
+        return smooth_maps(top_maps + bot_maps, sigma)
     elif map_name == 'rfmp4a':
         mapping_path = os.path.join(mapping_dir,
                                     'rfmp4a',
@@ -126,7 +156,7 @@ def get_result_dir(map_name, is_random, this_is_a_test_run):
     mapping_dir = os.path.join(c.REPO_DIR, 'results')
     is_random_str = "_random" if is_random else ""
 
-    if map_name == 'gt':
+    if map_name in ('gt', 'gt_composite'):
         if this_is_a_test_run:
             return os.path.join(mapping_dir,
                                 'ground_truth',
@@ -139,7 +169,11 @@ def get_result_dir(map_name, is_random, this_is_a_test_run):
                                 f'gaussian_fit{is_random_str}',
                                 model_name,
                                 'abs')
-    elif map_name in ('occlude', 'rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu'):
+    elif map_name in ('occlude', 'occlude_composite', 'rfmp4a', 'rfmp4c7o',
+                      'rfmp_sin1', 'pasu'):
+        if map_name == 'occlude_composite':
+            map_name = 'occlude'
+        
         if this_is_a_test_run:
             return os.path.join(mapping_dir,
                                 map_name,
@@ -154,12 +188,12 @@ def get_result_dir(map_name, is_random, this_is_a_test_run):
         raise KeyError(f"{map_name} does not exist.")
 
 
-def write_txt(f, layer_name, unit_i, top_x, top_y, bot_x, bot_y):
+def write_txt(f, layer_name, unit_i, top_x, top_y, bot_x, bot_y, map_shape):
     # Center the origin
-    top_y -= max_map.shape[0]/2
-    top_x -= max_map.shape[1]/2
-    bot_y -= min_map.shape[0]/2
-    bot_x -= min_map.shape[1]/2
+    top_y -= map_shape[0]/2
+    top_x -= map_shape[1]/2
+    bot_y -= map_shape[0]/2
+    bot_x -= map_shape[1]/2
     f.write(f"{layer_name} {unit_i} {top_x} {top_y} {bot_x} {bot_y}\n")
 
 
@@ -192,6 +226,20 @@ def write_pdf(pdf, layer_name, unit_i, top_map, bot_map,
     plt.close()
 
 
+def write_composite_pdf(pdf, layer_name, unit_i, composite_map, top_x, top_y):
+    # Fit 2D Gaussian, and plot them.
+    plt.figure(figsize=(8, 8))
+    plt.title(f"Center of mass ({layer_name} no.{unit_i})\nx = {top_x}, y = {top_y}", fontsize=20)
+
+    plt.imshow(composite_map, cmap='gray')
+    ax = plt.gca()
+    ax.add_patch(make_point(top_x, top_y))
+
+    pdf.savefig()
+    if this_is_a_test_run: plt.show()
+    plt.close()
+
+
 ###############################################################################
 
 result_dir = get_result_dir(map_name, is_random, this_is_a_test_run)
@@ -203,28 +251,47 @@ if os.path.exists(txt_file_path):
 
 # Find the center of mass coordinates and radius of RF.
 for conv_i in range(len(layer_indices)):
-    if model_name == 'vgg16' and conv_i < 1:
-        continue
+    # if model_name == 'vgg16' and conv_i < 1:
+    #     continue
     # Get layer-specific info
     layer_name = f"conv{conv_i + 1}"
     rf_size = rf_sizes[conv_i][0]
 
     # Load bar maps:
-    max_maps = load_maps(map_name, layer_name, 'max', is_random, rf_size)
-    min_maps = load_maps(map_name, layer_name, 'min', is_random, rf_size)
+    if map_name not in ('gt_composite', 'occlude_composite'):
+        max_maps = load_maps(map_name, layer_name, 'max', is_random, rf_size)
+        min_maps = load_maps(map_name, layer_name, 'min', is_random, rf_size)
 
-    pdf_path = os.path.join(result_dir, f"{layer_name}_hot_spot.pdf")
-    with PdfPages(pdf_path) as pdf:
-        for unit_i, (max_map, min_map) in enumerate(tqdm(zip(max_maps, min_maps))):
-            # Do only the first 5 unit during testing phase
-            if this_is_a_test_run and unit_i >= 5:
-                break
-            
-            top_y, top_x = np.unravel_index(np.argmax(max_map), max_map.shape)
-            bot_y, bot_x = np.unravel_index(np.argmax(min_map), min_map.shape)
+        pdf_path = os.path.join(result_dir, f"{layer_name}_hot_spot.pdf")
+        with PdfPages(pdf_path) as pdf:
+            for unit_i, (max_map, min_map) in enumerate(tqdm(zip(max_maps, min_maps))):
+                # Do only the first 5 unit during testing phase
+                if this_is_a_test_run and unit_i >= 5:
+                    break
+                
+                top_y, top_x = np.unravel_index(np.argmax(max_map), max_map.shape)
+                bot_y, bot_x = np.unravel_index(np.argmax(min_map), min_map.shape)
 
-            with open(txt_file_path, 'a') as f:
-                write_txt(f, layer_name, unit_i, top_x, top_y, bot_x, bot_y)
+                with open(txt_file_path, 'a') as f:
+                    write_txt(f, layer_name, unit_i, top_x, top_y, bot_x, bot_y, max_map.shape)
 
-            write_pdf(pdf, layer_name, unit_i, max_map, min_map,
-                      top_x, top_y, bot_x, bot_y)
+                write_pdf(pdf, layer_name, unit_i, max_map, min_map,
+                        top_x, top_y, bot_x, bot_y)
+
+    else:
+        composite_maps = load_maps(map_name, layer_name, '', is_random, rf_size)
+
+        pdf_path = os.path.join(result_dir, f"{layer_name}_composite_hot_spot.pdf")
+        with PdfPages(pdf_path) as pdf:
+            for unit_i, composite_map in enumerate(tqdm(composite_maps)):
+                # Do only the first 5 unit during testing phase
+                if this_is_a_test_run and unit_i >= 5:
+                    break
+                
+                top_y, top_x = np.unravel_index(np.argmax(composite_map), composite_map.shape)
+
+                with open(txt_file_path, 'a') as f:
+                    # Fill the bot_x and bot_y columns with NaN
+                    write_txt(f, layer_name, unit_i, top_x, top_y, np.NaN, np.NaN, composite_map.shape)
+
+                write_composite_pdf(pdf, layer_name, unit_i, composite_map, top_x, top_y)

@@ -31,7 +31,7 @@ model_name = 'alexnet'
 
 this_is_a_test_run = False
 map1_name = 'gt'                # ['gt', 'occlude']
-map2_name = 'rfmp4a'            # ['rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
+map2_name = 'rfmp4c7o'            # ['rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
 fnat_upper_thres = 2
 fnat_lower_thres = 0.1
 image_size = (227, 227)

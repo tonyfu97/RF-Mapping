@@ -30,7 +30,7 @@ model_name = 'alexnet'
 
 top_n_r = 1
 this_is_a_test_run = True
-rfmp_name = 'rfmp4c7o'
+rfmp_name = 'rfmp4a'
 
 # Please double-check the directories:
 gt_response_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n', model_name)
@@ -88,11 +88,11 @@ with PdfPages(pdf_path) as pdf:
         bot_rfmp_df.columns = [e.name for e in CR]
         
         # Average the top- and bottom-N resposnes for each unit
-        top_rfmp_responses = top_rfmp_df.loc[(top_rfmp_df.RANK < top_n_r), ['UNIT', 'R']]
+        top_rfmp_responses = top_rfmp_df.loc[(top_rfmp_df.RANK == 0), ['UNIT', 'R']]
         avg_top_rfmp_responses = top_rfmp_responses.groupby('UNIT').mean().to_numpy()
         avg_top_rfmp_responses = np.squeeze(avg_top_rfmp_responses, axis=1)
         
-        bot_rfmp_responses = bot_rfmp_df.loc[(bot_rfmp_df.RANK < top_n_r), ['UNIT', 'R']]
+        bot_rfmp_responses = bot_rfmp_df.loc[(bot_rfmp_df.RANK == 0), ['UNIT', 'R']]
         avg_bot_rfmp_responses = bot_rfmp_responses.groupby('UNIT').mean().to_numpy()
         avg_bot_rfmp_responses = np.squeeze(avg_bot_rfmp_responses, axis=1)
         
@@ -102,12 +102,13 @@ with PdfPages(pdf_path) as pdf:
         # Load the GT responses.
         gt_response_path = os.path.join(gt_response_dir, f"{layer_name}_responses.npy")
         gt_responses = np.load(gt_response_path)
-        # Shape = [num_images, num_units, 2]. There are 2 columns:
+        gt_responses = np.sort(gt_responses, axis=1)
+        # Shape = [num_units, num_images, 2]. There are 2 columns:
         # 0. Max responses of the given image and unit
         # 1. Min responses of the given image and unit
         
         # Average the top- and bottom-N responses for each unit
-        avg_top_gt_responses = np.mean(gt_responses[:, :top_n_r, 0], axis=1)
+        avg_top_gt_responses = np.mean(gt_responses[:, -top_n_r:, 0], axis=1)
         avg_bot_gt_responses = np.mean(gt_responses[:, :top_n_r, 1], axis=1)
         
         plt.subplot(2, num_layers, conv_i+1)

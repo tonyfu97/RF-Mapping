@@ -27,7 +27,7 @@ model_name = "alexnet"
 # model_name = 'vgg16'
 # model = models.resnet18()
 # model_name = 'resnet18'
-sum_modes = ['abs', 'sqr']
+sum_modes = ['abs']
 this_is_a_test_run = True
 is_random = False
 

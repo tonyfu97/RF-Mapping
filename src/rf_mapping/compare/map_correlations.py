@@ -22,20 +22,20 @@ import src.rf_mapping.constants as c
 
 
 # Please specify some details here:
-model = models.alexnet(pretrained=True).to(c.DEVICE)
-model_name = 'alexnet'
+# model = models.alexnet(pretrained=True).to(c.DEVICE)
+# model_name = 'alexnet'
 # model = models.vgg16(pretrained=True).to(c.DEVICE)
 # model_name = 'vgg16'
-# model = models.resnet18(pretrained=True).to(c.DEVICE)
-# model_name = 'resnet18'
+model = models.resnet18(pretrained=True).to(c.DEVICE)
+model_name = 'resnet18'
 image_shape = (227, 227)
 this_is_a_test_run = False
-max_or_min = 'min'
+max_or_min = 'max'
 font_size = 20
 r_val_threshold = 0.7
 
 # ADDING NEW MAP? MODIFY BELOW:
-all_map_names = ['gt', 'gt_composite', 'occlude', 'rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
+all_map_names = ['gt', 'gt_composite', 'occlude_composite', 'rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
 
 # Result paths:
 if this_is_a_test_run:
@@ -155,8 +155,10 @@ for conv_i in range(num_layers):
             gt_maps = load_maps('gt', layer_name, max_or_min)
             gt_max_maps = load_maps('gt', layer_name, 'max')
             gt_min_maps = load_maps('gt', layer_name, 'min')
-            gt_max_min_maps = gt_max_maps + gt_min_maps
-            occlude_maps = load_maps('occlude', layer_name, max_or_min)
+            gt_composite_maps = gt_max_maps + gt_min_maps
+            occlude_max_maps = load_maps('occlude', layer_name, 'max')
+            occlude_min_maps = load_maps('occlude', layer_name, 'max')
+            occlude_composite_maps = occlude_max_maps + occlude_min_maps
             rfmp4a_maps = load_maps('rfmp4a', layer_name, max_or_min)
             rfmp4c7o_maps = load_maps('rfmp4c7o', layer_name, max_or_min)
             rfmp_sin1_maps = load_maps('rfmp_sin1', layer_name, max_or_min)
@@ -170,20 +172,20 @@ for conv_i in range(num_layers):
         for unit_i in tqdm(range(num_units)):
             # Smooth the maps with gaussian blur to get rid off local texture
             # that will influence direct correlation.
-            sigma = occlude_maps[unit_i].shape[-1] / 30
-            occlude_map = gaussian_filter(occlude_maps[unit_i], sigma=sigma)
+            sigma = occlude_composite_maps[unit_i].shape[-1] / 30
+            occlude_composite_map = gaussian_filter(occlude_composite_maps[unit_i], sigma=sigma)
 
             # Get the other maps of this unit
             # ADDING NEW MAP? MODIFY BELOW:
             gt_map = gt_maps[unit_i]
-            gt_max_min_map = gt_max_min_maps[unit_i]
+            gt_composite_map = gt_composite_maps[unit_i]
             rfmp4a_map = rfmp4a_maps[unit_i]
             rfmp4c7o_map = rfmp4c7o_maps[unit_i]
             rfmp_sin1_map = rfmp_sin1_maps[unit_i]
             pasu_map = pasu_maps[unit_i]
 
             # ADDING NEW MAP? MODIFY BELOW:
-            all_maps = [gt_map, gt_max_min_map, occlude_map, rfmp4a_map, rfmp4c7o_map, rfmp_sin1_map, pasu_map]
+            all_maps = [gt_map, gt_composite_map, occlude_composite_map, rfmp4a_map, rfmp4c7o_map, rfmp_sin1_map, pasu_map]
 
             # Normalize the maps
             for i in range(len(all_maps)):

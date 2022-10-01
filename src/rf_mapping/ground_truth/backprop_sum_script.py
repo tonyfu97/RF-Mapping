@@ -31,7 +31,7 @@ model_name = "alexnet"
 # model_name = "vgg16"
 # model = models.resnet18(pretrained=True).to(c.DEVICE)
 # model_name = "resnet18"
-sum_modes = ['abs', 'sqr']
+sum_modes = ['abs']
 top_n = 100
 this_is_a_test_run = True
 is_random = True

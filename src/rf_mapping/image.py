@@ -55,11 +55,14 @@ def preprocess_img_to_tensor(img, img_size=None):
     presenting it to a Pytorch model. Adjusts the dimensions if necessary.
     """
     # This normalization only applies to the imagenet dataset we have.
+    # transform = T.Compose([
+    #             T.ToTensor(),
+    #             T.Normalize(
+    #     mean=[-0.01618503, -0.01468056, -0.01345447],
+    #     std=[0.45679083, 0.44849625, 0.44975275],),
+    # ])
     transform = T.Compose([
                 T.ToTensor(),
-                T.Normalize(
-        mean=[-0.01618503, -0.01468056, -0.01345447],
-        std=[0.45679083, 0.44849625, 0.44975275],),
     ])
     if len(img.shape) == 2:
         img_temp = np.zeros((3, img.shape[0], img.shape[1]))
