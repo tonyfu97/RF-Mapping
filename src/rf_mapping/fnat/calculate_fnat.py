@@ -72,6 +72,10 @@ def config_plot(x, y):
     plt.gca().set_aspect('equal')
 
 
+all_top_fnats = []
+all_bot_fnats = []
+
+
 pdf_path = os.path.join(result_dir, f"{rfmp_name}_fnat_{top_n_r}_avg.pdf")
 with PdfPages(pdf_path) as pdf:
     plt.figure(figsize=(num_layers*5, 10))
@@ -87,17 +91,19 @@ with PdfPages(pdf_path) as pdf:
         bot_rfmp_df = pd.read_csv(bot_rfmp_path, sep=" ", header=None)
         bot_rfmp_df.columns = [e.name for e in CR]
         
-        # Average the top- and bottom-N resposnes for each unit
-        top_rfmp_responses = top_rfmp_df.loc[(top_rfmp_df.RANK == 0), ['UNIT', 'R']]
-        avg_top_rfmp_responses = top_rfmp_responses.groupby('UNIT').mean().to_numpy()
-        avg_top_rfmp_responses = np.squeeze(avg_top_rfmp_responses, axis=1)
+        # Average the top-1 and bottom-1 resposnes for each unit
+        # top_rfmp_responses = top_rfmp_df.loc[(top_rfmp_df.RANK == 0), ['UNIT', 'R']]
+        # avg_top_rfmp_responses = top_rfmp_responses.groupby('UNIT').mean().to_numpy()
+        # avg_top_rfmp_responses = np.squeeze(avg_top_rfmp_responses, axis=1)
+        avg_top_rfmp_responses = np.squeeze(top_rfmp_df.loc[(top_rfmp_df.RANK == 0), ['R']].to_numpy(), axis=1)
         
-        bot_rfmp_responses = bot_rfmp_df.loc[(bot_rfmp_df.RANK == 0), ['UNIT', 'R']]
-        avg_bot_rfmp_responses = bot_rfmp_responses.groupby('UNIT').mean().to_numpy()
-        avg_bot_rfmp_responses = np.squeeze(avg_bot_rfmp_responses, axis=1)
+        # bot_rfmp_responses = bot_rfmp_df.loc[(bot_rfmp_df.RANK == 0), ['UNIT', 'R']]
+        # avg_bot_rfmp_responses = bot_rfmp_responses.groupby('UNIT').mean().to_numpy()
+        # avg_bot_rfmp_responses = np.squeeze(avg_bot_rfmp_responses, axis=1)
+        avg_bot_rfmp_responses = np.squeeze(bot_rfmp_df.loc[(bot_rfmp_df.RANK == 0), ['R']].to_numpy(), axis=1)
         
-        print(f"avg top rfmp has {np.sum(avg_top_rfmp_responses < 0):3} units less than zeros!")
-        # print(f"avg bot rfmp has {np.sum(avg_bot_rfmp_responses < 0)} units less than zeros!")
+        print(f"avg top rfmp has {np.sum(avg_top_rfmp_responses < 1):3} units less than 1")
+        print(f"avg bot rfmp has {np.sum(avg_bot_rfmp_responses > -1):3} units greater than -1")
         
         # Load the GT responses.
         gt_response_path = os.path.join(gt_response_dir, f"{layer_name}_responses.npy")
@@ -136,12 +142,34 @@ with PdfPages(pdf_path) as pdf:
         top_fnat[avg_top_rfmp_responses < 1] = np.NaN
         bot_fnat[avg_bot_gt_responses > -1] = np.NaN
         bot_fnat[avg_bot_rfmp_responses > -1] = np.NaN
+
+        # Append to lists for the next figure
+        all_top_fnats.append(top_fnat)
+        all_bot_fnats.append(bot_fnat)
         
         # Save fnat in a txt file
         with open(fnat_txt_path, 'a') as f:
             for unit_i, (t, b) in enumerate(zip(top_fnat, bot_fnat)):
                 f.write(f"{layer_name} {unit_i} {t:.4f} {b:.4f}\n")
         
+    pdf.savefig()
+    plt.show()
+    plt.close()
+    
+
+    plt.figure(figsize=(num_layers*5, 10))
+    for conv_i in range(num_layers):
+        layer_name = f"conv{conv_i+1}"
+
+        plt.subplot(2, num_layers, conv_i+1)
+        plt.hist(all_top_fnats[conv_i])
+        plt.title(f"{layer_name}, top (n = {np.sum(np.isfinite(all_top_fnats[conv_i]))})")
+        
+        plt.subplot(2, num_layers, conv_i+1+num_layers)
+        plt.hist(all_bot_fnats[conv_i])
+        plt.title(f"{layer_name}, bottom (n = {np.sum(np.isfinite(all_bot_fnats[conv_i]))})")
+                
+    
     pdf.savefig()
     plt.show()
     plt.close()

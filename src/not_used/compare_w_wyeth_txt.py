@@ -1,7 +1,9 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 plt.figure(figsize=(25,5))
+plt.suptitle(f"comparing natural images", fontsize=24)
 for i in range(2,6):
     wyeth_path = f'/Users/tonyfu/Desktop/n01_conv{i}_nat50k_r.txt'
     wyeth_conv_nat_r = pd.read_csv(wyeth_path, sep=' ', header=None)
@@ -13,17 +15,18 @@ for i in range(2,6):
 
     plt.subplot(1,4,i-1)
     plt.scatter(wyeth_conv_nat_r.MAX_10_AVG, my_conv_nat_r)
-    plt.xlabel('wyeth')
-    plt.ylabel('tony')
-    plt.title(f"conv{i} r")
+    plt.xlabel('Wyeth', fontsize=14)
+    plt.ylabel('Tony', fontsize=14)
+    plt.title(f"conv{i}", fontsize=14)
     plt.gca().set_aspect('equal')
-    plt.xlim(0, 300)
-    plt.ylim(0, 300)
+    plt.xlim(0, 150)
+    plt.ylim(0, 150)
 
 plt.show()
 
 
 plt.figure(figsize=(25,5))
+plt.suptitle(f"comparing rfmp4a", fontsize=24)
 for i in range(2,6):
     wyeth_path = f'/Users/tonyfu/Desktop/n01_conv{i}_bar4a_minmax.txt'
     wyeth_conv_bar_r = pd.read_csv(wyeth_path, sep=' ', header=None)
@@ -36,9 +39,9 @@ for i in range(2,6):
 
     plt.subplot(1,4,i-1)
     plt.scatter(wyeth_conv_bar_r.MAX_R, my_conv_bar_r.MAX_R)
-    plt.xlabel('wyeth')
-    plt.ylabel('tony')
-    plt.title(f"conv{i} r")
+    plt.xlabel('Wyeth', fontsize=14)
+    plt.ylabel('Tony', fontsize=14)
+    plt.title(f"conv{i}", fontsize=14)
     plt.gca().set_aspect('equal')
     plt.xlim(0, 45)
     plt.ylim(0, 45)

@@ -648,20 +648,23 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
         # Note that the background color are set to 0, while the foreground
         # values are always positive.
         if has_color:
-            # new_bar = stimfr_bar_color(params['xn'], params['yn'],
-            #                             params['x0'], params['y0'],
-            #                             params['theta'],
-            #                             params['len'], params['wid'], 
-            #                             params['aa'],
-            #                             max(params['r1'], 0), max(params['g1'], 0), max(params['b1'], 0),
-            #                             0, 0, 0)
-            new_bar = stimfr_bar_color(params['xn'], params['yn'],
+            if math.isclose(params['r1'], -1) and math.isclose(params['g1'], -1) and math.isclose(params['b1'], -1):
+                # if the color is black, make it white:
+                new_bar = stimfr_bar_color(params['xn'], params['yn'],
                                            params['x0'], params['y0'],
                                            params['theta'],
                                            params['len'], params['wid'], 
                                            params['aa'],
-                                           max(params['r1'], 0), max(params['g1'], 0), max(params['b1'], 0),
-                                           -1, -1, -1)
+                                           1, 1, 1,
+                                           0, 0, 0)
+            else:
+                new_bar = stimfr_bar_color(params['xn'], params['yn'],
+                                            params['x0'], params['y0'],
+                                            params['theta'],
+                                            params['len'], params['wid'], 
+                                            params['aa'],
+                                            max(params['r1'], 0), max(params['g1'], 0), max(params['b1'], 0),
+                                            0, 0, 0)
         else:
             new_bar = stimfr_bar(params['xn'], params['yn'],
                                 params['x0'], params['y0'],
@@ -681,20 +684,23 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
         response = center_responses[min_bar_i, unit_i]
         params = splist[min_bar_i]
         if has_color:
-            # new_bar = stimfr_bar_color(params['xn'], params['yn'],
-            #                             params['x0'], params['y0'],
-            #                             params['theta'],
-            #                             params['len'], params['wid'], 
-            #                             params['aa'],
-            #                             max(params['r1'], 0), max(params['g1'], 0), max(params['b1'], 0),
-            #                             0, 0, 0)
-            new_bar = stimfr_bar_color(params['xn'], params['yn'],
+            if math.isclose(params['r1'], -1) and math.isclose(params['g1'], -1) and math.isclose(params['b1'], -1):
+                # if the color is black, make it white:
+                new_bar = stimfr_bar_color(params['xn'], params['yn'],
                                            params['x0'], params['y0'],
                                            params['theta'],
                                            params['len'], params['wid'], 
                                            params['aa'],
-                                           max(params['r1'], 0), max(params['g1'], 0), max(params['b1'], 0),
-                                           -1, -1, -1)
+                                           1, 1, 1,
+                                           0, 0, 0)
+            else:
+                new_bar = stimfr_bar_color(params['xn'], params['yn'],
+                                            params['x0'], params['y0'],
+                                            params['theta'],
+                                            params['len'], params['wid'], 
+                                            params['aa'],
+                                            max(params['r1'], 0), max(params['g1'], 0), max(params['b1'], 0),
+                                            0, 0, 0)
         else:
             new_bar = stimfr_bar(params['xn'], params['yn'],
                                 params['x0'], params['y0'],

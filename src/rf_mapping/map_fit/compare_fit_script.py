@@ -539,9 +539,9 @@ with PdfPages(pdf_path) as pdf:
         plt.ylim([-5, 70])
         plt.xlim([-0.5, 2])
         
-    # pdf.savefig()
-    # plt.show()
-    # plt.close()
+    pdf.savefig()
+    plt.show()
+    plt.close()
     
     
     # plt.figure(figsize=(14, 7))
@@ -553,15 +553,16 @@ with PdfPages(pdf_path) as pdf:
     # plt.show()
     # plt.close()
 
+# Merge the two pds
+top_cri_map_corr_df = pd.merge(cri_df, max_map_corr_df, how='left')
+bot_cri_map_corr_df = pd.merge(cri_df, min_map_corr_df, how='left')
+cri_thres = 0.5
+
 pdf_path = os.path.join(result_dir, f"{model_name}_{map1_name}_{map2_name}_cri.pdf")
 with PdfPages(pdf_path) as pdf:
     ###########################################################################
     #                 FIGURE 2. MAP CORRELATIONS VS. CRI                      #
     ###########################################################################
-    # Merge the two pds
-    top_cri_map_corr_df = pd.merge(cri_df, max_map_corr_df, how='left')
-    bot_cri_map_corr_df = pd.merge(cri_df, min_map_corr_df, how='left')
-
     # Plot the relationship between CRI and map correlation
     plt.figure(figsize=(20, 10))
     plt.suptitle(f"Relation between CRI and map correlation ({map1_name} vs {map2_name})", fontsize=24)
@@ -570,18 +571,18 @@ with PdfPages(pdf_path) as pdf:
             continue
         
         layer_name = f"conv{conv_i+1}"
+
+        # print()
+        # print(f"Units in {layer_name} that have top CRI larger than {cri_thres}: ")
+        # print(top_cri_map_corr_df.loc[(top_cri_map_corr_df.LAYER == layer_name) & (top_cri_map_corr_df.CRI > cri_thres), 'UNIT'].to_numpy())
+        # print(f"Units in {layer_name} that have bot CRI larger than {cri_thres}: ")
+        # print(bot_cri_map_corr_df.loc[(bot_cri_map_corr_df.LAYER == layer_name) & (bot_cri_map_corr_df.CRI > cri_thres), 'UNIT'].to_numpy())
         
-        cri_thres = 0.5
-        print()
-        print(f"Units in {layer_name} that have top CRI larger than {cri_thres}: ")
-        print(top_cri_map_corr_df.loc[(top_cri_map_corr_df.LAYER == layer_name) & (top_cri_map_corr_df.CRI > cri_thres), 'UNIT'].to_numpy())
-        print(f"Units in {layer_name} that have bot CRI larger than {cri_thres}: ")
-        print(bot_cri_map_corr_df.loc[(bot_cri_map_corr_df.LAYER == layer_name) & (bot_cri_map_corr_df.CRI > cri_thres), 'UNIT'].to_numpy())
-        
-        top_cri = top_cri_map_corr_df.loc[(top_cri_map_corr_df.LAYER == layer_name), 'CRI']
-        top_map_corr = top_cri_map_corr_df.loc[(top_cri_map_corr_df.LAYER == layer_name), f"{map1_name}_vs_{map2_name}"]
-        bot_cri = bot_cri_map_corr_df.loc[(bot_cri_map_corr_df.LAYER == layer_name), 'CRI']
-        bot_map_corr = bot_cri_map_corr_df.loc[(bot_cri_map_corr_df.LAYER == layer_name), f"{map1_name}_vs_{map2_name}"]
+        # Extract columns and mutually filter NaN values.
+        top_cri = top_cri_map_corr_df.loc[(top_cri_map_corr_df.LAYER == layer_name) & ~(top_cri_map_corr_df[f"{map1_name}_vs_{map2_name}"].isnull()), 'CRI']
+        top_map_corr = top_cri_map_corr_df.loc[(top_cri_map_corr_df.LAYER == layer_name) & ~(top_cri_map_corr_df[f"{map1_name}_vs_{map2_name}"].isnull()), f"{map1_name}_vs_{map2_name}"]
+        bot_cri = bot_cri_map_corr_df.loc[(bot_cri_map_corr_df.LAYER == layer_name) & ~(bot_cri_map_corr_df[f"{map1_name}_vs_{map2_name}"].isnull()), 'CRI']
+        bot_map_corr = bot_cri_map_corr_df.loc[(bot_cri_map_corr_df.LAYER == layer_name) & ~(bot_cri_map_corr_df[f"{map1_name}_vs_{map2_name}"].isnull()), f"{map1_name}_vs_{map2_name}"]
 
         plt.subplot(2,num_layers - 1, conv_i)
         plt.scatter(top_cri, top_map_corr, alpha=0.4)
