@@ -28,7 +28,7 @@ model_name = 'alexnet'
 # model = models.resnet18(pretrained=True).to(c.DEVICE)
 # model_name = "resnet18"
 
-top_n_r = 1
+top_n_r = 10
 this_is_a_test_run = True
 rfmp_name = 'rfmp4a'
 
@@ -139,9 +139,11 @@ with PdfPages(pdf_path) as pdf:
         
         # Remove avg_gt_r that is less than 1 (or greater than -1 for bottom)
         top_fnat[avg_top_gt_responses < 1] = np.NaN
-        top_fnat[avg_top_rfmp_responses < 1] = np.NaN
         bot_fnat[avg_bot_gt_responses > -1] = np.NaN
-        bot_fnat[avg_bot_rfmp_responses > -1] = np.NaN
+        
+        # Remove negative rfmp responses (or positive for bottom map)
+        top_fnat[avg_top_rfmp_responses < 0] = 0
+        bot_fnat[avg_bot_rfmp_responses > 0] = 0
 
         # Append to lists for the next figure
         all_top_fnats.append(top_fnat)
@@ -158,16 +160,17 @@ with PdfPages(pdf_path) as pdf:
     
 
     plt.figure(figsize=(num_layers*5, 10))
+    plt.suptitle("Distribution of fnat", fontsize=24)
     for conv_i in range(num_layers):
         layer_name = f"conv{conv_i+1}"
 
         plt.subplot(2, num_layers, conv_i+1)
         plt.hist(all_top_fnats[conv_i])
-        plt.title(f"{layer_name}, top (n = {np.sum(np.isfinite(all_top_fnats[conv_i]))})")
+        plt.title(f"{layer_name}, top (n = {np.sum(np.isfinite(all_top_fnats[conv_i]))})", fontsize=14)
         
         plt.subplot(2, num_layers, conv_i+1+num_layers)
         plt.hist(all_bot_fnats[conv_i])
-        plt.title(f"{layer_name}, bottom (n = {np.sum(np.isfinite(all_bot_fnats[conv_i]))})")
+        plt.title(f"{layer_name}, bottom (n = {np.sum(np.isfinite(all_bot_fnats[conv_i]))})", fontsize=14)
                 
     
     pdf.savefig()
