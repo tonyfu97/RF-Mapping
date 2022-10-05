@@ -3,16 +3,13 @@ Script to correlate the maps and plot the distributions of r values.
 
 Tony Fu, August 21st, 2022
 """
-import enum
 import os
 import sys
 
 import numpy as np
 import pandas as pd
 import torch.nn as nn
-from scipy.stats import pearsonr
 from torchvision import models
-# from torchvision.models import AlexNet_Weights, VGG16_Weights
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 

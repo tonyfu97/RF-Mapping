@@ -34,7 +34,7 @@ this_is_a_test_run = True
 max_or_min = 'max'
 font_size = 20
 r_val_threshold = 0.7
-sigma_rf_ratio = 1/10  # From [0, 1/120, 1/60, 1/30, 1/20, 1/10, 1/5, 1/4, 1/2]
+sigma_rf_ratio = 1/30  # From [0, 1/120, 1/60, 1/30, 1/20, 1/10, 1/5, 1/4, 1/2]
 to_plot_pdf = True
 
 # ADDING NEW MAP? MODIFY BELOW:
@@ -160,9 +160,9 @@ def smooth_and_normalize_maps(maps, sigma):
         for unit_i in range(num_units):
             for color_i in range(3):
                 if sigma == 0:
-                    smoothed_maps[unit_i,:,:, color_i] = maps[unit_i, :, :, color_i]
+                    smoothed_maps[unit_i,:,:,color_i] = maps[unit_i,:,:,color_i]
                 else:
-                    smoothed_maps[unit_i,:,:, color_i] = gaussian_filter(maps[unit_i, :, :, color_i], sigma=sigma)
+                    smoothed_maps[unit_i,:,:,color_i] = gaussian_filter(maps[unit_i,:,:,color_i], sigma=sigma)
             if not math.isclose(smoothed_maps[unit_i].max(), 0, abs_tol=10 ** (-5)):
                 smoothed_maps[unit_i] = smoothed_maps[unit_i]/smoothed_maps[unit_i].max()
     return smoothed_maps
@@ -200,7 +200,7 @@ for conv_i in range(num_layers):
     all_smoothed_maps = {}
     for map_name in all_map_names:
         this_map = load_maps(map_name, layer_name, max_or_min)
-        sigma = this_map.shape[2] * sigma_rf_ratio
+        sigma = this_map.shape[-2] * sigma_rf_ratio
         all_smoothed_maps[map_name] = smooth_and_normalize_maps(this_map, sigma)
     # except:
     #     break  # This layer was not mapped.
@@ -253,7 +253,7 @@ if to_plot_pdf:
             all_smoothed_maps = {}
             for map_name in all_map_names:
                 this_map = load_maps(map_name, layer_name, max_or_min)
-                sigma = this_map.shape[-1] * sigma_rf_ratio
+                sigma = this_map.shape[-2] * sigma_rf_ratio
                 all_smoothed_maps[map_name] = smooth_and_normalize_maps(this_map, sigma)
         except:
             break  # This layer was not mapped.
@@ -275,7 +275,7 @@ if to_plot_pdf:
                 for idx, (map_name, map) in enumerate(all_smoothed_maps.items()):
                     plt.subplot(len(all_smoothed_maps)+1, len(all_smoothed_maps)+1, idx + 2)
                     plt.imshow(map[unit_i], cmap='gray')
-                    plt.title(all_map_names[idx], fontsize=font_size)
+                    plt.title(map_name, fontsize=font_size)
 
                     plt.subplot(len(all_smoothed_maps)+1, len(all_smoothed_maps)+1,
                                 (len(all_smoothed_maps) + 1) * (idx + 1) + 1)
