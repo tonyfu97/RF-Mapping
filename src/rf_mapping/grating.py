@@ -149,38 +149,37 @@ def stimfr_sine(xn,yn,x0,y0,diam,sf,phase,theta,bgval,contrast):
 #     plt.imshow(s1 + s2, cmap='gray')
 #     plt.show()
 
-
-if __name__ == "__main__":
-    spatial_freqs = np.array([ 0.02, 0.04, 0.08, 0.16, 0.32 ])
-    phase = np.array([ 0.0, 90.0, 180.0, 270.0 ])
-    orilist = np.arange(0.0, 180.0, 22.5)
+# if __name__ == "__main__":
+#     spatial_freqs = np.array([ 0.02, 0.04, 0.08, 0.16, 0.32 ])
+#     phase = np.array([ 0.0, 90.0, 180.0, 270.0 ])
+#     orilist = np.arange(0.0, 180.0, 22.5)
     
-    plt.figure(figsize=(50,10))
-    plot_size = (100, 500)
-    s = np.zeros((plot_size))
-    for i, sf in enumerate(spatial_freqs):
-        s += stimfr_sine(plot_size[1], plot_size[0],-200+100*i,0,100,sf,0,0,0,1)
-    plt.imshow(s, cmap='gray', vmin=-1, vmax=1)
-    plt.axis('off')
-    plt.show()
+#     plt.figure(figsize=(50,10))
+#     plot_size = (100, 500)
+#     s = np.zeros((plot_size))
+#     for i, sf in enumerate(spatial_freqs):
+#         s += stimfr_sine(plot_size[1], plot_size[0],-200+100*i,0,100,sf,0,0,0,1)
+#     plt.imshow(s, cmap='gray', vmin=-1, vmax=1)
+#     plt.axis('off')
+#     plt.show()
     
-    plt.figure(figsize=(40,10))
-    plot_size = (100, 400)
-    s = np.zeros((plot_size))
-    for i, p in enumerate(phase):
-        s += stimfr_sine(plot_size[1], plot_size[0],-150+100*i,0,90,0.02,p,0,0,1)
-    plt.imshow(s, cmap='gray', vmin=-1, vmax=1)
-    plt.axis('off')
-    plt.show()
+#     plt.figure(figsize=(40,10))
+#     plot_size = (100, 400)
+#     s = np.zeros((plot_size))
+#     for i, p in enumerate(phase):
+#         s += stimfr_sine(plot_size[1], plot_size[0],-150+100*i,0,90,0.02,p,0,0,1)
+#     plt.imshow(s, cmap='gray', vmin=-1, vmax=1)
+#     plt.axis('off')
+#     plt.show()
     
-    plt.figure(figsize=(80,10))
-    plot_size = (100, 800)
-    s = np.zeros((plot_size))
-    for i, ori in enumerate(orilist):
-        s += stimfr_sine(plot_size[1], plot_size[0],-350+100*i,0,90,0.02,0,ori,0,1)
-    plt.imshow(s, cmap='gray', vmin=-1, vmax=1)
-    plt.axis('off')
-    plt.show()
+#     plt.figure(figsize=(80,10))
+#     plot_size = (100, 800)
+#     s = np.zeros((plot_size))
+#     for i, ori in enumerate(orilist):
+#         s += stimfr_sine(plot_size[1], plot_size[0],-350+100*i,0,90,0.02,0,ori,0,1)
+#     plt.imshow(s, cmap='gray', vmin=-1, vmax=1)
+#     plt.axis('off')
+#     plt.show()
 
         
     # for p in phase:
@@ -384,15 +383,15 @@ def get_fourier_harmonic(d,order):
     return ampl,theta
     
 
-if __name__ == "__main__":
-    a = np.arange(0,2.0*math.pi,math.pi/4)
-    sa = np.sin(a)
-    plt.plot(sa)
-    plt.show()
+# if __name__ == "__main__":
+#     a = np.arange(0,2.0*math.pi,math.pi/4)
+#     sa = np.sin(a)
+#     plt.plot(sa)
+#     plt.show()
     
-    for order in range(5):
-        amp,thet = get_fourier_harmonic(sa,order)
-        print(order, amp, thet)
+#     for order in range(5):
+#         amp,thet = get_fourier_harmonic(sa,order)
+#         print(order, amp, thet)
 
 
 #######################################.#######################################
@@ -521,6 +520,13 @@ def make_stimmaps(splist, center_responses, unit_i, _debug=False,
     num_weighted_min_bars = 0
     num_non_overlap_max_bars = 0
     num_non_overlap_min_bars = 0
+    
+    # Need to change the stimulus parameters such that the entire circular
+    # patch are ones, and the background are zeros.
+    sf = 0
+    ph = 0
+    bgval = 0
+    contrast = 1
 
     if _debug:
         print(f"unit {unit_i}: r_max: {r_max:7.2f}, max bar idx: {isort[::-1][:5]}")
@@ -532,9 +538,9 @@ def make_stimmaps(splist, center_responses, unit_i, _debug=False,
         # values are always positive.
         new_stim = stimfr_sine(params['xn'], params['yn'],
                                params['x0'], params['y0'],
-                               params['size'], params['sf'], params['ph'],
+                               params['size'], sf, ph,
                                params['theta'], 
-                               params['bgval'], params['contrast'])
+                               bgval, contrast)
         if response > max(r_max * response_thr, 0):
             has_included = add_non_overlap_map(new_stim, non_overlap_max_map, stim_thr)
             add_weighted_map(new_stim, weighted_max_map, response)
@@ -550,9 +556,9 @@ def make_stimmaps(splist, center_responses, unit_i, _debug=False,
         params = splist[min_stim_i]
         new_stim = stimfr_sine(params['xn'], params['yn'],
                                params['x0'], params['y0'],
-                               params['size'], params['sf'], params['ph'],
+                               params['size'], sf, ph,
                                params['theta'], 
-                               params['bgval'], params['contrast'])
+                               bgval, contrast)
         if response < min(r_min * response_thr, 0):
             has_included = add_non_overlap_map(new_stim, non_overlap_min_map, stim_thr)
             add_weighted_map(new_stim, weighted_min_map, (r_max - response)/r_range)
@@ -730,7 +736,7 @@ def sin1_run_01b(model, model_name, result_dir, _debug=False, batch_size=10,
         # a bottleneck of the program because it is all computed by a single
         # CPU core. Improvement by multiprocessing was implemented on August
         # 15, 2022 to solve the problem.
-        batch_size = os.cpu_count() // 2
+        batch_size = os.cpu_count() // 3
         unit_i = 0
         while (unit_i < num_units):
             if _debug and unit_i >= 20:
