@@ -168,7 +168,7 @@ pdf_path = os.path.join(result_dir,
                         f"{layer_name}_{unit_i}_{max_or_min}_blur_example.pdf")
 with PdfPages(pdf_path) as pdf:
     plt.figure(figsize=(len(sigma_rf_ratios) * 5, 10))
-    plt.suptitle(f"{layer_name} {layer_name} no.{unit_i}", fontsize=24)
+    plt.suptitle(f"{model_name} {layer_name} no.{unit_i}", fontsize=30)
     for plot_i, sigma_rf_ratio in enumerate(sigma_rf_ratios):
         sigma = sigma_rf_ratio * gt_map.shape[-1]
         smoothed_gt_map = smooth_and_normalize_maps(gt_map, sigma)
@@ -177,10 +177,19 @@ with PdfPages(pdf_path) as pdf:
 
         plt.subplot(2, len(sigma_rf_ratios), plot_i + 1)
         plt.imshow(smoothed_gt_map, cmap='gray')
-        plt.title(f"{sigma_rf_ratios_str[plot_i]} (r = {r_val:.4f})", fontsize=14)
+        plt.xticks([])
+        plt.yticks([])
+        plt.title(f"$\sigma$ = {sigma_rf_ratios_str[plot_i]} M", fontsize=20)
+        if plot_i == 0:
+            plt.ylabel('Ground truth', fontsize=18)
         
         plt.subplot(2, len(sigma_rf_ratios), plot_i + 1 + len(sigma_rf_ratios))
         plt.imshow(smoothed_rfmp4a_map, cmap='gray')
+        plt.xticks([])
+        plt.yticks([])
+        plt.title(f"r = {r_val:.4f}", fontsize=20)
+        if plot_i == 0:
+            plt.ylabel('Rfmp4a', fontsize=18)
     
     pdf.savefig()
     plt.show()

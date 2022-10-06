@@ -484,7 +484,7 @@ def sinmap_run_01b(splist, truncated_model, num_units, batch_size=100, _debug=Fa
 #                                                                             #
 ###############################################################################
 def make_stimmaps(splist, center_responses, unit_i, _debug=False,
-                  num_stim=500, response_thr=0.8, stim_thr=0.2):
+                  num_stim=500, response_thr=0.5, stim_thr=0.2):
     """
     Parameters
     ----------
@@ -535,10 +535,9 @@ def make_stimmaps(splist, center_responses, unit_i, _debug=False,
                                params['size'], params['sf'], params['ph'],
                                params['theta'], 
                                params['bgval'], params['contrast'])
-        # if (response - r_min) > r_range * response_thr:
-        if num_weighted_max_bars < num_stim:
+        if response > max(r_max * response_thr, 0):
             has_included = add_non_overlap_map(new_stim, non_overlap_max_map, stim_thr)
-            add_weighted_map(new_stim, weighted_max_map, (response - r_min)/r_range)
+            add_weighted_map(new_stim, weighted_max_map, response)
             # counts the number of bars in each map
             num_weighted_max_bars += 1
             if has_included:
@@ -554,8 +553,7 @@ def make_stimmaps(splist, center_responses, unit_i, _debug=False,
                                params['size'], params['sf'], params['ph'],
                                params['theta'], 
                                params['bgval'], params['contrast'])
-        # if (response - r_min) < r_range * (1 - response_thr):
-        if num_weighted_min_bars < num_stim:
+        if response < min(r_min * response_thr, 0):
             has_included = add_non_overlap_map(new_stim, non_overlap_min_map, stim_thr)
             add_weighted_map(new_stim, weighted_min_map, (r_max - response)/r_range)
             # counts the number of bars in each map
@@ -662,7 +660,7 @@ def stimset_dict_rfmp_sin1(xn,max_rf):
 #                                                                             #
 ###############################################################################
 def sin1_run_01b(model, model_name, result_dir, _debug=False, batch_size=10,
-                 num_stim=500, conv_i_to_run=None):
+                 response_thr=0.5, conv_i_to_run=None):
     """
     Map the RF of all conv layers in model using RF mapping paradigm sin1.
     
@@ -702,11 +700,6 @@ def sin1_run_01b(model, model_name, result_dir, _debug=False, batch_size=10,
         os.remove(non_overlap_counts_path)
     
     for conv_i in range(len(layer_indices)):
-        # In case we would like to run only one layer...
-        if conv_i is not None:
-            if conv_i != conv_i_to_run:
-                continue
-        
         layer_name = f"conv{conv_i + 1}"
         print(f"\n{layer_name}\n")
         # Get layer-specific info
@@ -749,7 +742,8 @@ def sin1_run_01b(model, model_name, result_dir, _debug=False, batch_size=10,
                                        [center_responses for _ in range(real_batch_size)],
                                        [i for i in np.arange(unit_i, unit_i + real_batch_size)],
                                        [_debug for _ in range(real_batch_size)],
-                                       [num_stim for _ in range(real_batch_size)],
+                                       [None for _ in range(real_batch_size)],
+                                       [response_thr for _ in range(real_batch_size)]
                                        )
             # Crop and save maps to layer-level array
             for result_i, result in enumerate(results):

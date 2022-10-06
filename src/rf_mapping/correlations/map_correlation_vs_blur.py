@@ -82,8 +82,12 @@ with PdfPages(result_pdf_path) as pdf:
                                 idx1 * len(all_map_names) + idx2 + 1)
                     plt.plot(sigma_rf_ratios, avg_corr, '.-')
                     # plt.xticks(sigma_rf_ratios, sigma_rf_ratios_str)
-                    plt.title(corr_name)
                     plt.ylim([0, 1.1])
+                    
+                    if idx1 == 0:
+                        plt.title(map_name2, fontsize=18)
+                    if idx1 == idx2:
+                        plt.ylabel(map_name1, fontsize=18)
                     
         pdf.savefig()
         plt.show()

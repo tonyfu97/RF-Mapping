@@ -23,15 +23,15 @@ import src.rf_mapping.constants as c
 
 
 # Please specify some details here:
-model = models.alexnet(pretrained=True).to(c.DEVICE)
-model_name = 'alexnet'
-# model = models.vgg16(pretrained=True).to(c.DEVICE)
-# model_name = 'vgg16'
+# model = models.alexnet(pretrained=True).to(c.DEVICE)
+# model_name = 'alexnet'
+model = models.vgg16(pretrained=True).to(c.DEVICE)
+model_name = 'vgg16'
 # model = models.resnet18(pretrained=True).to(c.DEVICE)
 # model_name = 'resnet18'
 image_shape = (227, 227)
-this_is_a_test_run = True
-max_or_min = 'max'
+this_is_a_test_run = False
+max_or_min = 'min'
 font_size = 20
 r_val_threshold = 0.7
 sigma_rf_ratio = 1/30  # From [0, 1/120, 1/60, 1/30, 1/20, 1/10, 1/5, 1/4, 1/2]
@@ -39,7 +39,7 @@ to_plot_pdf = True
 
 # ADDING NEW MAP? MODIFY BELOW:
 all_map_names = ['gt', 'gt_composite', 'occlude_composite',
-                 'rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
+                 'rfmp4a', 'rfmp4c7o'] #'rfmp_sin1', 'pasu']
 
 # Result paths:
 if this_is_a_test_run:

@@ -23,12 +23,14 @@ model_name = 'alexnet'
 # model_name = "resnet18"
 this_is_a_test_run = False
 batch_size = 10
+response_thr = 0.5
 
 # Please double-check the directories:
 if this_is_a_test_run:
     result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp_sin1', 'mapping', 'test')
 else:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp_sin1', 'mapping', model_name)
+    # result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp_sin1', 'mapping', model_name)
+    result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp_sin1', 'mapping', 'test')
 
 ###############################################################################
 
@@ -43,4 +45,4 @@ else:
 
 if __name__ == '__main__':
     sin1_run_01b(model, model_name, result_dir, _debug=this_is_a_test_run,
-                 batch_size=batch_size)
+                 batch_size=batch_size, response_thr=response_thr)
