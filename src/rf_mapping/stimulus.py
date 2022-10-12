@@ -4,9 +4,11 @@ other .py files like bar.py, pasu_shape.py, and grating.py
 
 Tony Fu, Sep 14, 2022
 """
+import os
 import sys
 import math
 import warnings
+import datetime
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,7 +18,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 __all__ = ['clip', 'stimset_gridx_map', 'print_progress',
            'add_weighted_map', 'add_non_overlap_map',
            'summarize_TB1', 'summarize_TBn', 'record_stim_counts',
-           'record_splist', 'record_center_responses',
+           'record_splist', 'record_center_responses', 'record_script_log',
            'mapstat_comr_1', 'make_map_pdf']
 
 
@@ -283,6 +285,17 @@ def record_center_responses(txt_path, center_responses, top_n, is_top):
                 f.write(f"{unit_i} {i} {stimulus_idx} ")
                 f.write(f"{center_responses[stimulus_idx, unit_i]:.4f}\n")
                 # Format: unit_i, rank, stimulus_index, response_value
+
+
+#######################################.#######################################
+#                                                                             #
+#                              RECORD_SCRIPT_LOG                              #
+#                                                                             #
+###############################################################################
+def record_script_log(txt_path, layer_name, batch_size, response_thres, num_stim):
+    with open(txt_path, 'a') as f:
+        now = datetime.datetime.now()
+        f.write(f"{now} {layer_name} batch_size={batch_size} response_thres={response_thres} num_stim={num_stim}\n")
 
 
 #######################################.#######################################

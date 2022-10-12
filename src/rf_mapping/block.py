@@ -266,7 +266,7 @@ def make_block_maps(xn, block_params, center_responses, unit_i, _debug=False,
 #                                BLOCK_MAP_RUN                                #
 #                                                                             #
 ###############################################################################
-def block_map_run(model, result_dir, _debug=False, batch_size=100,
+def block_map_run(model, model_name, result_dir, _debug=False, batch_size=100,
                   response_thres=0.5):
     """
     Map the RF of all conv layers in model using RF mapping paradigm 4c7o,
@@ -287,6 +287,10 @@ def block_map_run(model, result_dir, _debug=False, batch_size=100,
     # was made so that layers with RF larger than (227, 227) could be properly
     # centered during block mapping.
     
+    weighted_counts_path = os.path.join(result_dir, f"{model_name}_block_weighted_counts.txt")
+    if os.path.exists(weighted_counts_path):
+        os.remove(weighted_counts_path)
+    
     for conv_i in range(len(layer_indices)):
         layer_name = f"conv{conv_i + 1}"
         print(f"\n{layer_name}\n")
@@ -296,6 +300,10 @@ def block_map_run(model, result_dir, _debug=False, batch_size=100,
         num_units = nums_units[conv_i]
         max_rf = max_rfs[conv_i][0]
         block_params = get_block_params(max_rf, xn)
+        
+        # Record this run into the log.
+        log_path = os.path.join(result_dir, f"script_log.txt")
+        record_script_log(log_path, layer_name, batch_size, response_thres, len(block_params))
 
         # Array initializations
         weighted_max_maps = np.zeros((num_units, 3, max_rf, max_rf))
@@ -311,12 +319,12 @@ def block_map_run(model, result_dir, _debug=False, batch_size=100,
 
         # make_block_maps(xn, block_params, center_responses, 0, _debug=False, 
         #                 response_thr=response_thres)
-        batch_size = os.cpu_count() // 3
+        unit_batch_size = os.cpu_count() // 3
         unit_i = 0
         while (unit_i < num_units):
             if _debug and unit_i >= 20:
                 break
-            real_batch_size = min(batch_size, num_units - unit_i)
+            real_batch_size = min(unit_batch_size, num_units - unit_i)
             with concurrent.futures.ProcessPoolExecutor() as executor:
                 results = executor.map(make_block_maps,
                             [xn for _ in range(real_batch_size)],
@@ -330,6 +338,9 @@ def block_map_run(model, result_dir, _debug=False, batch_size=100,
             for result_i, result in enumerate(results):
                 weighted_max_maps[unit_i + result_i] = result[0][:,padding:padding+max_rf, padding:padding+max_rf]
                 weighted_min_maps[unit_i + result_i] = result[1][:,padding:padding+max_rf, padding:padding+max_rf]
+                # Record the number of bars used in each map (append to txt files).
+                record_stim_counts(weighted_counts_path, layer_name, unit_i + result_i,
+                                  result[2], result[3])
             unit_i += real_batch_size
 
         # Save the maps of all units.
@@ -337,6 +348,17 @@ def block_map_run(model, result_dir, _debug=False, batch_size=100,
         weighted_min_maps_path = os.path.join(result_dir, f"{layer_name}_weighted_min_blockmaps.npy")
         np.save(weighte_max_maps_path, weighted_max_maps)
         np.save(weighted_min_maps_path, weighted_min_maps)
+        
+        # Save the indicies and responses of top and bottom 5000 stimuli.
+        top_n = min(5000, len(block_params)//2)
+        max_center_reponses_path = os.path.join(result_dir, f"{layer_name}_top{top_n}_responses.txt")
+        min_center_reponses_path = os.path.join(result_dir, f"{layer_name}_bot{top_n}_responses.txt")
+        if os.path.exists(max_center_reponses_path):
+            os.remove(max_center_reponses_path)
+        if os.path.exists(min_center_reponses_path):
+            os.remove(min_center_reponses_path)
+        record_center_responses(max_center_reponses_path, center_responses, top_n, is_top=True)
+        record_center_responses(min_center_reponses_path, center_responses, top_n, is_top=False)
         
         # Make pdf for the layer.
         weighted_pdf_path = os.path.join(result_dir, f"{layer_name}_weighted_blockmaps.pdf")

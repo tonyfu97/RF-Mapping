@@ -41,5 +41,5 @@ else:
 #         raise KeyboardInterrupt("Interrupted by user")
 
 if __name__ == "__main__":
-    block_map_run(model, result_dir, _debug=this_is_a_test_run,
-                  batch_size=100, response_thres=0.5)
+    block_map_run(model, model_name, result_dir, _debug=this_is_a_test_run,
+                  batch_size=64, response_thres=0.5)
