@@ -864,12 +864,12 @@ def pasu_bw_run_01b(model, model_name, result_dir, _debug=False, batch_size=10,
         # a bottleneck of the program because it is all computed by a single
         # CPU core. Improvement by multiprocessing was implemented on August
         # 15, 2022 to solve the problem.
-        batch_size = os.cpu_count() // 2
+        unit_batch_size = os.cpu_count() // 3
         unit_i = 0
         while (unit_i < num_units):
             if _debug and unit_i >= 20:
                 break
-            real_batch_size = min(batch_size, num_units - unit_i)
+            real_batch_size = min(unit_batch_size, num_units - unit_i)
             with concurrent.futures.ProcessPoolExecutor() as executor:
                 results = executor.map(make_shapemaps,
                                        [splist for _ in range(real_batch_size)],

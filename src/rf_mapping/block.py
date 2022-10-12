@@ -230,7 +230,10 @@ def make_block_maps(xn, block_params, center_responses, unit_i, _debug=False,
         params = block_params[max_block_i]
         # Note that the background color are set to 0, while the foreground
         # values are always positive.
-        block_color = [max(0, color) for color in params['block_color']]
+        if params['block_color'] == (-1, -1, -1):
+            block_color = (1, 1, 1)
+        else:
+            block_color = [max(0, color) for color in params['block_color']]
         new_block = make_color_block((xn, xn),
                                      params['top_left'],
                                      params['bottom_right'],
@@ -245,7 +248,10 @@ def make_block_maps(xn, block_params, center_responses, unit_i, _debug=False,
     for min_block_i in isort:
         response = center_responses[min_block_i, unit_i]
         params = block_params[min_block_i]
-        block_color = [max(0, color) for color in params['block_color']]
+        if params['block_color'] == (-1, -1, -1):
+            block_color = (1, 1, 1)
+        else:
+            block_color = [max(0, color) for color in params['block_color']]
         new_block = make_color_block((xn, xn),
                                      params['top_left'],
                                      params['bottom_right'],
