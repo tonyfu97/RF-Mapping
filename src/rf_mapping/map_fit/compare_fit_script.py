@@ -99,12 +99,12 @@ def load_gaussian_fit_dfs(map_name, model_name, is_random):
                                map_name,
                                'gaussian_fit',
                                model_name,
-                               f"weighted_top.txt")
+                               f"{model_name}_{map_name}_gaussian_top.txt")
         bot_df_path = os.path.join(mapping_dir,
                                map_name,
                                'gaussian_fit',
                                model_name,
-                               f"weighted_bot.txt")
+                               f"{model_name}_{map_name}_gaussian_bot.txt")
     else:
         raise KeyError(f"{map_name} does not exist.")
 

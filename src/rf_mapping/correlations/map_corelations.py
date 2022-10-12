@@ -27,15 +27,15 @@ import src.rf_mapping.constants as c
 # model_name = 'alexnet'
 model = models.vgg16(pretrained=True).to(c.DEVICE)
 model_name = 'vgg16'
-# model = models.resnet18(pretrained=True).to(c.DEVICE)
-# model_name = 'resnet18'
+model = models.resnet18(pretrained=True).to(c.DEVICE)
+model_name = 'resnet18'
 image_shape = (227, 227)
 this_is_a_test_run = False
 max_or_min = 'min'
 font_size = 20
 r_val_threshold = 0.7
 sigma_rf_ratio = 1/30  # From [0, 1/120, 1/60, 1/30, 1/20, 1/10, 1/5, 1/4, 1/2]
-to_plot_pdf = True
+to_plot_pdf = False
 
 # ADDING NEW MAP? MODIFY BELOW:
 all_map_names = ['gt', 'gt_composite', 'occlude_composite',

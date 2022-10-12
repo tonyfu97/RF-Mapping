@@ -16,7 +16,7 @@ import src.rf_mapping.constants as c
 from src.rf_mapping.result_txt_format import RfmpHotSpot as HS
 
 # Please specify the model
-num_layers_dict = {'alexnet' : 5} #, 'vgg16': 13, 'resnet18': 20}
+num_layers_dict = {'alexnet' : 5 , 'vgg16': 13} #, 'resnet18': 20}
 
 
 #########################  LOAD MAP CORRELATIONS  #############################
@@ -24,7 +24,7 @@ num_layers_dict = {'alexnet' : 5} #, 'vgg16': 13, 'resnet18': 20}
 map_corr_dict = {}
 for model_name in num_layers_dict.keys():
     max_map_corr_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations',
-                                    model_name, f"max_map_r.txt")
+                                    model_name, f"max_map_r_0.0333.txt")
 
     max_map_corr_df = pd.read_csv(max_map_corr_path, sep=" ", header=0)
 

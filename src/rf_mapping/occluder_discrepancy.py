@@ -56,10 +56,10 @@ import src.rf_mapping.constants as c
 
 #######################################.#######################################
 #                                                                             #
-#                                DRAW_OCCLUDER                                #
+#                            DRAW_RANDOM_OCCLUDER                             #
 #                                                                             #
 ###############################################################################
-def draw_occluder(img_tensor, top_left, bottom_right):
+def draw_random_occluder(img_tensor, top_left, bottom_right):
     """
     Returns an occluded version of img without modifying the original img.
     Note: the y-axis points downward.
@@ -71,7 +71,7 @@ def draw_occluder(img_tensor, top_left, bottom_right):
         channel as the first dimension.
     top_left : (int, int)
         Spatial index of the top left corner (inclusive) of the occluder.
-    bottom_right : (int, int))
+    bottom_right : (int, int)
         Spatial index of the bottom right corner (inclusive) of the occluder.
 
     Returns
@@ -83,8 +83,8 @@ def draw_occluder(img_tensor, top_left, bottom_right):
     occluder_size = (bottom_right[0] - top_left[0] + 1,
                      bottom_right[1] - top_left[1] + 1)
     
-    # Occluder is a random patch with uniform distribution over [-1, +1), set
-    # independently for RGB color channels.
+    # Occluder is a random patch with uniform distribution over [-1, +1),
+    # set independently for RGB color channels.
     occluder = (torch.rand(3, *occluder_size).to(c.DEVICE) * 2) - 1
     
     occluded_img_tensor[0, :, top_left[0]:bottom_right[0]+1, top_left[1]:bottom_right[1]+1] = occluder
@@ -94,8 +94,10 @@ def draw_occluder(img_tensor, top_left, bottom_right):
 # Plot an example occluder.
 if __name__ == "__main__":
     img = torch.zeros((1, 3, 5, 10))
-    occluded_img = draw_occluder(img, (0, 3), (3, 7))
+    occluded_img = draw_random_occluder(img, (0, 3), (3, 7))
     plt.imshow(np.transpose(occluded_img.numpy(), (1,2,0)))
+    plt.show()
+
 
 
 #######################################.#######################################
@@ -229,11 +231,12 @@ def add_discrepancy_maps(response_diff, occluder_params, discrepancy_maps, box,
 
 #######################################.#######################################
 #                                                                             #
-#                              GET_DISCREPANCY_MAP                            #
+#                          GET_RANDOM_DISCREPANCY_MAP                         #
 #                                                                             #
 ###############################################################################
-def get_discrepancy_map(img, occluder_params, truncated_model, rf_size,
-            spatial_index, unit_i, box, batch_size=100, _debug=False, image_size=(227,227)):
+def get_random_discrepancy_map(img, occluder_params, truncated_model, rf_size,
+                    spatial_index, unit_i, box, batch_size=100, _debug=False,
+                    image_size=(227,227)):
     """
     Presents the occluded image and returns the discrepency maps (one for
     each unit in the final layer of the truncated model).
@@ -281,9 +284,9 @@ def get_discrepancy_map(img, occluder_params, truncated_model, rf_size,
         # Create a batch of bars.
         for i in range(real_batch_size):
             params = occluder_params[occluder_i + i]
-            occluder_batch[i] = draw_occluder(img_tensor,
-                                              params['top_left'],
-                                              params['bottom_right'])
+            occluder_batch[i] = draw_random_occluder(img_tensor,
+                                                     params['top_left'],
+                                                     params['bottom_right'])
 
         # Present the patch of bars to the truncated model.
         y = truncated_model(occluder_batch)

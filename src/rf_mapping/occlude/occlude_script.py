@@ -15,7 +15,7 @@ from src.rf_mapping.net import get_truncated_model
 import src.rf_mapping.constants as c
 from src.rf_mapping.reproducibility import set_seeds
 from src.rf_mapping.occluder_discrepancy import (get_occluder_params,
-                                                 get_discrepancy_map)
+                                                 get_random_discrepancy_map)
 
 
 # Please specify some details here:
@@ -110,7 +110,7 @@ if __name__ == "__main__":
                     img = np.load(img_path)
                     box = converter.convert(max_patch_idx, layer_idx, 0, is_forward=False)
                     occluder_params = get_occluder_params(box, rf_size, image_size)
-                    discrepancy_map = get_discrepancy_map(img, occluder_params, 
+                    discrepancy_map = get_random_discrepancy_map(img, occluder_params, 
                                                           truncated_model, rf_size,
                                                           max_patch_idx, unit_i, box,
                                                           batch_size=batch_size, _debug=this_is_a_test_run, image_size=image_size)
@@ -127,7 +127,7 @@ if __name__ == "__main__":
                     img = np.load(img_path)
                     box = converter.convert(min_patch_idx, layer_idx, 0, is_forward=False)
                     occluder_params = get_occluder_params(box, rf_size, image_size)
-                    discrepancy_map = get_discrepancy_map(img, occluder_params, 
+                    discrepancy_map = get_random_discrepancy_map(img, occluder_params, 
                                                           truncated_model, rf_size,
                                                           min_patch_idx, unit_i, box,
                                                           batch_size=batch_size, _debug=this_is_a_test_run, image_size=image_size)

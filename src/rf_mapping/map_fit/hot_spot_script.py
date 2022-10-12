@@ -26,14 +26,14 @@ from src.rf_mapping.reproducibility import set_seeds
 # set_seeds()
 model = models.alexnet(pretrained=True).to(c.DEVICE)
 model_name = 'alexnet'
-# model = models.vgg16(pretrained=True).to(c.DEVICE)
-# model_name = "vgg16"
-# model = models.resnet18(pretrained=True).to(c.DEVICE)
-# model_name = "resnet18"
+model = models.vgg16(pretrained=True).to(c.DEVICE)
+model_name = "vgg16"
+model = models.resnet18(pretrained=True).to(c.DEVICE)
+model_name = "resnet18"
 
 this_is_a_test_run = False
 is_random = False
-map_name = 'occlude'
+map_name = 'gt_composite'
 sigma_rf_ratio = 1/30
 
 
@@ -294,4 +294,4 @@ for conv_i in range(len(layer_indices)):
                     # Fill the bot_x and bot_y columns with NaN
                     write_txt(f, layer_name, unit_i, top_x, top_y, np.NaN, np.NaN, composite_map.shape)
 
-                write_composite_pdf(pdf, layer_name, unit_i, composite_map, top_x, top_y)
+                # write_composite_pdf(pdf, layer_name, unit_i, composite_map, top_x, top_y)

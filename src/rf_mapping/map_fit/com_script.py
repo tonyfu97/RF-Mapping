@@ -25,8 +25,8 @@ from src.rf_mapping.reproducibility import set_seeds
 
 
 # Please specify some details here:
-set_seeds()
-model = models.alexnet(pretrained=False).to(c.DEVICE)
+# set_seeds()
+model = models.alexnet(pretrained=True).to(c.DEVICE)
 model_name = 'alexnet'
 # model = models.vgg16(pretrained=True).to(c.DEVICE)
 # model_name = "vgg16"
@@ -35,7 +35,8 @@ model_name = 'alexnet'
 
 this_is_a_test_run = False
 is_random = False
-map_name = 'pasu'
+map_name = 'gt_composite'
+sigma_rf_ratio = 1/30
 
 
 ###############################################################################
@@ -71,6 +72,22 @@ def load_maps(map_name, layer_name, max_or_min, is_random, rf_size):
                                     'abs',
                                     f"{layer_name}_{max_or_min}.npy")
         return np.load(mapping_path)  # [unit, yn, xn]
+    elif map_name == 'gt_composite':
+        max_mapping_path = os.path.join(mapping_dir,
+                                    'ground_truth',
+                                    'backprop_sum',
+                                    model_name,
+                                    'abs',
+                                    f"{layer_name}_max.npy")
+        min_mapping_path = os.path.join(mapping_dir,
+                                    'ground_truth',
+                                    'backprop_sum',
+                                    model_name,
+                                    'abs',
+                                    f"{layer_name}_min.npy")
+        max_map = np.load(max_mapping_path)  # [unit, yn, xn]
+        min_map = np.load(min_mapping_path)  # [unit, yn, xn]
+        return max_map + min_map
     elif map_name == 'occlude':
         mapping_path = os.path.join(mapping_dir,
                                     'occlude',
@@ -79,11 +96,26 @@ def load_maps(map_name, layer_name, max_or_min, is_random, rf_size):
                                     f"{layer_name}_{max_or_min}.npy")
         maps = np.load(mapping_path)  # [unit, yn, xn]
         # blur the maps
-        sigma = rf_size / 60    # Reason behind the choice of sigma:
-                                # The occlude stride is rf_size // 10 // 2
-                                # so about rf_size / 20. A Gaussian is about
-                                # 3 sigmas to each side => rf_size / 20 / 3
-                                # = rf_size / 60.
+        sigma = rf_size * sigma_rf_ratio
+        for i in range(maps.shape[0]):
+            maps[i] = gaussian_filter(maps[i], sigma=sigma)
+        return maps
+    elif map_name == 'occlude_composite':
+        top_mapping_path = os.path.join(mapping_dir,
+                                    'occlude',
+                                    'mapping',
+                                    model_name,
+                                    f"{layer_name}_max.npy")
+        bot_mapping_path = os.path.join(mapping_dir,
+                                    'occlude',
+                                    'mapping',
+                                    model_name,
+                                    f"{layer_name}_min.npy")
+        top_maps = np.load(top_mapping_path)  # [unit, yn, xn]
+        bot_maps = np.load(bot_mapping_path)  # [unit, yn, xn]
+        maps = top_maps + bot_maps
+        # blur the maps
+        sigma = rf_size * sigma_rf_ratio
         for i in range(maps.shape[0]):
             maps[i] = gaussian_filter(maps[i], sigma=sigma)
         return maps
@@ -124,7 +156,7 @@ def get_result_dir(map_name, is_random, this_is_a_test_run):
     mapping_dir = os.path.join(c.REPO_DIR, 'results')
     is_random_str = "_random" if is_random else ""
 
-    if map_name == 'gt':
+    if map_name in ('gt', 'gt_composite'):
         if this_is_a_test_run:
             return os.path.join(mapping_dir,
                                 'ground_truth',
@@ -137,7 +169,9 @@ def get_result_dir(map_name, is_random, this_is_a_test_run):
                                 f'gaussian_fit{is_random_str}',
                                 model_name,
                                 'abs')
-    elif map_name in ('occlude', 'rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu'):
+    elif map_name in ('occlude', 'occlude_composite', 'rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu'):
+        if map_name == 'occlude_composite':
+            map_name = 'occlude'
         if this_is_a_test_run:
             return os.path.join(mapping_dir,
                                 map_name,
@@ -172,9 +206,9 @@ def make_circle(xc, yc, radius, linewidth=1):
     return circ
 
 
-def write_pdf(pdf, layer_name, unit_i, top_map, bot_map,
-              top_x, top_y, top_rad_10, top_rad_50, top_rad_90,
-              bot_x, bot_y, bot_rad_10, bot_rad_50, bot_rad_90):
+def write_pdf_non_composite(pdf, layer_name, unit_i, top_map, bot_map,
+                            top_x, top_y, top_rad_10, top_rad_50, top_rad_90,
+                            bot_x, bot_y, bot_rad_10, bot_rad_50, bot_rad_90):
     # Fit 2D Gaussian, and plot them.
     plt.figure(figsize=(20, 10))
     plt.suptitle(f"Center of mass ({layer_name} no.{unit_i})", fontsize=20)
@@ -206,6 +240,29 @@ def write_pdf(pdf, layer_name, unit_i, top_map, bot_map,
     plt.close()
 
 
+def write_pdf_composite(pdf, layer_name, unit_i, map,
+                        x, y, rad_10, rad_50, rad_90):
+    """Just like write_pdf_non_composite(), but with only 1 subplot."""
+    # Fit 2D Gaussian, and plot them.
+    plt.figure(figsize=(8, 10))
+    plt.suptitle(f"Center of mass ({layer_name} no.{unit_i})", fontsize=20)
+
+    plt.subplot(1, 1, 1)
+    plt.imshow(map, cmap='gray')
+    plt.title(f"composite\n"
+              f"com_x = {x:.2f}, com_y = {y:.2f}\n"
+              f"radius: {rad_10:.2f} (10%), {rad_50:.2f} (50%), {rad_90:.2f} (90%)",
+              fontsize=14)
+    ax = plt.gca()
+    ax.add_patch(make_circle(x, y, rad_10))
+    ax.add_patch(make_circle(x, y, rad_50))
+    ax.add_patch(make_circle(x, y, rad_90))
+
+    pdf.savefig()
+    if this_is_a_test_run: plt.show()
+    plt.close()
+
+
 ###############################################################################
 
 result_dir = get_result_dir(map_name, is_random, this_is_a_test_run)
@@ -227,26 +284,40 @@ for conv_i in range(len(layer_indices)):
     max_maps = load_maps(map_name, layer_name, 'max', is_random, rf_size)
     min_maps = load_maps(map_name, layer_name, 'min', is_random, rf_size)
 
-    pdf_path = os.path.join(result_dir, f"{layer_name}_com.pdf")
+    pdf_path = os.path.join(result_dir, f"{layer_name}_{map_name}_com.pdf")
     with PdfPages(pdf_path) as pdf:
         for unit_i, (max_map, min_map) in enumerate(tqdm(zip(max_maps, min_maps))):
             # Do only the first 5 unit during testing phase
             if this_is_a_test_run and unit_i >= 5:
                 break
             
-            top_y, top_x, top_rad_10 = mapstat_comr_1(max_map, 0.1)
-            _, _, top_rad_50 = mapstat_comr_1(max_map, 0.5)
-            _, _, top_rad_90 = mapstat_comr_1(max_map, 0.9)
+            if map_name in ('gt_composite', 'occlude_composite'):
+                y, x, rad_10 = mapstat_comr_1(max_map, 0.1)
+                _, _, rad_50 = mapstat_comr_1(max_map, 0.5)
+                _, _, rad_90 = mapstat_comr_1(max_map, 0.9)
 
-            bot_y, bot_x, bot_rad_10 = mapstat_comr_1(min_map, 0.1)
-            _, _, bot_rad_50 = mapstat_comr_1(min_map, 0.5)
-            _, _, bot_rad_90 = mapstat_comr_1(min_map, 0.9)
+                with open(txt_file_path, 'a') as f:
+                    write_txt(f, layer_name, unit_i,
+                                x, y, rad_10, rad_50, rad_90,
+                                np.NaN, np.NaN, np.NaN, np.NaN, np.NaN)
 
-            with open(txt_file_path, 'a') as f:
-                write_txt(f, layer_name, unit_i,
-                        top_x, top_y, top_rad_10, top_rad_50, top_rad_90,
-                        bot_x, bot_y, bot_rad_10, bot_rad_50, bot_rad_90)
+                # write_pdf_composite(pdf, layer_name, unit_i, max_map,
+                #                     x, y, rad_10, rad_50, rad_90)
+            
+            else:
+                top_y, top_x, top_rad_10 = mapstat_comr_1(max_map, 0.1)
+                _, _, top_rad_50 = mapstat_comr_1(max_map, 0.5)
+                _, _, top_rad_90 = mapstat_comr_1(max_map, 0.9)
 
-            write_pdf(pdf, layer_name, unit_i, max_map, min_map,
-                top_x, top_y, top_rad_10, top_rad_50, top_rad_90,
-                bot_x, bot_y, bot_rad_10, bot_rad_50, bot_rad_90)
+                bot_y, bot_x, bot_rad_10 = mapstat_comr_1(min_map, 0.1)
+                _, _, bot_rad_50 = mapstat_comr_1(min_map, 0.5)
+                _, _, bot_rad_90 = mapstat_comr_1(min_map, 0.9)
+
+                with open(txt_file_path, 'a') as f:
+                    write_txt(f, layer_name, unit_i,
+                            top_x, top_y, top_rad_10, top_rad_50, top_rad_90,
+                            bot_x, bot_y, bot_rad_10, bot_rad_50, bot_rad_90)
+
+                write_pdf_non_composite(pdf, layer_name, unit_i, max_map, min_map,
+                                top_x, top_y, top_rad_10, top_rad_50, top_rad_90,
+                                bot_x, bot_y, bot_rad_10, bot_rad_50, bot_rad_90)

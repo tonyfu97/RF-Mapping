@@ -6,7 +6,6 @@ presented in model.children().
 
 Tony Fu, Aug 4th, 2022
 """
-from os import truncate
 import sys
 import copy
 
