@@ -36,8 +36,9 @@ is_random = False
 this_is_a_test_run = False
 map1_name = 'gt'                # ['gt', 'occlude']
 map2_name = 'rfmp4a'            # ['rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
-fit_name = 'hot_spot'       # ['gaussian_fit', 'com', 'hot_spot']
+fit_name = 'com'       # ['gaussian_fit', 'com', 'hot_spot']
 fxvar_thres = 0.8
+sigma_rf_ratio: 1/30
 
 
 ###############################################################################
@@ -83,18 +84,18 @@ def load_gaussian_fit_dfs(map_name, model_name, is_random):
                                model_name,
                                'abs',
                                f"{model_name}_{map_name}_gaussian_bot.txt")
-    elif map_name == 'occlude':
-        top_df_path = os.path.join(mapping_dir,
-                               'occlude',
-                               f'gaussian_fit{is_random_str}',
-                               model_name,
-                               f"{model_name}_{map_name}_gaussian_top.txt")
-        bot_df_path = os.path.join(mapping_dir,
-                               'occlude',
-                               f'gaussian_fit{is_random_str}',
-                               model_name,
-                               f"{model_name}_{map_name}_gaussian_bot.txt")
-    elif map_name in ('rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu'):
+    # elif map_name == 'occlude':
+    #     top_df_path = os.path.join(mapping_dir,
+    #                            'occlude',
+    #                            f'gaussian_fit{is_random_str}',
+    #                            model_name,
+    #                            f"{model_name}_{map_name}_gaussian_top.txt")
+    #     bot_df_path = os.path.join(mapping_dir,
+    #                            'occlude',
+    #                            f'gaussian_fit{is_random_str}',
+    #                            model_name,
+    #                            f"{model_name}_{map_name}_gaussian_bot.txt")
+    elif map_name in ('occlude', 'rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu'):
         top_df_path = os.path.join(mapping_dir,
                                map_name,
                                'gaussian_fit',
@@ -110,16 +111,18 @@ def load_gaussian_fit_dfs(map_name, model_name, is_random):
 
     top_fit_df = pd.read_csv(top_df_path, sep=" ", header=None)
     bot_fit_df = pd.read_csv(bot_df_path, sep=" ", header=None)
+    top_fit_df.columns = [e.name for e in GTG]
+    bot_fit_df.columns = [e.name for e in GTG]
     
-    # Name the columns. 
-    # Note: The gaussian.txt of GT data doesn't have the number of bars, so we
-    #       cannot use the 'W-format' to name their columns.
-    if map_name in ('gt', 'occlude'):
-        top_fit_df.columns = [e.name for e in GTG]
-        bot_fit_df.columns = [e.name for e in GTG]
-    else:
-        top_fit_df.columns = [e.name for e in W]
-        bot_fit_df.columns = [e.name for e in W]
+    # # Name the columns. 
+    # # Note: The gaussian.txt of GT data doesn't have the number of bars, so we
+    # #       cannot use the 'W-format' to name their columns.
+    # if map_name in ('gt', 'occlude'):
+    #     top_fit_df.columns = [e.name for e in GTG]
+    #     bot_fit_df.columns = [e.name for e in GTG]
+    # else:
+    #     top_fit_df.columns = [e.name for e in W]
+    #     bot_fit_df.columns = [e.name for e in W]
 
     return top_fit_df, bot_fit_df
 
@@ -415,7 +418,8 @@ bot_err_dist_df = bot_x_df1.loc[(bot_x_df1.LAYER != 'conv1'), ['LAYER', 'UNIT']]
 bot_err_dist_df['ERR_DIST'] = all_bot_err_dist
 
 # Load the color rotation index
-cri_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, 'cri.txt')
+cri_num_images = 1000
+cri_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, 'cri_{cri_num_images}.txt')
 cri_df = pd.read_csv(cri_path, sep=" ", header=None)
 cri_df.columns = ['LAYER', 'UNIT', 'CRI']
 
@@ -424,9 +428,9 @@ top_cri_err_dist_df = pd.merge(top_err_dist_df, cri_df, how='left')
 bot_cri_err_dist_df = pd.merge(bot_err_dist_df, cri_df, how='left')
 
 max_map_corr_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations',
-                                model_name, f"max_map_r.txt")
+                                model_name, f"max_map_r_{sigma_rf_ratio:.4f}.txt")
 min_map_corr_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations',
-                                model_name, f"min_map_r.txt")
+                                model_name, f"min_map_r_{sigma_rf_ratio:.4f}.txt")
 max_map_corr_df = pd.read_csv(max_map_corr_path, sep=" ", header=0)
 min_map_corr_df = pd.read_csv(min_map_corr_path, sep=" ", header=0)
 
@@ -657,28 +661,29 @@ with PdfPages(pdf_path) as pdf:
 
         plt.subplot(2,num_layers - 1, conv_i)
         plt.scatter(top_fnat, top_map_corr, alpha=0.4)
-        rval, _ = pearsonr(top_fnat, top_map_corr)
+        idx_to_keep = np.isfinite(top_fnat) & np.isfinite(top_map_corr)
+        rval, _ = pearsonr(top_fnat[idx_to_keep], top_map_corr[idx_to_keep])
         plt.title(layer_name, fontsize=16)
         if conv_i == 1:
-            plt.xlabel(f"fnat (top {top_n_r})", fontsize=18)
+            plt.xlabel(f"fnat (top)", fontsize=18)
             plt.ylabel("Direct map correlation", fontsize=18)
         plt.gca().set_facecolor(top_face_color)
-        plt.text(2,-0.8,f'n = {len(top_fnat)}\nr = {rval:.2f}', fontsize=18)
-        plt.xlim([-1, 4])
-        plt.ylim([-1.1, 1.1])
-        plt.yticks([-1, -0.5, 0, 0.5, 1])
+        plt.text(0.5,-0.3,f'n = {len(top_fnat)}\nr = {rval:.2f}', fontsize=18)
+        plt.xlim([-0.1, 1])
+        plt.ylim([-0.5, 1.1])
+        plt.yticks([-0.5, 0, 0.5, 1])
 
         plt.subplot(2,num_layers - 1, num_layers+conv_i-1)
         plt.scatter(bot_fnat, bot_map_corr, alpha=0.4)
         rval, _ = pearsonr(bot_fnat, bot_map_corr)
         if conv_i == 1:
-            plt.xlabel(f"fnat (bottom {top_n_r})", fontsize=18)
+            plt.xlabel(f"fnat (bottom)", fontsize=18)
             plt.ylabel("Direct map correlation", fontsize=18)
         plt.gca().set_facecolor(bot_face_color)
-        plt.text(2,-0.8,f'n = {len(bot_fnat)}\nr = {rval:.2f}', fontsize=18)
-        plt.xlim([-1, 4])
-        plt.ylim([-1.1, 1.1])
-        plt.yticks([-1, -0.5, 0, 0.5, 1])
+        plt.text(0.5,-0.3,f'n = {len(bot_fnat)}\nr = {rval:.2f}', fontsize=18)
+        plt.xlim([-0.1, 1])
+        plt.ylim([-0.5, 1.1])
+        plt.yticks([-0.5, 0, 0.5, 1])
 
     pdf.savefig()
     plt.show()

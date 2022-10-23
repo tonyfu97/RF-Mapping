@@ -250,18 +250,24 @@ if __name__ == '__main__':
     #                            r1, g1, b1,
     #                            0.5, 0.5, 0.5)
 
-    bar = stimfr_bar_color(15, 15, -4.125, -4.125, 20, 8.25, 4.125, 0.5,
-                            1, -1, 1, -1, 1, -1)
-    plt.imshow(np.transpose(bar, (1,2,0)))
-    plt.show()
+    # bar = stimfr_bar_color(15, 15, -4.125, -4.125, 20, 8.25, 4.125, 0.5,
+    #                         1, -1, 1, -1, 1, -1)
+    # plt.imshow(np.transpose(bar, (1,2,0)))
+    # plt.show()
 
-    bar = stimfr_bar_color(15, 15, -4.125, -4.125, 20, 8.25, 4.125, 0.5,
-                            1, -1, -1, -1, 1, 1)
-    plt.imshow(np.transpose(bar, (1,2,0)))
-    plt.show()
+    # bar = stimfr_bar_color(15, 15, -4.125, -4.125, 20, 8.25, 4.125, 0.5,
+    #                         1, -1, -1, -1, 1, 1)
+    # plt.imshow(np.transpose(bar, (1,2,0)))
+    # plt.show()
 
-    bar = stimfr_bar_color(15, 15, -4.125, -4.125, 20, 8.25, 4.125, 0.5,
-                           -1, 1, -1, -1, -1, 1)
+    # bar = stimfr_bar_color(15, 15, -4.125, -4.125, 20, 8.25, 4.125, 0.5,
+    #                        -1, 1, -1, -1, -1, 1)
+    # plt.imshow(np.transpose(bar, (1,2,0)))
+    # plt.show()
+    
+    bar = stimfr_bar_color(100, 100, -35, -10, 0, 26, 13, 0.5,
+                           1, 1, 1, 0.5, 0.5, 0.5)
+    plt.figure(figsize=(12, 12))
     plt.imshow(np.transpose(bar, (1,2,0)))
     plt.show()
 

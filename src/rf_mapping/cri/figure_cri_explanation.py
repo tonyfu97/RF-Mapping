@@ -405,7 +405,8 @@ with PdfPages(pdf_path) as pdf:
     bot_err_dist_df['ERR_DIST'] = all_bot_err_dist
     
     # Load the color rotation index
-    cri_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, 'cri.txt')
+    cri_num_images = 1000
+    cri_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, 'cri_{cri_num_images}.txt')
     cri_df = pd.read_csv(cri_path, sep=" ", header=None)
     cri_df.columns = ['LAYER', 'UNIT', 'CRI']
     

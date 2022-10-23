@@ -25,8 +25,8 @@ import src.rf_mapping.constants as c
 # Please specify some details here:
 # model = models.alexnet(pretrained=True).to(c.DEVICE)
 # model_name = 'alexnet'
-model = models.vgg16(pretrained=True).to(c.DEVICE)
-model_name = 'vgg16'
+# model = models.vgg16(pretrained=True).to(c.DEVICE)
+# model_name = 'vgg16'
 model = models.resnet18(pretrained=True).to(c.DEVICE)
 model_name = 'resnet18'
 image_shape = (227, 227)
@@ -39,7 +39,7 @@ to_plot_pdf = False
 
 # ADDING NEW MAP? MODIFY BELOW:
 all_map_names = ['gt', 'gt_composite', 'occlude_composite',
-                 'rfmp4a', 'rfmp4c7o'] #'rfmp_sin1', 'pasu']
+                 'rfmp4a', 'rfmp4c7o'] #, 'block'] #'rfmp_sin1', 'pasu']
 
 # Result paths:
 if this_is_a_test_run:
@@ -142,6 +142,14 @@ def load_maps(map_name, layer_name, max_or_min):
                                     model_name,
                                     f"{layer_name}_weighted_{max_or_min}_shapemaps.npy")
         return np.load(mapping_path)  # [unit, yn, xn]
+    elif map_name == 'block':
+        mapping_path = os.path.join(mapping_dir,
+                                    'block',
+                                    'mapping',
+                                    model_name,
+                                    f"{layer_name}_weighted_{max_or_min}_blockmaps.npy")
+        maps = np.load(mapping_path)  # [unit, 3, yn, xn]
+        return np.transpose(maps, (0,2,3,1))  # Need the color channel for plots.
     else:
         raise KeyError(f"{map_name} does not exist.")
 
@@ -166,6 +174,23 @@ def smooth_and_normalize_maps(maps, sigma):
             if not math.isclose(smoothed_maps[unit_i].max(), 0, abs_tol=10 ** (-5)):
                 smoothed_maps[unit_i] = smoothed_maps[unit_i]/smoothed_maps[unit_i].max()
     return smoothed_maps
+
+def compute_correlation(map1, map2):
+    # If the map has color, average the color channel.
+    if len(map1.shape) == 3:
+        map1 = np.mean(map1, axis=2)
+    if len(map2.shape) == 3:
+        map2 = np.mean(map2, axis=2)
+    
+    # Resize map2 to the size of map1 if necessary.
+    if (map1.shape[0] < map2.shape[0]):
+        left_padding = math.floor((map2.shape[0] - map1.shape[0])/2)
+        right_padding = math.ceil((map2.shape[0] - map1.shape[0])/2)
+        map2 = map2[left_padding:map2.shape[0]-right_padding,
+                    left_padding:map2.shape[0]-right_padding]
+        
+    r_val, _ = pearsonr(map1.flatten(), map2.flatten())
+    return r_val
     
 def plot_r_val(r_val, font_size):
     plt.xticks([])
@@ -216,14 +241,9 @@ for conv_i in range(num_layers):
                 if idx1 <= idx2:
                     unit_map1 = map1[unit_i]
                     unit_map2 = map2[unit_i]
-                    # If the map has color, average the color channel.
-                    if len(unit_map1.shape) == 3:
-                        unit_map1 = np.mean(unit_map1, axis=2)
-                    if len(unit_map2.shape) == 3:
-                        unit_map2 = np.mean(unit_map2, axis=2)
 
                     # Compute correlations
-                    r_val, p_val = pearsonr(unit_map1.flatten(), unit_map2.flatten())
+                    r_val = compute_correlation(unit_map1, unit_map2)
                     r_vals.append(r_val)
         
         # Record correlations in text file

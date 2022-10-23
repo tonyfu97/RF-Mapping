@@ -51,7 +51,8 @@ _, rf_sizes = get_rf_sizes(model, (227, 227), layer_type=nn.Conv2d)
 num_layers = len(rf_sizes)
 
 # Load CRI
-cri_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, 'cri.txt')
+cri_num_images = 1000
+cri_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, 'cri_{cri_num_images}.txt')
 cri_df = pd.read_csv(cri_path, sep=" ", header=None)
 cri_df.columns = ['LAYER', 'UNIT', 'CRI']
 

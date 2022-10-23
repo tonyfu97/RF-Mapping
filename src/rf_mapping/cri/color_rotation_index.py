@@ -166,7 +166,7 @@ while (img_i < num_images):
 
 
 print("Calculate Color Rotation Index (CRI)...")
-cri_txt_path = os.path.join(result_dir, f"cri.txt")
+cri_txt_path = os.path.join(result_dir, f"cri_{num_images}.txt")
 if os.path.exists(cri_txt_path):
     os.remove(cri_txt_path)
 for conv_i in range(len(nums_units)):

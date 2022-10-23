@@ -9,6 +9,7 @@ import math
 
 import numpy as np
 import pandas as pd
+from regex import X
 from scipy.optimize import curve_fit
 from scipy.stats import pearsonr
 import torchvision.models as models
@@ -25,12 +26,12 @@ from src.rf_mapping.result_txt_format import (GtGaussian as GT,
                                               Rfmp4aWeighted as W)
 
 # Please specify the model
-model = models.alexnet()
-model_name = 'alexnet'
+# model = models.alexnet()
+# model_name = 'alexnet'
 # model = models.vgg16()
 # model_name = 'vgg16'
-# model = models.resnet18()
-# model_name = 'resnet18'
+model = models.resnet18()
+model_name = 'resnet18'
 
 # Please specify what ground_truth method versus what RFMP4
 is_occlude = False
@@ -69,18 +70,20 @@ else:
     gt_top_path = os.path.join(gt_dir, model_name, 'abs', f"{model_name}_gt_gaussian_top.txt")
     gt_bot_path = os.path.join(gt_dir, model_name, 'abs', f"{model_name}_gt_gaussian_bot.txt")
 
-no_path  = os.path.join(rfmp4_fit_dir, model_name, f"non_overlap.txt")
-w_t_path = os.path.join(rfmp4_fit_dir, model_name, f"weighted_top.txt")
-w_b_path = os.path.join(rfmp4_fit_dir, model_name, f"weighted_bot.txt")
+# no_path  = os.path.join(rfmp4_fit_dir, model_name, f"non_overlap.txt")
 
 if is_rfmp4a:
     tb1_path   = os.path.join(rfmp4_mapping_dir, model_name, f"{model_name}_rfmp4a_tb1.txt")
     tb20_path  = os.path.join(rfmp4_mapping_dir, model_name, f"{model_name}_rfmp4a_tb20.txt")
     tb100_path = os.path.join(rfmp4_mapping_dir, model_name, f"{model_name}_rfmp4a_tb100.txt")
+    w_t_path = os.path.join(rfmp4_fit_dir, model_name, f"{model_name}_rfmp4a_gaussian_top.txt")
+    w_b_path = os.path.join(rfmp4_fit_dir, model_name, f"{model_name}_rfmp4a_gaussian_bot.txt")
 else:
     tb1_path   = os.path.join(rfmp4_mapping_dir, model_name, f"{model_name}_rfmp4c7o_tb1.txt")
     tb20_path  = os.path.join(rfmp4_mapping_dir, model_name, f"{model_name}_rfmp4c7o_tb20.txt")
     tb100_path = os.path.join(rfmp4_mapping_dir, model_name, f"{model_name}_rfmp4c7o_tb100.txt")
+    w_t_path = os.path.join(rfmp4_fit_dir, model_name, f"{model_name}_rfmp4c7o_gaussian_top.txt")
+    w_b_path = os.path.join(rfmp4_fit_dir, model_name, f"{model_name}_rfmp4c7o_gaussian_bot.txt")
 
                                                            # Data source                Abbreviation(s)
                                                            # -----------------------    ---------------
@@ -89,7 +92,7 @@ gt_b_df  = pd.read_csv(gt_bot_path, sep=" ", header=None)  # Ground truth bottom
 tb1_df   = pd.read_csv(tb1_path,    sep=" ", header=None)  # Top bar                    tb1
 tb20_df  = pd.read_csv(tb20_path,   sep=" ", header=None)  # Avg of top 20 bars         tb20
 tb100_df = pd.read_csv(tb100_path,  sep=" ", header=None)  # Avg of top 100 bars        tb100
-no_df    = pd.read_csv(no_path,     sep=" ", header=None)  # Non-overlap bar maps       no
+# no_df    = pd.read_csv(no_path,     sep=" ", header=None)  # Non-overlap bar maps       no
 w_t_df   = pd.read_csv(w_t_path,    sep=" ", header=None)  # Weighted top bar maps      w_t
 w_b_df   = pd.read_csv(w_b_path,    sep=" ", header=None)  # Weighted bottom bar maps   w_b
 
@@ -103,9 +106,9 @@ set_column_names(gt_b_df, GT)
 set_column_names(tb1_df, TB1)
 set_column_names(tb20_df, TBn)
 set_column_names(tb100_df, TBn)
-set_column_names(no_df, NO)
-set_column_names(w_t_df, W)
-set_column_names(w_b_df, W)
+# set_column_names(no_df, NO)
+set_column_names(w_t_df, GT)
+set_column_names(w_b_df, GT)
 
 # Pad the missing layers with NAN because not all layers are mapped.
 gt_no_data = gt_t_df[['LAYER', 'UNIT']].copy()  # template df used for padding
@@ -115,7 +118,7 @@ def pad_missing_layers(df):
 tb1_df   = pad_missing_layers(tb1_df)
 tb20_df  = pad_missing_layers(tb20_df)
 tb100_df = pad_missing_layers(tb100_df)
-no_df  = pad_missing_layers(no_df)
+# no_df  = pad_missing_layers(no_df)
 w_t_df = pad_missing_layers(w_t_df)
 w_b_df = pad_missing_layers(w_b_df)
 
@@ -123,7 +126,7 @@ w_b_df = pad_missing_layers(w_b_df)
 # Get/set some model-specific information.
 layer_indices, rf_sizes = get_rf_sizes(model, (999, 999))
 num_layers = len(rf_sizes)
-fxvar_thres = 0.8
+fxvar_thres = 0.7
 
 # Name the methods (used for naming pdf files and plot titles & labels)
 if is_occlude:
@@ -344,26 +347,26 @@ def make_coords_pdf():
             ax = plt.gca()
             ax.invert_yaxis()
 
-            xdata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_X']
-            ydata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_Y']
-            num_units_included = len(xdata)
-            plt.subplot(2,6,5)
-            config_plot(limits)
-            plt.scatter(xdata, ydata, alpha=0.4)
-            plt.title(f'non overlap {ephys_method} (top, n = {num_units_included})')
-            ax = plt.gca()
-            ax.invert_yaxis()
+            # xdata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_X']
+            # ydata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_Y']
+            # num_units_included = len(xdata)
+            # plt.subplot(2,6,5)
+            # config_plot(limits)
+            # plt.scatter(xdata, ydata, alpha=0.4)
+            # plt.title(f'non overlap {ephys_method} (top, n = {num_units_included})')
+            # ax = plt.gca()
+            # ax.invert_yaxis()
 
-            xdata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'BOT_X']
-            ydata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'BOT_Y']
-            num_units_included = len(xdata)
-            plt.subplot(2,6,11)
-            config_plot(limits)
-            plt.scatter(xdata, ydata, alpha=0.4)
-            plt.xlabel('x')
-            plt.title(f'non overlap {ephys_method} (bottom, n = {num_units_included})')
-            ax = plt.gca()
-            ax.invert_yaxis()
+            # xdata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'BOT_X']
+            # ydata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'BOT_Y']
+            # num_units_included = len(xdata)
+            # plt.subplot(2,6,11)
+            # config_plot(limits)
+            # plt.scatter(xdata, ydata, alpha=0.4)
+            # plt.xlabel('x')
+            # plt.title(f'non overlap {ephys_method} (bottom, n = {num_units_included})')
+            # ax = plt.gca()
+            # ax.invert_yaxis()
 
             xdata = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres), 'MUX']
             ydata = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres), 'MUY']
@@ -442,33 +445,33 @@ def make_radius_pdf():
             plt.title(f'{gt_method} bottom (n = {num_units_included})')
 
             # Note: For poorly fit units, all TOP_RAD is -1, so checking only one of them is sufficient.
-            radii_10 = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_RAD_10']
-            radii_50 = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_RAD_50']
-            radii_90 = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_RAD_90']
-            num_units_included = len(radii_10)
-            plt.subplot(2,3,2)
-            plt.hist(radii_10, bins=bins, label='10% of mass', color=(0.9, 0.5, 0.3, 0.7))
-            plt.hist(radii_50, bins=bins, label='50% of mass', color=(0.5, 0.9, 0.5, 0.7))
-            plt.hist(radii_90, bins=bins, label='90% of mass', color=(0.3, 0.5, 0.9, 0.7))
-            plt.xlim(xlim)
-            plt.ylim(ylim)
-            plt.legend()
-            plt.title(f'non overlap {ephys_method} (top, n = {num_units_included})')
+            # radii_10 = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_RAD_10']
+            # radii_50 = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_RAD_50']
+            # radii_90 = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_RAD_90']
+            # num_units_included = len(radii_10)
+            # plt.subplot(2,3,2)
+            # plt.hist(radii_10, bins=bins, label='10% of mass', color=(0.9, 0.5, 0.3, 0.7))
+            # plt.hist(radii_50, bins=bins, label='50% of mass', color=(0.5, 0.9, 0.5, 0.7))
+            # plt.hist(radii_90, bins=bins, label='90% of mass', color=(0.3, 0.5, 0.9, 0.7))
+            # plt.xlim(xlim)
+            # plt.ylim(ylim)
+            # plt.legend()
+            # plt.title(f'non overlap {ephys_method} (top, n = {num_units_included})')
 
-            # Note: For poorly fit units, all BOT_RAD is -1, so checking only one of them is sufficient.
-            radii_10 = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_10 != -1), 'BOT_RAD_10']
-            radii_50 = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_10 != -1), 'BOT_RAD_50']
-            radii_90 = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_10 != -1), 'BOT_RAD_90']
-            num_units_included = len(radii_10)
-            plt.subplot(2,3,5)
-            plt.hist(radii_10, bins=bins, label='10% of mass', color=(0.9, 0.5, 0.3, 0.7))
-            plt.hist(radii_50, bins=bins, label='50% of mass', color=(0.5, 0.9, 0.5, 0.7))
-            plt.hist(radii_90, bins=bins, label='90% of mass', color=(0.3, 0.5, 0.9, 0.7))
-            plt.xlabel('radius')
-            plt.xlim(xlim)
-            plt.ylim(ylim)
-            plt.legend()
-            plt.title(f'non overlap {ephys_method} (bottom, n = {num_units_included})')
+            # # Note: For poorly fit units, all BOT_RAD is -1, so checking only one of them is sufficient.
+            # radii_10 = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_10 != -1), 'BOT_RAD_10']
+            # radii_50 = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_10 != -1), 'BOT_RAD_50']
+            # radii_90 = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_10 != -1), 'BOT_RAD_90']
+            # num_units_included = len(radii_10)
+            # plt.subplot(2,3,5)
+            # plt.hist(radii_10, bins=bins, label='10% of mass', color=(0.9, 0.5, 0.3, 0.7))
+            # plt.hist(radii_50, bins=bins, label='50% of mass', color=(0.5, 0.9, 0.5, 0.7))
+            # plt.hist(radii_90, bins=bins, label='90% of mass', color=(0.3, 0.5, 0.9, 0.7))
+            # plt.xlabel('radius')
+            # plt.xlim(xlim)
+            # plt.ylim(ylim)
+            # plt.legend()
+            # plt.title(f'non overlap {ephys_method} (bottom, n = {num_units_included})')
 
             sd1data = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres), 'SD1']
             sd2data = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres), 'SD2']
@@ -512,16 +515,16 @@ def make_radius2_pdf():
     # Collect data of all layers first.
     all_gt_t_radii = []
     all_gt_b_radii = []
-    all_no_t_radii = []
-    all_no_b_radii = []
+    # all_no_t_radii = []
+    # all_no_b_radii = []
     all_w_t_radii = []
     all_w_b_radii = []
     
     # Collect the x-axis tick labels given to boxes.
     all_gt_t_ticks = []
     all_gt_b_ticks = []
-    all_no_t_ticks = []
-    all_no_b_ticks = []
+    # all_no_t_ticks = []
+    # all_no_b_ticks = []
     all_w_t_ticks = []
     all_w_b_ticks = []
     
@@ -542,13 +545,13 @@ def make_radius2_pdf():
         all_gt_b_radii.append(radii)
         all_gt_b_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
         
-        radii = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_RAD_50']
-        all_no_t_radii.append(radii)
-        all_no_t_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
+        # radii = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_RAD_50']
+        # all_no_t_radii.append(radii)
+        # all_no_t_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
         
-        radii = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'BOT_RAD_50']
-        all_no_b_radii.append(radii)
-        all_no_b_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
+        # radii = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'BOT_RAD_50']
+        # all_no_b_radii.append(radii)
+        # all_no_b_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
         
         sd1data = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres), 'SD1']
         sd2data = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres), 'SD2']
@@ -586,18 +589,18 @@ def make_radius2_pdf():
         plt.figure(figsize=(4*num_layers,10))
         plt.suptitle(f"{model_name} RF radii {ephys_method}: Non-Overlap 50% mass", fontsize=14)
         
-        plt.subplot(2,1,1)
-        plt.boxplot(all_no_t_radii, labels=all_no_t_ticks, showmeans=True, positions=all_rf_sizes, widths=5)
-        plt.title(f"top")
-        plt.ylabel('ERF')
-        plt.grid()
+        # plt.subplot(2,1,1)
+        # plt.boxplot(all_no_t_radii, labels=all_no_t_ticks, showmeans=True, positions=all_rf_sizes, widths=5)
+        # plt.title(f"top")
+        # plt.ylabel('ERF')
+        # plt.grid()
         
-        plt.subplot(2,1,2)
-        plt.boxplot(all_no_b_radii, labels=all_no_b_ticks, showmeans=True, positions=all_rf_sizes, widths=5)
-        plt.title(f"bottom")
-        plt.xlabel("TRF", fontsize=16)
-        plt.ylabel('ERF')
-        plt.grid()
+        # plt.subplot(2,1,2)
+        # plt.boxplot(all_no_b_radii, labels=all_no_b_ticks, showmeans=True, positions=all_rf_sizes, widths=5)
+        # plt.title(f"bottom")
+        # plt.xlabel("TRF", fontsize=16)
+        # plt.ylabel('ERF')
+        # plt.grid()
     
         pdf.savefig()
         plt.close()
@@ -706,16 +709,16 @@ def make_radius3_pdf():
     # Collect data of all layers first.
     all_gt_t_radii = []
     all_gt_b_radii = []
-    all_no_t_radii = []
-    all_no_b_radii = []
+    # all_no_t_radii = []
+    # all_no_b_radii = []
     all_w_t_radii = []
     all_w_b_radii = []
     
     # Collect the x-axis tick labels given to boxes.
     all_gt_t_ticks = []
     all_gt_b_ticks = []
-    all_no_t_ticks = []
-    all_no_b_ticks = []
+    # all_no_t_ticks = []
+    # all_no_b_ticks = []
     all_w_t_ticks = []
     all_w_b_ticks = []
     
@@ -740,13 +743,13 @@ def make_radius3_pdf():
         all_gt_b_radii.append(radii)
         all_gt_b_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
         
-        radii = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_RAD_50']
-        all_no_t_radii.append(radii)
-        all_no_t_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
+        # radii = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'TOP_RAD_50']
+        # all_no_t_radii.append(radii)
+        # all_no_t_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
         
-        radii = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'BOT_RAD_50']
-        all_no_b_radii.append(radii)
-        all_no_b_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
+        # radii = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1), 'BOT_RAD_50']
+        # all_no_b_radii.append(radii)
+        # all_no_b_ticks.append(f"{layer_name}, RF={rf_size}\n(n={len(radii)},$\mu$={radii.mean():.2f})")
         
         sd1data = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres), 'SD1']
         sd2data = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres), 'SD2']
@@ -762,11 +765,13 @@ def make_radius3_pdf():
     
     pdf_path = os.path.join(result_dir, f"{model_name}_{gt_method}_{ephys_method}_radius3.pdf")
     with PdfPages(pdf_path) as pdf:
+        # data_sources = [(all_gt_t_radii, all_gt_b_radii),
+        #                 (all_no_t_radii, all_no_b_radii),
+        #                 (all_w_t_radii, all_w_b_radii)]
+        
         data_sources = [(all_gt_t_radii, all_gt_b_radii),
-                        (all_no_t_radii, all_no_b_radii),
                         (all_w_t_radii, all_w_b_radii)]
         suptitles = [f"{model_name} RF radii of {gt_method}: Gaussian fit",
-                     f"{model_name} RF radii {ephys_method}: Non-Overlap 50% mass",
                      f"{model_name} RF radii of {ephys_method}: Gaussian fit to weighted map"]
         for (top_data, bot_data), suptitle in zip(data_sources, suptitles):
             plt.figure(figsize=(24,15))
@@ -818,7 +823,7 @@ def make_radius3_pdf():
 
 
 if __name__ == '__main__':
-    # make_radius3_pdf()
+    make_radius3_pdf()
     pass
 
 
@@ -990,31 +995,31 @@ def make_error_coords_pdf():
             r_val, p_val = pearsonr(gt_ydata, ydata)
             plt.title(f'{gt_method} vs. top 100 avg y (n={num_units_included}, r={r_val:.2f})')
 
-            xdata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_X']
-            num_units_included = len(xdata)
-            plt.subplot(4,5,4)
-            config_plot(limits)
-            plt.scatter(gt_xdata.loc[no_df.TOP_RAD_10 != -1], xdata, alpha=0.4)
-            plt.xlabel(f'{gt_method} x')
-            plt.ylabel(f'{ephys_method} x')
-            try:
-                r_val, p_val = pearsonr(gt_xdata.loc[no_df.TOP_RAD_10 != -1], xdata)
-            except:
-                r_val = np.NaN
-            plt.title(f'{gt_method} vs. top non-overlap x (n={num_units_included}, r={r_val:.2f})')
+            # xdata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_X']
+            # num_units_included = len(xdata)
+            # plt.subplot(4,5,4)
+            # config_plot(limits)
+            # plt.scatter(gt_xdata.loc[no_df.TOP_RAD_10 != -1], xdata, alpha=0.4)
+            # plt.xlabel(f'{gt_method} x')
+            # plt.ylabel(f'{ephys_method} x')
+            # try:
+            #     r_val, p_val = pearsonr(gt_xdata.loc[no_df.TOP_RAD_10 != -1], xdata)
+            # except:
+            #     r_val = np.NaN
+            # plt.title(f'{gt_method} vs. top non-overlap x (n={num_units_included}, r={r_val:.2f})')
 
-            ydata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_Y']
-            num_units_included = len(xdata)
-            plt.subplot(4,5,9)
-            config_plot(limits)
-            plt.scatter(gt_ydata.loc[no_df.TOP_RAD_10 != -1], ydata, alpha=0.4)
-            plt.xlabel(f'{gt_method} y')
-            plt.ylabel(f'{ephys_method} y')
-            try:
-                r_val, p_val = pearsonr(gt_ydata.loc[no_df.TOP_RAD_10 != -1], ydata)
-            except:
-                r_val = np.NaN
-            plt.title(f'{gt_method} vs. top non-overlap y (n={num_units_included}, r={r_val:.2f})')
+            # ydata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.TOP_RAD_10 != -1) & (gt_t_df.FXVAR > fxvar_thres), 'TOP_Y']
+            # num_units_included = len(xdata)
+            # plt.subplot(4,5,9)
+            # config_plot(limits)
+            # plt.scatter(gt_ydata.loc[no_df.TOP_RAD_10 != -1], ydata, alpha=0.4)
+            # plt.xlabel(f'{gt_method} y')
+            # plt.ylabel(f'{ephys_method} y')
+            # try:
+            #     r_val, p_val = pearsonr(gt_ydata.loc[no_df.TOP_RAD_10 != -1], ydata)
+            # except:
+            #     r_val = np.NaN
+            # plt.title(f'{gt_method} vs. top non-overlap y (n={num_units_included}, r={r_val:.2f})')
 
             xdata = w_t_df.loc[(w_t_df.LAYER == layer_name) & (w_t_df.FXVAR > fxvar_thres) & (gt_t_df.FXVAR > fxvar_thres), 'MUX']
             num_units_included = len(xdata)
@@ -1102,31 +1107,31 @@ def make_error_coords_pdf():
             r_val, p_val = pearsonr(gb_ydata, ydata)
             plt.title(f'{gt_method} vs. bottom 100 y (n={num_units_included}, r={r_val:.2f})')
 
-            xdata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_10 != -1) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_X']
-            num_units_included = len(xdata)
-            plt.subplot(4,5,14)
-            config_plot(limits)
-            plt.scatter(gb_xdata.loc[no_df.BOT_RAD_10 != -1], xdata, alpha=0.4)
-            plt.xlabel(f'{gt_method} x')
-            plt.ylabel(f'{ephys_method} x')
-            try:
-                r_val, p_val = pearsonr(gb_xdata.loc[no_df.BOT_RAD_10 != -1], xdata)
-            except:
-                r_val = np.NaN
-            plt.title(f'{gt_method} vs. bottom non-overlap x (n={num_units_included}, r={r_val:.2f})')
+            # xdata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_10 != -1) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_X']
+            # num_units_included = len(xdata)
+            # plt.subplot(4,5,14)
+            # config_plot(limits)
+            # plt.scatter(gb_xdata.loc[no_df.BOT_RAD_10 != -1], xdata, alpha=0.4)
+            # plt.xlabel(f'{gt_method} x')
+            # plt.ylabel(f'{ephys_method} x')
+            # try:
+            #     r_val, p_val = pearsonr(gb_xdata.loc[no_df.BOT_RAD_10 != -1], xdata)
+            # except:
+            #     r_val = np.NaN
+            # plt.title(f'{gt_method} vs. bottom non-overlap x (n={num_units_included}, r={r_val:.2f})')
 
-            ydata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_10 != -1) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_Y']
-            num_units_included = len(xdata)
-            plt.subplot(4,5,19)
-            config_plot(limits)
-            plt.scatter(gb_ydata.loc[no_df.BOT_RAD_10 != -1], ydata, alpha=0.4)
-            plt.xlabel(f'{gt_method} y')
-            plt.ylabel(f'{ephys_method} y')
-            try:
-                r_val, p_val = pearsonr(gb_ydata.loc[no_df.BOT_RAD_10 != -1], ydata)
-            except:
-                r_val = np.NaN
-            plt.title(f'{gt_method} vs. bottom non-overlap y (n={num_units_included}, r={r_val:.2f})')
+            # ydata = no_df.loc[(no_df.LAYER == layer_name) & (no_df.BOT_RAD_10 != -1) & (gt_b_df.FXVAR > fxvar_thres), 'BOT_Y']
+            # num_units_included = len(xdata)
+            # plt.subplot(4,5,19)
+            # config_plot(limits)
+            # plt.scatter(gb_ydata.loc[no_df.BOT_RAD_10 != -1], ydata, alpha=0.4)
+            # plt.xlabel(f'{gt_method} y')
+            # plt.ylabel(f'{ephys_method} y')
+            # try:
+            #     r_val, p_val = pearsonr(gb_ydata.loc[no_df.BOT_RAD_10 != -1], ydata)
+            # except:
+            #     r_val = np.NaN
+            # plt.title(f'{gt_method} vs. bottom non-overlap y (n={num_units_included}, r={r_val:.2f})')
 
             xdata = w_b_df.loc[(w_b_df.LAYER == layer_name) & (w_b_df.FXVAR > fxvar_thres) & (gt_b_df.FXVAR > fxvar_thres), 'MUX']
             num_units_included = len(xdata)
@@ -1192,7 +1197,7 @@ def make_error_coords2_pdf():
         top_face_color = 'orange'
         bot_face_color = 'silver'
         
-        plt.figure(figsize=(20,9))
+        plt.figure(figsize=(num_layers*4,9))
         for conv_i in range(1, num_layers):  # Skip Conv1
             # Get some layer-specific information.
             layer_name = f'conv{conv_i+1}'
@@ -1253,28 +1258,27 @@ def make_error_coords2_pdf():
         
         
         plt.figure(figsize=(12,5))
-        
-        x = np.arange(1,num_layers)
-        x_str = [f"conv{num+1}" for num in x]
+        x = np.arange(2, num_layers+1)
         plt.subplot(1,2,1)
         plt.plot(x, top_x_r_vals, 'b.-' ,markersize=20, label='x')
         plt.plot(x, top_y_r_vals, 'g.-' ,markersize=20, label='y')
+        plt.xlabel('conv layer index', fontsize=16)
         plt.ylabel('r', fontsize=16)
         plt.title("Top", fontsize=20)
-        plt.xticks(x,x_str, fontsize=16)
+        plt.xticks(x[::2], fontsize=16)
         plt.yticks([0, 0.5, 1])
-        plt.ylim(-0.1, 1.1)
+        plt.ylim(-0.3, 1.1)
         plt.gca().set_facecolor(top_face_color)
         plt.legend(fontsize=16)
         
         plt.subplot(1,2,2)
         plt.plot(x, bot_x_r_vals, 'b.-', markersize=20, label='x')
         plt.plot(x, bot_y_r_vals, 'g.-', markersize=20, label='y')
-        plt.ylabel('r', fontsize=16)
+        plt.xlabel('conv layer index', fontsize=16)
         plt.title("Bottom", fontsize=20)
-        plt.xticks(x,x_str, fontsize=16)
+        plt.xticks(x[::2], fontsize=16)
         plt.yticks([0, 0.5, 1])
-        plt.ylim(-0.1, 1.1)
+        plt.ylim(-0.3, 1.1)
         plt.gca().set_facecolor(bot_face_color)
         plt.legend(fontsize=16)
 

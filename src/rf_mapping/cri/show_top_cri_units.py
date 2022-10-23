@@ -32,7 +32,7 @@ model_name = 'alexnet'
 this_is_a_test_run = False
 map1_name = 'gt'                # ['gt', 'occlude']
 map2_name = 'rfmp4a'            # ['rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
-cri_thres = 0.5
+cri_thres = 0.8
 image_size = (227, 227)
 top_n = 5
 
@@ -106,8 +106,9 @@ def plot_one_grad_map(im, ax, img_idx, unit_idx, patch_idx, box, grad_method):
 ##############################  LOAD CRI DATA  ###############################
 
 
-# Load the fnat
-cri_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, 'cri.txt')
+# Load the CRI
+cri_num_images = 1000
+cri_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, 'cri_{cri_num_images}.txt')
 cri_df = pd.read_csv(cri_path, sep=" ", header=None)
 cri_df.columns = ['LAYER', 'UNIT', 'CRI']
 
@@ -151,9 +152,9 @@ with PdfPages(pdf_path) as pdf:
         # Plot the natural images of the top units.
         for _, unit_data in tqdm(top_cri_df.iterrows()):
             unit_i = int(unit_data['UNIT'])
-            this_fnat = unit_data['CRI']
+            this_cri = unit_data['CRI']
             
-            fig.suptitle(f"{layer_name} unit no.{unit_i} (fnat = {this_fnat})", fontsize=20)
+            fig.suptitle(f"{layer_name} unit no.{unit_i} (CRI = {this_cri})", fontsize=20)
             # Get top and bottom image indices and patch spatial indices
             max_n_img_indices   = max_min_indices[unit_i, :top_n, 0]
             max_n_patch_indices = max_min_indices[unit_i, :top_n, 1]

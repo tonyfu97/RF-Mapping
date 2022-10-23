@@ -48,10 +48,11 @@ model_name = 'alexnet'
 
 this_is_a_test_run = False
 map1_name = 'gt'       # ['gt', 'occlude']
-map2_name = 'rfmp4c7o'   # ['rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
-fxvar_thres = 0.8
-conv_i_to_plot = 1
+map2_name = 'rfmp4a'   # ['rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
 
+conv_i_to_plot = 1
+sigma_rf_ratio = 1/30
+fxvar_thres = 0.7
 
 ###############################################################################
 
@@ -104,43 +105,25 @@ def load_gaussian_fit_dfs(map_name, model_name, is_random):
                                model_name,
                                'abs',
                                f"{model_name}_{map_name}_gaussian_bot.txt")
-    elif map_name == 'occlude':
+    elif map_name in ('occlude', 'rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu'):
         top_df_path = os.path.join(mapping_dir,
-                               'occlude',
-                               f'gaussian_fit{is_random_str}',
+                               map_name,
+                               'gaussian_fit',
                                model_name,
                                f"{model_name}_{map_name}_gaussian_top.txt")
         bot_df_path = os.path.join(mapping_dir,
-                               'occlude',
-                               f'gaussian_fit{is_random_str}',
+                               map_name,
+                               'gaussian_fit',
                                model_name,
                                f"{model_name}_{map_name}_gaussian_bot.txt")
-    elif map_name in ('rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu'):
-        top_df_path = os.path.join(mapping_dir,
-                               map_name,
-                               'gaussian_fit',
-                               model_name,
-                               f"weighted_top.txt")
-        bot_df_path = os.path.join(mapping_dir,
-                               map_name,
-                               'gaussian_fit',
-                               model_name,
-                               f"weighted_bot.txt")
     else:
         raise KeyError(f"{map_name} does not exist.")
 
     top_fit_df = pd.read_csv(top_df_path, sep=" ", header=None)
     bot_fit_df = pd.read_csv(bot_df_path, sep=" ", header=None)
     
-    # Name the columns. 
-    # Note: The gaussian.txt of GT data doesn't have the number of bars, so we
-    #       cannot use the 'W-format' to name their columns.
-    if map_name in ('gt', 'occlude'):
-        top_fit_df.columns = [e.name for e in GTG]
-        bot_fit_df.columns = [e.name for e in GTG]
-    else:
-        top_fit_df.columns = [e.name for e in W]
-        bot_fit_df.columns = [e.name for e in W]
+    top_fit_df.columns = [e.name for e in GTG]
+    bot_fit_df.columns = [e.name for e in GTG]
 
     return top_fit_df, bot_fit_df
 
@@ -203,6 +186,12 @@ def get_result_dir(map1_name, map2_name, model_name, this_is_a_test_run):
     return result_dir
 
 
+def drop_nan_and_compute_pearson_r(array1, array2):
+    idx_to_keep = np.isfinite(array1) & np.isfinite(array2)
+    r_val, _ = pearsonr(array1[idx_to_keep], array2[idx_to_keep])
+    return r_val, np.sum(idx_to_keep)
+
+
 # Pad the missing layers with NAN because not all layers are mapped.
 gt_df = load_non_gaussian_fit_df('gt', model_name, is_random, 'com')
 gt_no_data = gt_df[['LAYER', 'UNIT']].copy()  # template df used for padding
@@ -233,9 +222,9 @@ top_xy_df_com2, bot_xy_df_com2 =\
 
 # Load the correlation data
 max_map_corr_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations',
-                                 model_name, f"max_map_r.txt")
+                                 model_name, f"max_map_r_{sigma_rf_ratio:.4f}.txt")
 min_map_corr_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations',
-                                 model_name, f"min_map_r.txt")
+                                 model_name, f"min_map_r_{sigma_rf_ratio:.4f}.txt")
 max_map_corr_df = pd.read_csv(max_map_corr_path, sep=" ", header=0)
 min_map_corr_df = pd.read_csv(min_map_corr_path, sep=" ", header=0)
 
@@ -292,41 +281,46 @@ for conv_i, rf_size in enumerate(rf_sizes):
     # Compute r values
     top_map_corr = max_df.loc[(max_df.LAYER == layer_name) & ~(max_df.GAUSSIAN_FXVAR_TOO_LOW), f'{map1_name}_vs_{map2_name}']
     top_gaussian_err_dist = max_df.loc[(max_df.LAYER == layer_name) & ~(max_df.GAUSSIAN_FXVAR_TOO_LOW), 'GAUSSIAN_ERR_DIST']
-    r_val, p_val = pearsonr(top_map_corr, top_gaussian_err_dist)
-    top_gaussian_n_r.append((len(top_map_corr), r_val))
+    r_val, n = drop_nan_and_compute_pearson_r(top_map_corr, top_gaussian_err_dist)
+    top_gaussian_n_r.append((n, r_val))
     if conv_i == conv_i_to_plot:  # Store the data to a list for the layer that will be plotted below as an example
         top_plot_xy.append((top_gaussian_err_dist, top_map_corr))
-    
+
+
     bot_map_corr = min_df.loc[(min_df.LAYER == layer_name) & ~(min_df.GAUSSIAN_FXVAR_TOO_LOW), f'{map1_name}_vs_{map2_name}']
     bot_gaussian_err_dist = min_df.loc[(min_df.LAYER == layer_name) & ~(min_df.GAUSSIAN_FXVAR_TOO_LOW), 'GAUSSIAN_ERR_DIST']
-    r_val, p_val = pearsonr(bot_map_corr, bot_gaussian_err_dist)
-    bot_gaussian_n_r.append((len(bot_map_corr), r_val))
+    r_val, n = drop_nan_and_compute_pearson_r(bot_map_corr, bot_gaussian_err_dist)
+    bot_gaussian_n_r.append((n, r_val))
     if conv_i == conv_i_to_plot:
         bot_plot_xy.append((bot_gaussian_err_dist, bot_map_corr))
-    
+
+
     top_map_corr = max_df.loc[max_df.LAYER == layer_name, f'{map1_name}_vs_{map2_name}']
     top_hot_spot_err_dist = max_df.loc[max_df.LAYER == layer_name, 'HOT_SPOT_ERR_DIST']
-    r_val, p_val = pearsonr(top_map_corr, top_hot_spot_err_dist)
-    top_hot_spot_n_r.append((len(top_map_corr), r_val))
+    r_val, n = drop_nan_and_compute_pearson_r(top_map_corr, top_hot_spot_err_dist)
+    top_hot_spot_n_r.append((n, r_val))
     if conv_i == conv_i_to_plot:
         top_plot_xy.append((top_hot_spot_err_dist, top_map_corr))
-    
+
+
     bot_map_corr = min_df.loc[min_df.LAYER == layer_name, f'{map1_name}_vs_{map2_name}']
     bot_hot_spot_err_dist = min_df.loc[min_df.LAYER == layer_name, 'HOT_SPOT_ERR_DIST']
-    r_val, p_val = pearsonr(bot_map_corr, bot_hot_spot_err_dist)
-    bot_hot_spot_n_r.append((len(bot_map_corr), r_val))
+    r_val, n = drop_nan_and_compute_pearson_r(bot_map_corr, bot_hot_spot_err_dist)
+    bot_hot_spot_n_r.append((n, r_val))
     if conv_i == conv_i_to_plot:
         bot_plot_xy.append((bot_hot_spot_err_dist, bot_map_corr))
-    
+
+
     top_com_err_dist = max_df.loc[max_df.LAYER == layer_name, 'COM_ERR_DIST']
-    r_val, p_val = pearsonr(top_map_corr, top_com_err_dist)
-    top_com_n_r.append((len(top_map_corr), r_val))
+    r_val, n = drop_nan_and_compute_pearson_r(top_map_corr, top_com_err_dist)
+    top_com_n_r.append((n, r_val))
     if conv_i == conv_i_to_plot:
         top_plot_xy.append((top_com_err_dist, top_map_corr))
-    
+
+
     bot_com_err_dist = min_df.loc[min_df.LAYER == layer_name, 'COM_ERR_DIST']
-    r_val, p_val = pearsonr(bot_map_corr, bot_com_err_dist)
-    bot_com_n_r.append((len(bot_map_corr), r_val))
+    r_val, n = drop_nan_and_compute_pearson_r(bot_map_corr, bot_com_err_dist)
+    bot_com_n_r.append((n, r_val))
     if conv_i == conv_i_to_plot:
         bot_plot_xy.append((bot_com_err_dist, bot_map_corr))
 
@@ -339,7 +333,7 @@ layer_name = f"conv{conv_i_to_plot+1}"
 pdf_path = os.path.join(result_dir, f"{model_name}_{layer_name}_{map1_name}_{map2_name}_figure_fit_methods.pdf")
 with PdfPages(pdf_path) as pdf:
     def config_plot(r, n, face_color):
-        plt.xlim([-1, 50])
+        plt.xlim([-1, 45])
         plt.ylim([-1.1, 1.1])
         plt.yticks([-1, -0.5, 0, 0.5, 1])
         plt.text(5, -0.9, f"r = {r:.4f}\nn = {n}", fontsize=18)

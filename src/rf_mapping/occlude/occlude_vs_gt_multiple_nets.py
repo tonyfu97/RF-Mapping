@@ -16,7 +16,7 @@ import src.rf_mapping.constants as c
 from src.rf_mapping.result_txt_format import RfmpHotSpot as HS
 
 # Please specify the model
-num_layers_dict = {'alexnet' : 5 , 'vgg16': 13} #, 'resnet18': 20}
+num_layers_dict = {'alexnet' : 5 , 'vgg16': 13, 'resnet18': 20}
 
 
 #########################  LOAD MAP CORRELATIONS  #############################
@@ -67,16 +67,16 @@ with PdfPages(pdf_path) as pdf:
             corr_mean = df.loc[df.LAYER == f'conv{conv_i+1}', 'gt_composite_vs_occlude_composite'].to_numpy().mean()
             avg_corr_data.append(corr_mean)
 
-        plt.plot(avg_corr_data, '.-', markersize=20)
-        plt.ylim([0.2, 1])
+        plt.plot(avg_corr_data, '.-', markersize=10, alpha=0.8)
+        plt.ylim([0.5, 1.1])
         plt.ylabel('Direct map correlation', fontsize=16)
         plt.title(f"Comparing ground truths: Guided backprop composite vs. occlusion composite",
                     fontsize=18)
 
     max_num_layers = max(num_layers_dict.values())
-    plt.xticks(np.arange(max_num_layers-1),  [f'conv{i+1}' for i in range(1, max_num_layers)], fontsize=16)
+    plt.xlabel('conv layer index', fontsize=16)
+    plt.xticks(np.arange(0,max_num_layers-1,2),  np.arange(2, max_num_layers+1,2), fontsize=16)
     plt.legend(num_layers_dict.keys(), fontsize=16)
-
     pdf.savefig()
     plt.show()
     plt.close()
@@ -98,7 +98,8 @@ with PdfPages(pdf_path) as pdf:
                     fontsize=18)
 
     max_num_layers = max(num_layers_dict.values())
-    plt.xticks(np.arange(max_num_layers-1),  [f'conv{i+1}' for i in range(1, max_num_layers)], fontsize=16)
+    plt.xlabel('conv layer index', fontsize=16)
+    plt.xticks(np.arange(0,max_num_layers-1,2),  np.arange(2, num_layers+1,2), fontsize=16)
     plt.legend(num_layers_dict.keys(), fontsize=16)
 
     pdf.savefig()

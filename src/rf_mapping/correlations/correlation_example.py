@@ -61,6 +61,8 @@ else:
                              'map_correlations',
                               model_name)
 
+apply_fix = False
+fix_pix_thres = 0.1
 
 #############################  HELPER FUNCTIONS  ##############################
 
@@ -143,6 +145,14 @@ def load_maps(map_name, layer_name, max_or_min):
                                     model_name,
                                     f"{layer_name}_weighted_{max_or_min}_shapemaps.npy")
         return np.load(mapping_path)  # [unit, yn, xn]
+    elif map_name == 'block':
+        mapping_path = os.path.join(mapping_dir,
+                                    'block',
+                                    'mapping',
+                                    model_name,
+                                    f"{layer_name}_weighted_{max_or_min}_blockmaps.npy")
+        maps = np.load(mapping_path)  # [unit, 3, yn, xn]
+        return np.transpose(maps, (0,2,3,1))  # Need the color channel for plots.
     else:
         raise KeyError(f"{map_name} does not exist.")
 
@@ -187,20 +197,35 @@ max_map_corr_df = pd.read_csv(max_map_corr_path, sep=" ", header=0)
         
 ################################ MAKE PDF #####################################
 
-
-pdf_path = os.path.join(result_dir, f"{model_name}_correlation_example.pdf")
+fix_or_not = '_fix' if apply_fix else ''
+pdf_path = os.path.join(result_dir, f"{model_name}_{map_name}_correlation_example{fix_or_not}.pdf")
 with PdfPages(pdf_path) as pdf:
-    plt.figure(figsize=(15, 10))
+    plt.figure(figsize=(18, 15))
     
     for plot_i, unit_data in enumerate([unit_w_low_r, unit_w_mid_r, unit_w_high_r]):
-        low_r_gt_map = load_maps('gt', unit_data['layer_name'], max_or_min)[unit_data['unit_i']]
-        low_r_gt_map = smooth_and_normalize_map(low_r_gt_map, sigma_rf_ratio)
-        low_r_rfmp_map = load_maps(map_name, unit_data['layer_name'], max_or_min)[unit_data['unit_i']]
-        low_r_rfmp_map = smooth_and_normalize_map(low_r_rfmp_map, sigma_rf_ratio)
-        r_val, _ = pearsonr(low_r_gt_map.flatten(), low_r_rfmp_map.flatten())
+        gt_map = load_maps('gt', unit_data['layer_name'], max_or_min)[unit_data['unit_i']]
+        gt_map = smooth_and_normalize_map(gt_map, sigma_rf_ratio)
+        rfmp_map = load_maps(map_name, unit_data['layer_name'], max_or_min)[unit_data['unit_i']]
+        rfmp_map = smooth_and_normalize_map(rfmp_map, sigma_rf_ratio)
+        
+        if len(rfmp_map.shape) == 3:  # if there is a color channel
+            rfmp_map_no_color = np.mean(rfmp_map, axis=2)
+        else:
+            rfmp_map_no_color = rfmp_map
+
+        if apply_fix:
+            gt_map_flatten = gt_map.flatten()
+            rfmp_map_flatten = rfmp_map_no_color.flatten()
+            idx_to_keep = (gt_map_flatten > fix_pix_thres) & (rfmp_map_flatten > fix_pix_thres)
+            gt_map_flatten = gt_map_flatten[idx_to_keep]
+            rfmp_map_flatten = rfmp_map_flatten[idx_to_keep]
+        else:
+            gt_map_flatten = gt_map.flatten()
+            rfmp_map_flatten = rfmp_map_no_color.flatten()
+        r_val, _ = pearsonr(gt_map_flatten, rfmp_map_flatten)
         
         plt.subplot(3, 3, plot_i + 1)
-        plt.imshow(low_r_gt_map, cmap='gray')
+        plt.imshow(gt_map, cmap='gray')
         plt.xticks([])
         plt.yticks([])
         if plot_i == 0:
@@ -208,14 +233,20 @@ with PdfPages(pdf_path) as pdf:
         plt.title(f"{unit_data['layer_name']}-{unit_data['unit_i']} (r = {r_val:.4f})", fontsize=18)
         
         plt.subplot(3, 3, plot_i + 4)
-        plt.imshow(low_r_rfmp_map, cmap='gray')
+        plt.imshow(rfmp_map, cmap='gray')
         if plot_i == 0:
             plt.ylabel(f"{map_name}", fontsize=18)
         plt.xticks([])
         plt.yticks([])
         
         plt.subplot(3, 3, plot_i + 7)
-        plt.scatter(low_r_gt_map.flatten(), low_r_rfmp_map.flatten(), alpha=0.01)
+        plt.scatter(gt_map_flatten, rfmp_map_flatten, alpha=0.05)
+        plt.xlim([-0.1, 1.1])
+        plt.ylim([-0.1, 1.1])
+        if plot_i == 0:
+            plt.xlabel('GT normalized pix value', fontsize=14)
+            plt.ylabel(f'{map_name} normalized pix value', fontsize=14)
+        plt.gca().set_aspect('equal')
     
     pdf.savefig()
     plt.show()
