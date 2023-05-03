@@ -26,12 +26,12 @@ from src.rf_mapping.result_txt_format import (GtGaussian as GT,
                                               Rfmp4aWeighted as W)
 
 # Please specify the model
-# model = models.alexnet()
-# model_name = 'alexnet'
+model = models.alexnet()
+model_name = 'alexnet'
 # model = models.vgg16()
 # model_name = 'vgg16'
-model = models.resnet18()
-model_name = 'resnet18'
+# model = models.resnet18()
+# model_name = 'resnet18'
 
 # Please specify what ground_truth method versus what RFMP4
 is_occlude = False
@@ -823,7 +823,7 @@ def make_radius3_pdf():
 
 
 if __name__ == '__main__':
-    make_radius3_pdf()
+    # make_radius3_pdf()
     pass
 
 
@@ -895,7 +895,7 @@ def make_ori_pdf():
             plt.close()
 
 if __name__ == '__main__':
-    # make_ori_pdf()
+    make_ori_pdf()
     pass
 
 
@@ -1287,7 +1287,7 @@ def make_error_coords2_pdf():
         plt.close()
 
 if __name__ == '__main__':
-    make_error_coords2_pdf()
+    # make_error_coords2_pdf()
     pass
 
 
