@@ -48,7 +48,7 @@ from src.rf_mapping.model_utils import ModelInfo
 
 
 # Please specify some model details here:
-MODEL_NAME = "alexnet"
+MODEL_NAME = "vgg16"
 
 # Specify optimization method
 OPTIMIZATION_METHOD = 'SGD'  # options: SGD and Adam
@@ -69,7 +69,7 @@ LAYER_NAMES = MODEL_INFO.get_layer_names(MODEL_NAME)
 
 # Get the image directory
 IMG_SIZE = (227, 227)
-NUM_TOP_IMAGES = 100
+NUM_TOP_IMAGES = 10
 
 """
 Obviously, I cannot upload the content of IMG_DIR to GitHub because it is too
@@ -242,5 +242,6 @@ def create_visualizations_for_layer(layer_name):
     np.save(os.path.join(RESULT_DIR, f"{layer_name}.npy"), result_array)
 
 if __name__ == '__main__':
-    with multiprocessing.Pool(processes=len(LAYER_NAMES)) as pool:
-        pool.map(create_visualizations_for_layer, LAYER_NAMES)
+    LAYERS_TO_RUN = [f"conv{i}" for i in range(6,11)]
+    with multiprocessing.Pool(processes=len(LAYERS_TO_RUN)) as pool:
+        pool.map(create_visualizations_for_layer, LAYERS_TO_RUN)

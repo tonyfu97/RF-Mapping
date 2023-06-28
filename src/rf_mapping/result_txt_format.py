@@ -2,6 +2,12 @@
 Classes used to describe the columns of the result txt files. Helps with
 extracting information from the txt files and put them into pandas dataframes.
 
+Example usage
+-------------
+from src.rf_mapping.result_txt_format import RfmpHotSpot as HS
+hot_spot_df = pd.read_csv(df_path, sep=" ", header=None)
+hot_spot_df.columns = [e.name for e in HS]
+
 Tony Fu, July 27, 2022
 """
 from enum import Enum

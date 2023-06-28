@@ -28,7 +28,7 @@ a fixed size and stride for the occluders, we scaled the occluder size and
 stride linearly with the RF field size according to the formula:
 
     occluder_size = rf_size // 10
-    occluder_stride = occluder_size // 3
+    occluder_stride = occluder_size // 2
     
 This method will serve as an alternative to the guided backprop visualizations
 for the 'ground truth' RF mapping.

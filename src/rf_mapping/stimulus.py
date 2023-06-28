@@ -19,7 +19,7 @@ __all__ = ['clip', 'stimset_gridx_map', 'print_progress',
            'add_weighted_map', 'add_non_overlap_map',
            'summarize_TB1', 'summarize_TBn', 'record_stim_counts',
            'record_splist', 'record_center_responses', 'record_script_log',
-           'mapstat_comr_1', 'make_map_pdf']
+           'mapstat_comr_1', 'make_map_pdf', 'stimset_gridx_map_with_divider']
 
 
 #######################################.#######################################
@@ -81,7 +81,21 @@ def stimset_gridx_map(max_rf,stim_len):
     max_rf   - maximum RF size (pix)\n
     stim_len - stimulus length (pix)\n
     """
-    dx = stim_len / 2.0                       # Grid spacing is 1/2 of stimulus length
+    dx = stim_len / 2.0                   # Grid spacing is 1/2 of stimulus length
+    xmax = round((max_rf/dx) / 2.0) * dx  # Max offset of grid point from center
+    xlist = np.arange(-xmax,xmax+1,dx)
+    return xlist
+
+
+def stimset_gridx_map_with_divider(max_rf,stim_len, divider):
+    """
+    Parameters
+    ----------
+    max_rf   - maximum RF size (pix)\n
+    stim_len - stimulus length (pix)\n
+    divider  - the number of grid points per stimulus length
+    """
+    dx = stim_len / divider               # Grid spacing is 1/2 of stimulus length
     xmax = round((max_rf/dx) / 2.0) * dx  # Max offset of grid point from center
     xlist = np.arange(-xmax,xmax+1,dx)
     return xlist

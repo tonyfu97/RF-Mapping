@@ -23,14 +23,14 @@ from src.rf_mapping.hook import ConvUnitCounter
 # Please specify some details here:
 model = models.alexnet(pretrained=True).to(c.DEVICE)
 model_name = 'alexnet'
-# model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(c.DEVICE)
+# model = models.vgg16(pretrained=True).to(c.DEVICE)
 # model_name = "vgg16"
 # model = models.resnet18(pretrained=True).to(c.DEVICE)
 # model_name = "resnet18"
 
 top_n_r = 10
-this_is_a_test_run = True
-rfmp_name = 'rfmp4a'
+this_is_a_test_run = False
+rfmp_name = 'rfmp4c7o'
 
 # Please double-check the directories:
 gt_response_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n', model_name)
@@ -118,20 +118,21 @@ with PdfPages(pdf_path) as pdf:
         avg_bot_gt_responses = np.mean(gt_responses[:, :top_n_r, 1], axis=1)
         
         plt.subplot(2, num_layers, conv_i+1)
-        plt.scatter(avg_top_gt_responses, avg_top_rfmp_responses)
+        plt.scatter(avg_top_gt_responses, avg_top_rfmp_responses, alpha=0.4)
         config_plot(avg_top_gt_responses, avg_top_rfmp_responses)
-        plt.xlabel(f"GT")
-        plt.ylabel(f"{rfmp_name}")
+        if conv_i == 0:
+            plt.ylabel(f"Response to\nTop-{top_n_r} Facilitatory Bar", fontsize=14)
         r_val, _ = pearsonr(avg_top_gt_responses, avg_top_rfmp_responses)
-        plt.title(f"{layer_name}, top, r = {r_val:.4f}")
+        plt.title(f"{layer_name}\n(r = {r_val:.4f})", fontsize=14)
 
         plt.subplot(2, num_layers, conv_i+1+num_layers)
-        plt.scatter(avg_bot_gt_responses, avg_bot_rfmp_responses)
+        plt.scatter(avg_bot_gt_responses, avg_bot_rfmp_responses, alpha=0.4)
         config_plot(avg_bot_gt_responses, avg_bot_rfmp_responses)
-        plt.xlabel(f"GT")
-        plt.ylabel(f"{rfmp_name}")
+        plt.xlabel(f"Response to\nTop-{top_n_r} Natural Image", fontsize=14)
+        if conv_i == 0:
+            plt.ylabel(f"Response to\nTop-{top_n_r} Suppressive Bar", fontsize=14)
         r_val, _ = pearsonr(avg_bot_gt_responses, avg_bot_rfmp_responses)
-        plt.title(f"{layer_name}, bottom, r = {r_val:.4f}")
+        plt.title(f"(r = {r_val:.4f})", fontsize=14)
         
         # Compuate fnat
         top_fnat = avg_top_rfmp_responses / avg_top_gt_responses
@@ -157,22 +158,30 @@ with PdfPages(pdf_path) as pdf:
     pdf.savefig()
     plt.show()
     plt.close()
-    
 
-    plt.figure(figsize=(num_layers*5, 10))
-    plt.suptitle("Distribution of fnat", fontsize=24)
+    plt.figure(figsize=((num_layers - 1)*5, 10))
+    # plt.suptitle("Distribution of fnat", fontsize=24)
+
     for conv_i in range(num_layers):
         layer_name = f"conv{conv_i+1}"
+        if conv_i == 0:
+            continue
 
-        plt.subplot(2, num_layers, conv_i+1)
-        plt.hist(all_top_fnats[conv_i])
-        plt.title(f"{layer_name}, top (n = {np.sum(np.isfinite(all_top_fnats[conv_i]))})", fontsize=14)
-        
-        plt.subplot(2, num_layers, conv_i+1+num_layers)
-        plt.hist(all_bot_fnats[conv_i])
-        plt.title(f"{layer_name}, bottom (n = {np.sum(np.isfinite(all_bot_fnats[conv_i]))})", fontsize=14)
-                
-    
+        plt.subplot(2, num_layers-1, conv_i)
+        plt.hist(all_top_fnats[conv_i], bins=20, density=True)
+        plt.title(f"{layer_name}\n(n = {np.sum(np.isfinite(all_top_fnats[conv_i]))})", fontsize=18)
+        if conv_i == 1:
+            plt.ylabel("density (Facilitatory)", fontsize=18)
+        plt.xlim(0, 1.0)
+
+        plt.subplot(2, num_layers-1, conv_i+(num_layers-1))
+        plt.hist(all_bot_fnats[conv_i], bins=20, density=True)
+        plt.title(f"(n = {np.sum(np.isfinite(all_bot_fnats[conv_i]))})", fontsize=18)
+        if conv_i == 1:
+            plt.ylabel("density (Suppressive)", fontsize=18)
+        plt.xlabel("Fnat", fontsize=14)
+        plt.xlim(0, 1.0)
+
     pdf.savefig()
     plt.show()
     plt.close()

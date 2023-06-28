@@ -27,7 +27,7 @@ model_name = 'alexnet'
 # model_name = "resnet18"
 num_images = 1000
 batch_size = 50
-this_is_a_test_run = True
+this_is_a_test_run = False
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR

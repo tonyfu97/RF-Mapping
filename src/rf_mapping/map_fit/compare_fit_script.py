@@ -5,7 +5,6 @@ Tony Fu, Sep 20, 2022
 """
 import os
 import sys
-import math
 
 import numpy as np
 import pandas as pd
@@ -35,10 +34,10 @@ model_name = 'alexnet'
 is_random = False
 this_is_a_test_run = False
 map1_name = 'gt'                # ['gt', 'occlude']
-map2_name = 'rfmp4a'            # ['rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
-fit_name = 'com'       # ['gaussian_fit', 'com', 'hot_spot']
-fxvar_thres = 0.8
-sigma_rf_ratio: 1/30
+map2_name = 'rfmp4c7o'            # ['rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
+fit_name = 'gaussian_fit'       # ['gaussian_fit', 'com', 'hot_spot']
+fxvar_thres = 0.7
+sigma_rf_ratio = 1/30
 
 
 ###############################################################################
@@ -189,11 +188,12 @@ def get_result_dir(map1_name, map2_name, model_name, this_is_a_test_run):
     return result_dir
 
 
+# Do we need this? May 12, 2023 Tony Fu
 # Pad the missing layers with NAN because not all layers are mapped.
-gt_df = load_non_gaussian_fit_df('gt', model_name, is_random, 'com')
-gt_no_data = gt_df[['LAYER', 'UNIT']].copy()  # template df used for padding
-def pad_missing_layers(df):
-    return pd.merge(gt_no_data, df, how='left')
+# gt_df = load_non_gaussian_fit_df('gt', model_name, is_random, 'com')
+# gt_no_data = gt_df[['LAYER', 'UNIT']].copy()  # template df used for padding
+# def pad_missing_layers(df):
+#     return pd.merge(gt_no_data, df, how='left')
 
 
 def config_plot(limits):
@@ -246,7 +246,7 @@ with PdfPages(pdf_path) as pdf:
     ###########################################################################
     #                   FIGURE 1. CORRELATIONS IN EACH LAYER                  #
     ###########################################################################
-    plt.figure(figsize=(20, 9))
+    plt.figure(figsize=(70, 9))
     if fit_name == 'gaussian_fit':
         plt.suptitle(f"{model_name}: {map1_name} vs {map2_name} ({fit_name}, fxvar_threshold = {fxvar_thres})", fontsize=24)
     else:
@@ -258,7 +258,7 @@ with PdfPages(pdf_path) as pdf:
         
         # Some basic layer info
         layer_name = f"conv{conv_i+1}"
-        limits = (-75, 75)
+        limits = (-25, 25)
         
         # Get data
         top_x1 = top_x_df1.loc[(top_x_df1.LAYER == layer_name), 'TOP_X']
@@ -284,7 +284,7 @@ with PdfPages(pdf_path) as pdf:
         # Plot x only
         plt.subplot(2,num_layers - 1, conv_i)
         plt.scatter(top_x1, top_x2, alpha=0.4, c='b')
-        plt.text(-70,50,f'n = {len(top_x1)}\nr = {top_x_r_vals[-1]:.2f}', fontsize=16)
+        plt.text(-20,20,f'n = {len(top_x1)}\nr = {top_x_r_vals[-1]:.2f}', fontsize=16)
         config_plot(limits)
         plt.gca().set_facecolor(top_face_color)
         if conv_i == 1:
@@ -293,7 +293,7 @@ with PdfPages(pdf_path) as pdf:
         
         plt.subplot(2,num_layers - 1, num_layers+conv_i-1)
         plt.scatter(bot_x1, bot_x2, alpha=0.4, c='b')
-        plt.text(-70,50,f'n = {len(bot_x1)}\nr = {bot_x_r_vals[-1]:.2f}', fontsize=16)
+        plt.text(-20,20,f'n = {len(bot_x1)}\nr = {bot_x_r_vals[-1]:.2f}', fontsize=16)
         config_plot(limits)
         plt.gca().set_facecolor(bot_face_color)
         plt.xlabel(f'{map1_name}', fontsize=16)
@@ -311,15 +311,16 @@ with PdfPages(pdf_path) as pdf:
     plt.figure(figsize=(12,5))
         
     x = np.arange(1,num_layers)
-    x_str = [f"conv{num+1}" for num in x]
+    x_ticks = np.arange(1 ,num_layers, 2)
+    x_labels = [f"{num+1}" for num in x_ticks]
     plt.subplot(1,2,1)
     plt.plot(x, top_x_r_vals, 'b.-' ,markersize=20, label='x')
     plt.plot(x, top_y_r_vals, 'r.-' ,markersize=20, label='y')
     plt.ylabel('r', fontsize=16)
     plt.title("Top", fontsize=20)
-    plt.xticks(x,x_str, fontsize=16)
-    plt.yticks([0, 0.5, 1])
-    plt.ylim(-0.1, 1.1)
+    plt.xticks(x_ticks,x_labels, fontsize=16)
+    plt.yticks([-0.5, 0, 0.5, 1])
+    plt.ylim(-0.6, 1.1)
     plt.gca().set_facecolor(top_face_color)
     plt.legend(fontsize=16)
     
@@ -328,9 +329,9 @@ with PdfPages(pdf_path) as pdf:
     plt.plot(x, bot_y_r_vals, 'r.-', markersize=20, label='y')
     plt.ylabel('r', fontsize=16)
     plt.title("Bottom", fontsize=20)
-    plt.xticks(x,x_str, fontsize=16)
-    plt.yticks([0, 0.5, 1])
-    plt.ylim(-0.1, 1.1)
+    plt.xticks(x_ticks,x_labels, fontsize=16)
+    plt.yticks([-0.5, 0, 0.5, 1])
+    plt.ylim(-0.6, 1.1)
     plt.gca().set_facecolor(bot_face_color)
     plt.legend(fontsize=16)
 

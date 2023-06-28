@@ -27,7 +27,8 @@ this_is_a_test_run = False
 if this_is_a_test_run:
     result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', 'test')
 else:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', model_name)
+    # result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', model_name)
+    result_dir = f"/Volumes/T7 Shield/borderownership/results (2023 summer)/rfmp4b/mapping/{model_name}"
 
 ###############################################################################
 

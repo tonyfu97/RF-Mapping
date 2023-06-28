@@ -483,6 +483,58 @@ if __name__ == "__main__":
 
 #######################################.#######################################
 #                                                                             #
+#                            STIMSET_DICT_RFMP_4B                             #
+#                                                                             #
+#  Return the stimulus parameter dictionary with the appropriate entries      #
+#  for the entire stimulus set for RF mapping paradigm "4b", which is         #
+#  achromatic just like 4a, but contains more spatial locations               #
+#  changes made on June 26, 2023.                                             #
+#                                                                             #
+###############################################################################
+def stimset_dict_rfmp_4b(xn,max_rf,grid_divider=2.0):
+    """
+    Parameters
+    ----------
+    xn     - stimulus image size (pix)\n
+    max_rf - maximum RF size (pix)\n
+    
+    Returns
+    -------
+    splist - List of dictionary entries, one per stimulus image.
+    """
+    splist = []
+
+    #  There are 4 bar lengths
+    barlen = np.array([48/64 * max_rf,    #  Array of bar lengths
+                       24/64 * max_rf,
+                       12/64 * max_rf,
+                        6/64 * max_rf])
+
+    #  There are 3 aspect ratios
+    arat = np.array([1/2, 1/5, 1/10])   # Array of aspect ratios
+
+    #  There are 16 orientations, even spaced around 360 deg starting at 0 deg
+    orilist = np.arange(0.0, 180.0, 22.5)
+
+    #  This constant sets how much blurring occurs at the edges of the bars
+    aa =  0.5      # Antialias distance (pix)
+
+    for bl in barlen:
+        xlist = stimset_gridx_map_with_divider(max_rf,bl,grid_divider)
+        for ar in arat:
+            stim_dapp_bar_xyo_bw(splist,xn,xlist,orilist,bl,ar*bl,aa)
+
+    # print("  Length of stimulus parameter list:",len(splist))
+    return splist
+
+
+# HERE IS AN EXAMPLE OF HOW TO CALL THE CODE ABOVE:
+# if __name__ == "__main__":
+#     s = stimset_dict_rfmp_4b(11,11)
+
+
+#######################################.#######################################
+#                                                                             #
 #                            STIMSET_DICT_RFMP_4C7O                           #
 #                                                                             #
 #  Return the stimulus parameter dictionary with the appropriate entries      #
@@ -614,9 +666,6 @@ def make_barmaps(splist, center_responses, unit_i, _debug=False, has_color=False
     -------
     The weighted_max_map, weighted_min_map, non_overlap_max_map, and
     non_overlap_min_map of one unit.
-    
-    TODO: This function is a bottleneck. Must uses multiprocessing to
-          parallelize the computations on multiple cpu cores.
     """
     print(f"{unit_i} done.")
 
@@ -774,6 +823,7 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False, batch_size=100,
         os.remove(non_overlap_counts_path)
     
     for conv_i in range(len(layer_indices)):
+        if conv_i != 2: continue
         layer_name = f"conv{conv_i + 1}"
         print(f"\n{layer_name}\n")
         # Get layer-specific info
@@ -781,7 +831,7 @@ def rfmp4a_run_01b(model, model_name, result_dir, _debug=False, batch_size=100,
         layer_idx = layer_indices[conv_i]
         num_units = nums_units[conv_i]
         max_rf = max_rfs[conv_i][0]
-        splist = stimset_dict_rfmp_4a(xn, max_rf)
+        splist = stimset_dict_rfmp_4b(xn, max_rf)
 
         # Array initializations
         weighted_max_maps = np.zeros((num_units, max_rf, max_rf))
@@ -1127,3 +1177,78 @@ if __name__ == "__main__":
     #                         f'{model_name}_test_grid.pdf')
     # make_rfmp4a_grid_pdf(pdf_path, model)
     pass
+
+
+#######################################.#######################################
+#                                                                             #
+#                            MAKE_RFMP4a_WINDOW_PDF                           #
+#                                                                             #
+###############################################################################
+def rotate_about_center(x, y, x0, y0, theta_deg):
+    dx = x - x0
+    dy = y - y0
+    output = rotate(dx, dy, theta_deg)
+    return np.array((output[0] + x0, output[1] + y0))
+
+
+def create_gaussian(sigma, center, shape):
+    Y, X = np.indices(shape)
+    dx = X - center[0]
+    dy = Y - center[1]
+    gaussian = np.exp(-(dx**2 + dy**2) / (2 * sigma**2))
+    return gaussian
+
+
+def get_coordinates_of_edges_and_corners(xn, yn, x0, y0, theta, len, wid):
+    recenter_coord = np.array(((xn-1.0)/2.0, (yn-1.0)/2.0))
+    coords = {}
+    # Get the coordinates of the four corners
+    coords['top_left'] = rotate_about_center(x0 - wid/2, y0 + len/2, x0, y0, theta) + recenter_coord
+    coords['top_right'] = rotate_about_center(x0 + wid/2, y0 + len/2, x0, y0, theta) + recenter_coord
+    coords['bot_left'] = rotate_about_center(x0 - wid/2, y0 - len/2, x0, y0, theta) + recenter_coord
+    coords['bot_right'] = rotate_about_center(x0 + wid/2, y0 - len/2, x0, y0, theta) + recenter_coord
+    # Get the coordinates of the four edges
+    coords['top'] = rotate_about_center(x0, y0 + len/2, x0, y0, theta) + recenter_coord
+    coords['bot'] = rotate_about_center(x0, y0 - len/2, x0, y0, theta) + recenter_coord
+    coords['left'] = rotate_about_center(x0 - wid/2, y0, x0, y0, theta) + recenter_coord
+    coords['right'] = rotate_about_center(x0 + wid/2, y0, x0, y0, theta) + recenter_coord
+    return coords
+
+
+def make_rfmp4a_window_pdf(pdf_path, alpha=4.0):
+    # Set bar parameters
+    x0 = y0 = 0
+    theta = 60
+    xn = 127
+    max_rf = 99
+    bl = 48/64 * max_rf
+    arat = np.array([1/2, 1/5, 1/10])
+    
+    # Set window parameter
+    sigma = bl / alpha
+
+    with PdfPages(pdf_path) as pdf:
+        for ar in arat:
+            bw = bl * ar
+            bar = stimfr_bar(xn, xn, x0, y0, theta, bl, bw, 0.5, 1, 0)
+            edges_and_corners = get_coordinates_of_edges_and_corners(xn, xn, x0, y0, -theta, bl, bw)
+            
+            plt.figure(figsize=(40, 5))
+            plt.suptitle(f"Aspect Ratio = {ar}", fontsize=24)
+            for i, (name, coord) in enumerate(edges_and_corners.items()):
+                plt.subplot(1, 8, i + 1)
+                windowed_bar = windowed_bar = bar * create_gaussian(sigma, coord, bar.shape)
+                plt.imshow(windowed_bar, cmap='gray', vmin=0, vmax=1)
+                plt.title(f"{name}")
+                plt.axis('off')
+    
+            pdf.savefig()
+            plt.show()
+            plt.close()
+
+
+# Show the effect of windowing on bars
+# if __name__ == "__main__":
+#     for alpha in [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]:
+#         pdf_path = f"/Volumes/T7 Shield/borderownership/results (2023 summer)/rfmp4a/window_alpha{alpha}.pdf"
+#         make_rfmp4a_window_pdf(pdf_path, alpha)

@@ -1,7 +1,22 @@
 """
-Script to correlate the maps and plot the maps of each units.
+Script to compute the earth mover's distance between ground truth and bar maps.
+Note: Not used because it is too slow.
 
-Tony Fu, August 21st, 2022
+Tony Fu, Jan 16, 2023
+
+Some words about the Earth mover's distance package (pyemd):
+
+See:  https://github.com/wmayner/pyemd [github.com]
+
+[Original author's note] Cite these papers if you use this code:
+
+Ofir Pele and Michael Werman. Fast and robust earth mover's distances.
+Proc. 2009 IEEE 12th Int. Conf. on Computer Vision, Kyoto, Japan, 2009,
+pp. 460-467.
+
+Ofir Pele and Michael Werman. A linear time histogram metric for
+improved SIFT matching. Computer Vision - ECCV 2008, Marseille,
+France, 2008, pp. 495-508.
 """
 import os
 import sys
@@ -10,12 +25,24 @@ import math
 import numpy as np
 import pandas as pd
 import torch.nn as nn
-from scipy.stats import pearsonr
-from scipy.ndimage.filters import gaussian_filter
 from torchvision import models
+# from torchvision.models import AlexNet_Weights, VGG16_Weights
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from tqdm import tqdm
+from scipy.ndimage.filters import gaussian_filter
+from pyemd import emd
+
+sys.path.append('../../..')
+from src.rf_mapping.gaussian_fit import (gaussian_fit,
+                                        calc_f_explained_var,
+                                        theta_to_ori)
+from src.rf_mapping.gaussian_fit import GaussianFitParamFormat as ParamFormat
+from src.rf_mapping.hook import ConvUnitCounter
+from src.rf_mapping.spatial import get_rf_sizes
+from src.rf_mapping.reproducibility import set_seeds
+import src.rf_mapping.constants as c
+
 
 sys.path.append('../../..')
 from src.rf_mapping.spatial import get_rf_sizes
@@ -23,11 +50,11 @@ import src.rf_mapping.constants as c
 
 
 # Please specify some details here:
-model = models.alexnet(pretrained=True).to(c.DEVICE)
+model = models.alexnet().to(c.DEVICE)
 model_name = 'alexnet'
-# model = models.vgg16(pretrained=True).to(c.DEVICE)
+# model = models.vgg16().to(c.DEVICE)
 # model_name = 'vgg16'
-# model = models.resnet18(pretrained=True).to(c.DEVICE)
+# model = models.resnet18().to(c.DEVICE)
 # model_name = 'resnet18'
 image_shape = (227, 227)
 this_is_a_test_run = False
@@ -38,30 +65,22 @@ sigma_rf_ratio = 1/30  # From [0, 1/120, 1/60, 1/30, 1/20, 1/10, 1/5, 1/4, 1/2]
 to_plot_pdf = False
 
 # ADDING NEW MAP? MODIFY BELOW:
-# all_map_names = ['gt', 'gt_composite', 'occlude_composite',
-#                  'rfmp4a', 'rfmp4c7o'] #, 'block'] #'rfmp_sin1', 'pasu']
-all_map_names = ['gt', 'gt_composite', 'occlude_composite', 'gradient_ascent']
+all_map_names = ['gt', 'gt_composite', 'occlude_composite',
+                 'rfmp4a', 'rfmp4c7o'] #, 'block'] #'rfmp_sin1', 'pasu']
 
 # Result paths:
 if this_is_a_test_run:
     result_dir = os.path.join(c.REPO_DIR,
                               'results',
                               'compare',
-                              'map_correlations',
+                              'earth_movers_distance',
                               'test')
 else:
-    # result_dir = os.path.join(c.REPO_DIR,
-                            #  'results',
-                            #  'compare',
-                            #  'map_correlations',
-                            #   model_name)
-    # modify on May 2, 2023 to compute the correlation of only the ground-truth
     result_dir = os.path.join(c.REPO_DIR,
                              'results',
                              'compare',
-                             'map_correlations',
-                              model_name,
-                             'ground_truth')
+                             'earth_movers_distance',
+                              model_name)
 
 ###############################################################################
 
@@ -121,14 +140,6 @@ def load_maps(map_name, layer_name, max_or_min):
         max_map = np.load(max_mapping_path)  # [unit, yn, xn]
         min_map = np.load(min_mapping_path)  # [unit, yn, xn]
         return max_map + min_map
-    elif map_name == 'gradient_ascent':
-        mapping_path = os.path.join(mapping_dir,
-                                    'gradient_ascent',
-                                    'mapping',
-                                    model_name,
-                                    f"{layer_name}.npy")
-        maps = np.load(mapping_path)  # [unit, 3, yn, xn]
-        return maps  # Need the color channel for plots.
     elif map_name == 'rfmp4a':
         mapping_path = os.path.join(mapping_dir,
                                     'rfmp4a',
@@ -191,7 +202,21 @@ def smooth_and_normalize_maps(maps, sigma):
                 smoothed_maps[unit_i] = smoothed_maps[unit_i]/smoothed_maps[unit_i].max()
     return smoothed_maps
 
-def compute_correlation(map1, map2):
+
+def get_distance_matrix(size):
+    distance_matrix = np.zeros((size ** 2, size ** 2))
+    for i1 in range(size):
+        for j1 in range(i1, size): # The matrix is symmetrical:
+            for i2 in range(size):
+                for j2 in range(size):
+                    distance = math.sqrt((i1 - i2) ** 2 + (j1 - j2) ** 2)
+                    # The matrix is symmetrical:
+                    distance_matrix[i1 * size + j1, i2 * size + j2] = distance
+                    distance_matrix[j1 * size + i1, j2 * size + i2] = distance
+    return distance_matrix
+    
+
+def compute_emd(map1, map2, distance_matrix):
     # If the map has color, average the color channel.
     if len(map1.shape) == 3:
         map1 = np.mean(map1, axis=2)
@@ -202,11 +227,11 @@ def compute_correlation(map1, map2):
     if (map1.shape[0] < map2.shape[0]):
         left_padding = math.floor((map2.shape[0] - map1.shape[0])/2)
         right_padding = math.ceil((map2.shape[0] - map1.shape[0])/2)
-        map2 = map2[left_padding:map2.shape[0]-right_padding,
-                    left_padding:map2.shape[0]-right_padding]
-        
-    r_val, _ = pearsonr(map1.flatten(), map2.flatten())
-    return r_val
+        map2 = map2[left_padding : map2.shape[0]-right_padding,
+                    left_padding : map2.shape[0]-right_padding]
+
+    earth_movers_distance = emd(map1.flatten(), map2.flatten(), distance_matrix)
+    return earth_movers_distance
     
 def plot_r_val(r_val, font_size):
     plt.xticks([])
@@ -231,7 +256,7 @@ with open(txt_path, 'a') as f:
                 f.write(f" {map_name1}_vs_{map_name2}")
     f.write("\n")
 
-########################### COMPUTE CORRELATIONS ##############################
+################################# COMPUTE EMD #################################
 
 for conv_i in range(num_layers):
     layer_name = f"conv{conv_i+1}"
@@ -253,16 +278,14 @@ for conv_i in range(num_layers):
         # Display the r values and p values.
         r_vals = []
         for idx1, (name1, map1) in enumerate(all_smoothed_maps.items()):
+            distance_matrix = get_distance_matrix(map1.shape[1])
             for idx2, (name2, map2) in enumerate(all_smoothed_maps.items()):
                 if idx1 <= idx2:
                     unit_map1 = map1[unit_i]
                     unit_map2 = map2[unit_i]
 
                     # Compute correlations
-                    try:
-                        r_val = compute_correlation(unit_map1, unit_map2)
-                    except:
-                        print(unit_map1.shape, unit_map2.shape)
+                    r_val = compute_emd(unit_map1, unit_map2, distance_matrix)
                     r_vals.append(r_val)
         
         # Record correlations in text file
@@ -297,7 +320,7 @@ if to_plot_pdf:
         except:
             break  # This layer was not mapped.
 
-        pdf_path = os.path.join(result_dir, f"{layer_name}_{max_or_min}_map_r_{sigma_rf_ratio:.4f}.pdf")
+        pdf_path = os.path.join(result_dir, f"{layer_name}_{max_or_min}_map_emd_{sigma_rf_ratio:.4f}.pdf")
         with PdfPages(pdf_path) as pdf:
             
             num_units = all_smoothed_maps['gt'].shape[0]
@@ -308,7 +331,7 @@ if to_plot_pdf:
                     break
 
                 plt.figure(figsize=(4*len(all_smoothed_maps), 4*len(all_smoothed_maps) - 2))
-                plt.suptitle(f"Correlations of different maps (no.{unit_i}, {max_or_min})", fontsize=32)
+                plt.suptitle(f"EMD of different maps (no.{unit_i}, {max_or_min})", fontsize=32)
 
                 # Plot the maps at the margin.
                 for idx, (map_name, map) in enumerate(all_smoothed_maps.items()):
@@ -341,7 +364,7 @@ if to_plot_pdf:
             bars = plt.bar(high_r_val_counts.keys(), high_r_val_counts.values())
             plt.gca().bar_label(bars)   # Display the counts on top of the bars.
             plt.ylabel('counts', fontsize=font_size)
-            plt.title(f"Distribution of r values higher than {r_val_threshold}", fontsize=font_size)
+            plt.title(f"Distribution of EMD higher than {r_val_threshold}", fontsize=font_size)
             pdf.savefig()
             plt.show()
             plt.close()

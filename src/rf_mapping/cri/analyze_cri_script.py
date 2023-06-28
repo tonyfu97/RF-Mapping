@@ -29,7 +29,7 @@ model_name = 'alexnet'
 # model_name = 'resnet18'
 
 is_random = False
-this_is_a_test_run = False
+this_is_a_test_run = True
 top_n_r = 1
 
 
@@ -52,7 +52,7 @@ num_layers = len(rf_sizes)
 
 # Load CRI
 cri_num_images = 1000
-cri_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, 'cri_{cri_num_images}.txt')
+cri_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, f'cri_{cri_num_images}.txt')
 cri_df = pd.read_csv(cri_path, sep=" ", header=None)
 cri_df.columns = ['LAYER', 'UNIT', 'CRI']
 
@@ -87,15 +87,15 @@ with PdfPages(pdf_path) as pdf:
         avg_top_rfmp4c7o_responses = top_rfmp4c7o_responses.groupby('UNIT').mean()
         
         plt.subplot(2, num_layers, conv_i+1)
-        plt.scatter(avg_top_rfmp4a_responses, avg_top_rfmp4c7o_responses)
+        plt.scatter(avg_top_rfmp4a_responses, avg_top_rfmp4c7o_responses, alpha=0.4)
         plt.plot([-10, 100], [-10, 100], 'k', alpha=0.4)
         plt.xlim([-10, 100])
         plt.ylim([-10, 100])
         ax = plt.gca()
         ax.set_aspect('equal')
-        plt.xlabel("avg top rfmp4a")
-        plt.ylabel("avg top rfmp4c7o")
-        plt.title(f"{layer_name}")
+        plt.xlabel(f"top-{top_n_r} achromatic", fontsize=14)
+        plt.ylabel(f"top-{top_n_r} color", fontsize=14)
+        plt.title(f"{layer_name}", fontsize=14)
         
         avg_top_responses_diff = np.array(avg_top_rfmp4c7o_responses - avg_top_rfmp4a_responses)[:,0]
         avg_top_responses_diff -= avg_top_responses_diff.min() - 1
@@ -106,11 +106,11 @@ with PdfPages(pdf_path) as pdf:
         # layer_cri = np.log(layer_cri)
 
         plt.subplot(2, num_layers, conv_i+1+num_layers)
-        plt.scatter(avg_top_responses_diff, layer_cri)
+        plt.scatter(avg_top_responses_diff, layer_cri, alpha=0.4)
         r_val, _ = pearsonr(avg_top_responses_diff, layer_cri)
-        plt.title(f"{layer_name}, r = {r_val:.4f}")
-        plt.xlabel("rfmp4c7o - rfmp4a")
-        plt.ylabel("CRI")
+        plt.title(f"r = {r_val:.4f}", fontsize=14)
+        plt.xlabel("color - achromatic", fontsize=14)
+        plt.ylabel("CRI", fontsize=14)
         
     pdf.savefig()
     plt.show()

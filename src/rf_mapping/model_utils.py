@@ -1,8 +1,21 @@
 """
 Utilities for working with pre-trained models.
 
-Tony Fu, Bair Lab, Feb 2023
+Example usage
+-------------
+>>> model_info = ModelInfo()
+>>> model_info.get_layer_names('alexnet')
+['conv1', 'conv2', 'conv3', 'conv4', 'conv5']
+>>> model_info.get_layer_index('alexnet', 'conv3')
+6
+>>> model_info.get_num_units('alexnet', 'conv3')
+384
+>>> model_info.get_rf_size('alexnet', 'conv3')
+99
+>>> model_info.get_xn('alexnet', 'conv3')
+127
 
+Tony Fu, Bair Lab, Feb 2023
 """
 
 import os
