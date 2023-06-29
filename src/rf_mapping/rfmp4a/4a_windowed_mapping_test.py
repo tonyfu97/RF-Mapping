@@ -1,5 +1,9 @@
 """
 Test the windowed mapping algorithm on one unit at a time.
+
+Update: This script has been refactored into 4a_windowed_mapping_test2.py.
+
+Tony Fu, June 2023
 """
 import os
 import sys
@@ -25,7 +29,7 @@ UNIT_IDX = 201
 MAX_RF = 99
 ALPHA = 4.0
 
-pdf_path = f"/Volumes/T7 Shield/borderownership/results (2023 summer)/rfmp4a/window/{MODEL_NAME}/{LAYER_NAME}_windowed_bars_test.pdf"
+pdf_path = f"/Volumes/T7 Shield/borderownership/results (2023 summer)/rfmp4a/window/{MODEL_NAME}/tests/{LAYER_NAME}_windowed_bars_test.pdf"
 with PdfPages(pdf_path) as pdf:
     for UNIT_IDX in tqdm(range(384)):
         if UNIT_IDX != 2: continue
