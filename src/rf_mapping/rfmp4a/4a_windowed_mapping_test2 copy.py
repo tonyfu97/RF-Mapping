@@ -82,7 +82,7 @@ XN = model_info.get_xn(MODEL_NAME, LAYER_NAME)
 NUM_UNITS = model_info.get_num_units(MODEL_NAME, LAYER_NAME)
 
 # Logging
-logger = get_logger(os.path.join(output_dir, f"4a_windowed_bars_test2.log"), __name__)
+logger = get_logger(os.path.join(output_dir, f"4a_windowed_bars_test2.log"), __file__)
 logger.info(f"Model = {MODEL_NAME}, layer = {LAYER_NAME}, top rank = {TOP_RANK}, alpha = {ALPHA}")
 
 # Load the top bars of the unit

@@ -4,11 +4,12 @@ My futal attempt to see how nonlinear the units are over layers.
 Explanation
 -----------
 We windowed the top bars of the units and compare the responses of the windowed
-bars to the original bars. If the unit is linear, then we expect the sum of the
-windowed responses to be the same as the original response. In certains cases,
-we found that some units seem to exhibit 'Gestalt' behavior, where the original
-bar is greater than the sum of the individual windowed bars. This script plots
-some scatter plots and histograms to visualize the nonlinearity of the units.
+bars to the original bars (see 4a_windowed_mapping_test2.py). If the unit is
+linear, then we expect the sum of the windowed responses to be the same as the
+original response. In certains cases, we found that some units seem to exhibit
+'Gestalt' behavior, where the original bar is greater than the sum of the
+individual windowed bars. This script plots some scatter plots and histograms
+to visualize the nonlinearity of the units.
 
 Tony Fu, June 2023
 """
@@ -21,11 +22,7 @@ from sklearn.linear_model import LinearRegression
 
 sys.path.append('../../..')
 from src.rf_mapping.bar import *
-from src.rf_mapping.result_txt_format import CenterReponses as CR, Rfmp4aSplist as SPL
-from src.rf_mapping.net import get_truncated_model
-from src.rf_mapping.log import get_logger
 from src.rf_mapping.model_utils import ModelInfo
-import src.rf_mapping.constants as c
 
 # Main script
 # Please specify some details here:
@@ -35,6 +32,8 @@ ALPHA = 4.0
 
 # Please specify the output directory and the pdf path
 output_dir = f"/Volumes/T7 Shield/borderownership/results (2023 summer)/rfmp4a/window/{MODEL_NAME}/tests"
+pdf_path = os.path.join(output_dir, f"{MODEL_NAME}_windowed_bars_test_nonlinearity.pdf")
+interactdive_path = os.path.join(output_dir, f"{MODEL_NAME}_windowed_bars_test_nonlinearity.html")
 
 # Get model information
 model_info = ModelInfo()
@@ -42,36 +41,39 @@ LAYERS = model_info.get_layer_names(MODEL_NAME)
 
 windowed_cols = list(get_coordinates_of_edges_and_corners(0,0,0,0,0,1,1).keys())
 
-plt.figure(figsize=(len(LAYERS)*5, 5))
-for i, layer_name in enumerate(LAYERS):
-    txt_path = os.path.join(output_dir, f"{layer_name}_windowed_bars_test2.txt")
-    df = pd.read_csv(txt_path, sep='\s+')
+with PdfPages(pdf_path) as pdf:  
+    plt.figure(figsize=(len(LAYERS)*5, 5))
+    for i, layer_name in enumerate(LAYERS):
+        txt_path = os.path.join(output_dir, f"{layer_name}_windowed_bars_test2.txt")
+        df = pd.read_csv(txt_path, sep='\s+')
 
-    df['windowed_response_total'] = df[windowed_cols].sum(axis=1)
-    
-    # Fit linear regression model
-    x = df['original'].values.reshape(-1,1)
-    y = df['windowed_response_total'].values.reshape(-1,1)
-    model = LinearRegression().fit(x, y)
-    
-    # Compute predicted values for linear model line
-    x_line = np.linspace(-50, 100, 400).reshape(-1, 1)
-    y_line = model.predict(x_line)
-    
-    plt.subplot(1, len(LAYERS), i+1)
-    plt.scatter(df['original'], df['windowed_response_total'])
-    plt.plot(x_line, y_line, 'r')
-    plt.title(f"{layer_name} (y = {model.coef_[0][0]:.2f}x + {model.intercept_[0]:.2f})")
-    plt.xlabel('original response')
-    plt.ylabel('windowed response')
-    plt.xlim([-50, 100])
-    plt.ylim([-50, 100])
-    
-    # Draw crosshair at (0, 0)
-    plt.axhline(0, color='k', linewidth=0.5)
-    plt.axvline(0, color='k', linewidth=0.5)
+        df['windowed_response_total'] = df[windowed_cols].sum(axis=1)
+        
+        # Fit linear regression model
+        x = df['original'].values.reshape(-1,1)
+        y = df['windowed_response_total'].values.reshape(-1,1)
+        model = LinearRegression().fit(x, y)
+        
+        # Compute predicted values for linear model line
+        x_line = np.linspace(-50, 100, 400).reshape(-1, 1)
+        y_line = model.predict(x_line)
+        
+        plt.subplot(1, len(LAYERS), i+1)
+        plt.scatter(df['original'], df['windowed_response_total'])
+        plt.plot(x_line, y_line, 'r')
+        plt.title(f"{layer_name} (y = {model.coef_[0][0]:.2f}x + {model.intercept_[0]:.2f})")
+        plt.xlabel('original response')
+        plt.ylabel('windowed response')
+        plt.xlim([-50, 100])
+        plt.ylim([-50, 100])
+        
+        # Draw crosshair at (0, 0)
+        plt.axhline(0, color='k', linewidth=0.5)
+        plt.axvline(0, color='k', linewidth=0.5)
 
-plt.show()
+    pdf.savefig()
+    plt.show()
+    plt.close()
 
 ######################### Make interactive plot ###############################
 
@@ -152,4 +154,4 @@ for i, layer_name in enumerate(LAYERS):
     fig.update_xaxes(title_text="normalized windowed response", row=2, col=i+1)
 
 fig.update_layout(height=800, width=1000*len(LAYERS), title_text="Scatter Plots and Histograms")
-fig.write_html(f"{output_dir}/my_interactive_plot.html")
+fig.write_html(interactdive_path)
