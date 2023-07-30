@@ -89,7 +89,7 @@ def load_gaussian_fit_dfs(map_name, model_name, is_random):
     fits are saved in separate txt files. For other fit methods like 'com' and
     'hotspot', please use load_non_gaussian_fit_df().
     """
-    mapping_dir = os.path.join(c.REPO_DIR, 'results')
+    mapping_dir = os.path.join(c.RESULTS_DIR)
     is_random_str = "_random" if is_random else ""
     
     if map_name == 'gt':
@@ -129,7 +129,7 @@ def load_gaussian_fit_dfs(map_name, model_name, is_random):
 
 
 def load_non_gaussian_fit_df(map_name, model_name, is_random, fit_name):
-    mapping_dir = os.path.join(c.REPO_DIR, 'results')
+    mapping_dir = os.path.join(c.RESULTS_DIR)
     is_random_str = "_random" if is_random else ""
     fit_format = {'com' : COM, 'hot_spot' : HS}
     
@@ -176,10 +176,10 @@ def get_top_bot_xy_dfs(map_name, model_name, is_random, fit_name):
 
 def get_result_dir(map1_name, map2_name, model_name, this_is_a_test_run):
     if this_is_a_test_run:  
-        result_dir = os.path.join(c.REPO_DIR, 'results', 'compare',
+        result_dir = os.path.join(c.RESULTS_DIR, 'compare',
                                   f"{map1_name}_vs_{map2_name}", 'test')
     else:
-        result_dir = os.path.join(c.REPO_DIR, 'results', 'compare',
+        result_dir = os.path.join(c.RESULTS_DIR, 'compare',
                                   f"{map1_name}_vs_{map2_name}", model_name)
     if not os.path.exists(result_dir):
         raise KeyError(f"{result_dir} does not exist.")
@@ -221,9 +221,9 @@ top_xy_df_com2, bot_xy_df_com2 =\
 
 
 # Load the correlation data
-max_map_corr_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations',
+max_map_corr_path = os.path.join(c.RESULTS_DIR, 'compare', 'map_correlations',
                                  model_name, f"max_map_r_{sigma_rf_ratio:.4f}.txt")
-min_map_corr_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations',
+min_map_corr_path = os.path.join(c.RESULTS_DIR, 'compare', 'map_correlations',
                                  model_name, f"min_map_r_{sigma_rf_ratio:.4f}.txt")
 max_map_corr_df = pd.read_csv(max_map_corr_path, sep=" ", header=0)
 min_map_corr_df = pd.read_csv(min_map_corr_path, sep=" ", header=0)

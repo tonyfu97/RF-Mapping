@@ -38,8 +38,8 @@ top_n = 5
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR
-index_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n', model_name)
-result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name)
+index_dir = os.path.join(c.RESULTS_DIR, 'ground_truth', 'top_n', model_name)
+result_dir = os.path.join(c.RESULTS_DIR, 'ground_truth', 'cri', model_name)
 
 ###############################################################################
 
@@ -108,7 +108,7 @@ def plot_one_grad_map(im, ax, img_idx, unit_idx, patch_idx, box, grad_method):
 
 # Load the CRI
 cri_num_images = 1000
-cri_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, 'cri_{cri_num_images}.txt')
+cri_path = os.path.join(c.RESULTS_DIR, 'ground_truth', 'cri', model_name, 'cri_{cri_num_images}.txt')
 cri_df = pd.read_csv(cri_path, sep=" ", header=None)
 cri_df.columns = ['LAYER', 'UNIT', 'CRI']
 

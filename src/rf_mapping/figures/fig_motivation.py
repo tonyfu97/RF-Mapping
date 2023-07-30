@@ -36,7 +36,7 @@ conv_i = 1
 unit_i = 132
 
 # Please specify the output directory
-result_dir = os.path.join(c.REPO_DIR, 'results', 'figures')
+result_dir = os.path.join(c.RESULTS_DIR, 'figures')
 
 # Get the model info
 xn_list = xn_to_center_rf(model, image_size=(999, 999))  

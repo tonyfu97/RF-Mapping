@@ -29,7 +29,7 @@ sigma_rf_ratio = 1/30
 
 map_corr_dict = {}
 for model_name in num_layers_dict.keys():
-    max_map_corr_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations',
+    max_map_corr_path = os.path.join(c.RESULTS_DIR, 'compare', 'map_correlations',
                                      model_name, 'ground_truth', f"max_map_r_{sigma_rf_ratio:.4f}.txt")
 
     max_map_corr_df = pd.read_csv(max_map_corr_path, sep=" ", header=0)
@@ -42,7 +42,7 @@ for model_name in num_layers_dict.keys():
 
 # map_iou_dict = {}
 # for model_name in num_layers_dict.keys():
-#     max_map_iou_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'iou',
+#     max_map_iou_path = os.path.join(c.RESULTS_DIR, 'compare', 'iou',
 #                                     model_name, f"max_map_iou_{sigma_rf_ratio:.4f}.txt")
 
 #     max_map_iou_df = pd.read_csv(max_map_iou_path, sep=" ", header=0)
@@ -53,7 +53,7 @@ for model_name in num_layers_dict.keys():
 
 ################################  MAKE PDF  ###################################
 
-pdf_path = os.path.join(c.REPO_DIR, 'results', 'compare', f'{map1_name}_vs_{map2_name}',
+pdf_path = os.path.join(c.RESULTS_DIR, 'compare', f'{map1_name}_vs_{map2_name}',
                         f"{map1_name}_vs_{map2_name}_summary.pdf")
 with PdfPages(pdf_path) as pdf:
     plt.figure(figsize=(12, 6))

@@ -23,7 +23,7 @@ num_layers_dict = {'alexnet' : 5 , 'vgg16': 13, 'resnet18': 20}
 
 map_corr_dict = {}
 for model_name in num_layers_dict.keys():
-    max_map_corr_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations',
+    max_map_corr_path = os.path.join(c.RESULTS_DIR, 'compare', 'map_correlations',
                                     model_name, f"max_map_r_0.0333.txt")
 
     max_map_corr_df = pd.read_csv(max_map_corr_path, sep=" ", header=0)
@@ -35,9 +35,9 @@ for model_name in num_layers_dict.keys():
 
 hot_spot_err_dist_dict = {}
 for model_name in num_layers_dict.keys():
-    gt_df_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'gaussian_fit',
+    gt_df_path = os.path.join(c.RESULTS_DIR, 'ground_truth', 'gaussian_fit',
                               model_name, 'abs', f"{model_name}_gt_composite_hot_spot.txt")
-    occlude_df_path = os.path.join(c.REPO_DIR, 'results', 'occlude', 'gaussian_fit',
+    occlude_df_path = os.path.join(c.RESULTS_DIR, 'occlude', 'gaussian_fit',
                               model_name, f"{model_name}_occlude_composite_hot_spot.txt")
 
     gt_df = pd.read_csv(gt_df_path, sep=" ", header=0)
@@ -55,7 +55,7 @@ for model_name in num_layers_dict.keys():
 
 ################################  MAKE PDF  ###################################
 
-pdf_path = os.path.join(c.REPO_DIR, 'results', 'compare',
+pdf_path = os.path.join(c.RESULTS_DIR, 'compare',
                         f"gt_composite_vs_occlude_composite.pdf")
 with PdfPages(pdf_path) as pdf:
     plt.figure(figsize=(12, 6))

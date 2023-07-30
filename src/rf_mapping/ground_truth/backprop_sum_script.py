@@ -40,14 +40,14 @@ is_random = True
 img_dir = c.IMG_DIR
 
 if is_random:
-    index_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+    index_dir = os.path.join(c.RESULTS_DIR, 'ground_truth',
                              'top_n_random', model_name)
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+    result_dir = os.path.join(c.RESULTS_DIR, 'ground_truth',
                               'backprop_sum_random', model_name)
 else:
-    index_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+    index_dir = os.path.join(c.RESULTS_DIR, 'ground_truth',
                              'top_n', model_name)
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+    result_dir = os.path.join(c.RESULTS_DIR, 'ground_truth',
                               'backprop_sum', model_name)
 
 ###############################################################################

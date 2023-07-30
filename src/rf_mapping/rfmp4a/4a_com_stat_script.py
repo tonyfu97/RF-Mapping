@@ -24,7 +24,7 @@ import src.rf_mapping.constants as c
 model_name = 'alexnet'
 
 # Source paths:
-stat_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'gaussian_fit', model_name)
+stat_dir = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'gaussian_fit', model_name)
 txt_path = os.path.join(stat_dir, f"non_overlap.txt")
 
 with open(txt_path) as f:

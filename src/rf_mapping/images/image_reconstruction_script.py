@@ -37,7 +37,7 @@ pos_idx = 100
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR
-rank_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n', model_name)
+rank_dir = os.path.join(c.RESULTS_DIR, 'ground_truth', 'top_n', model_name)
 result_dir = rank_dir
 
 # Get info of conv layers.

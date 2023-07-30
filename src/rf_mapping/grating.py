@@ -870,6 +870,6 @@ if __name__ == "__main__":
     # model_name = 'resnet18'
     model = models.alexnet()
     model_name = 'alexnet'
-    pdf_path = os.path.join(c.REPO_DIR,'results','rfmp_sin1','mapping', 'test',
+    pdf_path = os.path.join(c.RESULTS_DIR,'rfmp_sin1','mapping', 'test',
                             f'{model_name}_test_grid.pdf')
     # make_sin1_grid_pdf(pdf_path, model)

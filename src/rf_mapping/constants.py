@@ -4,5 +4,6 @@ import torch
 # Use 'mps' if using Apple silicon
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 REPO_DIR = '/Users/tonyfu/Desktop/Bair Lab/borderownership'
+RESULTS_DIR = '/Volumes/T7 Shield/borderownership/results (2023 summer)'
 IMG_DIR = '/Users/tonyfu/Desktop/Bair Lab/top_and_bottom_images/images'
 TEXTURE_DIR = '/Users/tonyfu/Desktop/Bair Lab/describable_textures_dataset/images'

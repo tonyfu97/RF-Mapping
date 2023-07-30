@@ -35,12 +35,12 @@ model = models.resnet18(pretrained=True).to(c.DEVICE)
 model_name = "resnet18"
 this_is_a_test_run = False
 # Please double-check the directories:
-map_dir = os.path.join(c.REPO_DIR, 'results', 'occlude', 'mapping', model_name)
+map_dir = os.path.join(c.RESULTS_DIR, 'occlude', 'mapping', model_name)
 
 if this_is_a_test_run:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'occlude', 'gaussian_fit', 'test')
+    result_dir = os.path.join(c.RESULTS_DIR, 'occlude', 'gaussian_fit', 'test')
 else:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'occlude', 'gaussian_fit', model_name)
+    result_dir = os.path.join(c.RESULTS_DIR, 'occlude', 'gaussian_fit', model_name)
 
 ###############################################################################
 

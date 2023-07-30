@@ -7,7 +7,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 MODEL_NAME = "alexnet"
 LAYER_NAME = "conv3"
-FNAT_DIR = f"/Volumes/T7 Shield/borderownership/results (2023 summer)/rfmp4a/fnat/{MODEL_NAME}/{LAYER_NAME}"
+FNAT_DIR = f"{c.RESULTS_DIR}/rfmp4a/fnat/{MODEL_NAME}/{LAYER_NAME}"
 
 ############################  SOME HELPER FUNCTIONS ###########################
 

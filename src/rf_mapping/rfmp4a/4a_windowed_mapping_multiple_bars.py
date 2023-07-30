@@ -29,13 +29,13 @@ import src.rf_mapping.constants as c
 # Main script
 # Please specify some details here:
 MODEL_NAME = 'alexnet'
-LAYER_NAME = 'conv5'
+LAYER_NAME = 'conv'
 ALPHA = 4.0  # window's sigma is bar_length / ALPHA. Default value is 4.0.
 RESPONSE_THR = 0.5  # Only use bars with original response > max(r_max * RESPONSE_THR, 0)
 MAX_NUM_BARS = 100
 
 # Please specify the output directory and the pdf path
-output_dir = f"/Volumes/T7 Shield/borderownership/results (2023 summer)/rfmp4a/window/{MODEL_NAME}"
+output_dir = f"{c.RESULTS_DIR}/rfmp4a/window/{MODEL_NAME}"
 max_txt_path = os.path.join(output_dir, f"{LAYER_NAME}_max_windowed_map.txt")
 min_txt_path = os.path.join(output_dir, f"{LAYER_NAME}_min_windowed_map.txt")
 
@@ -121,9 +121,9 @@ logger = get_logger(os.path.join(output_dir, f"4a_windowed_mapping.log"), __file
 logger.info(f"Model = {MODEL_NAME}, layer = {LAYER_NAME}, alpha = {ALPHA}, response_thr = {RESPONSE_THR}, max_num_bars = {MAX_NUM_BARS}")
 
 # Load the bars of the unit
-top_bar_path = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', MODEL_NAME, f"{LAYER_NAME}_top5000_responses.txt")
-bot_bar_path = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', MODEL_NAME, f"{LAYER_NAME}_bot5000_responses.txt")
-splist_path = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', MODEL_NAME, f"{LAYER_NAME}_splist.txt")
+top_bar_path = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'mapping', MODEL_NAME, f"{LAYER_NAME}_top5000_responses.txt")
+bot_bar_path = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'mapping', MODEL_NAME, f"{LAYER_NAME}_bot5000_responses.txt")
+splist_path = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'mapping', MODEL_NAME, f"{LAYER_NAME}_splist.txt")
 
 # Load the dataframes and name the columns
 top_bar_df = pd.read_csv(top_bar_path, sep='\s+', header=None)

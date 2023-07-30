@@ -30,14 +30,14 @@ this_is_a_test_run = False
 
 
 # Source directories
-gt_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'gaussian_fit', model_name)
-oc_dir = os.path.join(c.REPO_DIR, 'results', 'occlude', 'gaussian_fit', model_name)
+gt_dir = os.path.join(c.RESULTS_DIR, 'ground_truth', 'gaussian_fit', model_name)
+oc_dir = os.path.join(c.RESULTS_DIR, 'occlude', 'gaussian_fit', model_name)
 
 # Result directories
 if this_is_a_test_run:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'gt_vs_occlude', 'test')
+    result_dir = os.path.join(c.RESULTS_DIR, 'compare', 'gt_vs_occlude', 'test')
 else:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'gt_vs_occlude', model_name)
+    result_dir = os.path.join(c.RESULTS_DIR, 'compare', 'gt_vs_occlude', model_name)
 
 ###############################################################################
 

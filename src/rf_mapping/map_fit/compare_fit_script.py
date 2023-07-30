@@ -67,7 +67,7 @@ def load_gaussian_fit_dfs(map_name, model_name, is_random):
     fits are saved in separate txt files. For other fit methods like 'com' and
     'hotspot', please use load_non_gaussian_fit_df().
     """
-    mapping_dir = os.path.join(c.REPO_DIR, 'results')
+    mapping_dir = os.path.join(c.RESULTS_DIR)
     is_random_str = "_random" if is_random else ""
     
     if map_name == 'gt':
@@ -127,7 +127,7 @@ def load_gaussian_fit_dfs(map_name, model_name, is_random):
 
 
 def load_non_gaussian_fit_df(map_name, model_name, is_random, fit_name):
-    mapping_dir = os.path.join(c.REPO_DIR, 'results')
+    mapping_dir = os.path.join(c.RESULTS_DIR)
     is_random_str = "_random" if is_random else ""
     fit_format = {'com' : COM, 'hot_spot' : HS}
     
@@ -180,9 +180,9 @@ def get_top_bot_xy_dfs(map_name, model_name, is_random, fit_name):
 
 def get_result_dir(map1_name, map2_name, model_name, this_is_a_test_run):
     if this_is_a_test_run:  
-        result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', f'{map1_name}_vs_{map2_name}', 'test')
+        result_dir = os.path.join(c.RESULTS_DIR, 'compare', f'{map1_name}_vs_{map2_name}', 'test')
     else:
-        result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', f'{map1_name}_vs_{map2_name}', model_name)
+        result_dir = os.path.join(c.RESULTS_DIR, 'compare', f'{map1_name}_vs_{map2_name}', model_name)
     if not os.path.exists(result_dir):
         raise KeyError(f"{result_dir} does not exist.")
     return result_dir
@@ -420,7 +420,7 @@ bot_err_dist_df['ERR_DIST'] = all_bot_err_dist
 
 # Load the color rotation index
 cri_num_images = 1000
-cri_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, 'cri_{cri_num_images}.txt')
+cri_path = os.path.join(c.RESULTS_DIR, 'ground_truth', 'cri', model_name, 'cri_{cri_num_images}.txt')
 cri_df = pd.read_csv(cri_path, sep=" ", header=None)
 cri_df.columns = ['LAYER', 'UNIT', 'CRI']
 
@@ -428,9 +428,9 @@ cri_df.columns = ['LAYER', 'UNIT', 'CRI']
 top_cri_err_dist_df = pd.merge(top_err_dist_df, cri_df, how='left')
 bot_cri_err_dist_df = pd.merge(bot_err_dist_df, cri_df, how='left')
 
-max_map_corr_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations',
+max_map_corr_path = os.path.join(c.RESULTS_DIR, 'compare', 'map_correlations',
                                 model_name, f"max_map_r_{sigma_rf_ratio:.4f}.txt")
-min_map_corr_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations',
+min_map_corr_path = os.path.join(c.RESULTS_DIR, 'compare', 'map_correlations',
                                 model_name, f"min_map_r_{sigma_rf_ratio:.4f}.txt")
 max_map_corr_df = pd.read_csv(max_map_corr_path, sep=" ", header=0)
 min_map_corr_df = pd.read_csv(min_map_corr_path, sep=" ", header=0)
@@ -626,7 +626,7 @@ with PdfPages(pdf_path) as pdf:
 ###############################################################################
 # Load the fnat
 top_n_r = 10
-fnat_path = os.path.join(c.REPO_DIR, 'results', 'fnat', map2_name, model_name, f"{map2_name}_fnat_{top_n_r}_avg.txt")
+fnat_path = os.path.join(c.RESULTS_DIR, 'fnat', map2_name, model_name, f"{map2_name}_fnat_{top_n_r}_avg.txt")
 fnat_df = pd.read_csv(fnat_path, sep=" ", header=None)
 fnat_df.columns = ['LAYER', 'UNIT', 'TOP_AVG_FNAT', 'BOT_AVG_FNAT']
 

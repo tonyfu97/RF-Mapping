@@ -33,10 +33,10 @@ is_random = False
 
 # Please double-check the directories:
 if is_random:
-    backprop_sum_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+    backprop_sum_dir = os.path.join(c.RESULTS_DIR, 'ground_truth',
                                     'backprop_sum_random', model_name)
 else:
-    backprop_sum_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+    backprop_sum_dir = os.path.join(c.RESULTS_DIR, 'ground_truth',
                                     'backprop_sum', model_name)
 
 pdf_dir = backprop_sum_dir

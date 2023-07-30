@@ -330,8 +330,8 @@ if __name__ == '__main__':
     model_name = 'alexnet'
     sum_mode = 'abs'
 
-    backprop_sum_dir = c.REPO_DIR + f'/results/ground_truth/backprop_sum/{model_name}/{sum_mode}'
-    pdf_dir = c.REPO_DIR + f'/results/ground_truth/gaussian_fit/{model_name}/test'
+    backprop_sum_dir = c.RESULTS_DIR + f'/ground_truth/backprop_sum/{model_name}/{sum_mode}'
+    pdf_dir = c.RESULTS_DIR + f'/ground_truth/gaussian_fit/{model_name}/test'
 
     layer_name = "conv5"
     num_units = 5
@@ -642,6 +642,6 @@ if __name__ == '__main__':
     rf_size = (51, 51)
     num_units = 192
 
-    backprop_sum_dir = c.REPO_DIR + f'/results/ground_truth/gaussian_fit/{model_name}/{sum_mode}'
+    backprop_sum_dir = c.RESULTS_DIR + f'/ground_truth/gaussian_fit/{model_name}/{sum_mode}'
     file_names = [f"{max_or_min}_{layer_name}.{i}.npy" for i in range(num_units)]
     param_loader = ParamLoader(backprop_sum_dir, file_names, rf_size)

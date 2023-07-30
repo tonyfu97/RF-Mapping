@@ -25,9 +25,9 @@ this_is_a_test_run = False
 
 # Please double-check the directories:
 if this_is_a_test_run:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'block', 'mapping', 'test')
+    result_dir = os.path.join(c.RESULTS_DIR, 'block', 'mapping', 'test')
 else:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'block', 'mapping', model_name)
+    result_dir = os.path.join(c.RESULTS_DIR, 'block', 'mapping', model_name)
 
 ###############################################################################
 

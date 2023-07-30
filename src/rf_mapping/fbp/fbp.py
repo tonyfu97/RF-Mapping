@@ -35,7 +35,7 @@ layer_idx = 6
 model = models.alexnet(pretrained=True).to(c.DEVICE)
 truncated_model = get_truncated_model(model, layer_idx)
 
-result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', model_name)
+result_dir = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'mapping', model_name)
 max_center_reponses_path = os.path.join(result_dir, f"{layer_name}_top5000_responses.txt")
 splist = os.path.join(result_dir, f"{layer_name}_splist.txt")
 

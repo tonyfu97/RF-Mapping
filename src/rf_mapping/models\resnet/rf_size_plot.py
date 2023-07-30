@@ -19,7 +19,7 @@ from src.rf_mapping.model_utils import ModelInfo
 
 # Please specify some details here:
 MODEL_NAMES = ['alexnet', 'vgg16', 'resnet18']
-RESULT_DIR = os.path.join(c.REPO_DIR, 'results')
+RESULT_DIR = os.path.join(c.RESULTS_DIR)
 NUM_MAX_LAYERS = 20
 
 MODEL_INFO_FILE_PATH = os.path.join(c.REPO_DIR, "data", "model_info.txt")

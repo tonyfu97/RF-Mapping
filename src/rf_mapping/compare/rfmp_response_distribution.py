@@ -38,13 +38,13 @@ gt_method = 'gt'
 ephys_method = 'pasu'
 
 # Please confirm the directories
-source_dir = os.path.join(c.REPO_DIR, 'results', ephys_method, 'mapping', model_name)
-result_dir = os.path.join(c.REPO_DIR, 'results', ephys_method, 'analysis', model_name)
+source_dir = os.path.join(c.RESULTS_DIR, ephys_method, 'mapping', model_name)
+result_dir = os.path.join(c.RESULTS_DIR, ephys_method, 'analysis', model_name)
 
 # Result paths:
 def load_maps(map_name, layer_name, max_or_min):
     """Loads the maps of the layer."""
-    mapping_dir = os.path.join(c.REPO_DIR, 'results')
+    mapping_dir = os.path.join(c.RESULTS_DIR)
     
     if map_name == 'gt':
         mapping_path = os.path.join(mapping_dir,

@@ -42,7 +42,7 @@ rfmp_name = 'rfmp4c7o'
 num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 5000]
 response_thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
-result_dir = os.path.join(c.REPO_DIR, 'results', 'test_num_stim', rfmp_name)
+result_dir = os.path.join(c.RESULTS_DIR, 'test_num_stim', rfmp_name)
 
 ###############################################################################
 

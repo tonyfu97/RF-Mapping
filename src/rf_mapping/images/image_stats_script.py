@@ -43,9 +43,9 @@ this_is_a_test_run = False
 # Please double-check the directories:y
 img_dir = c.IMG_DIR
 if this_is_a_test_run:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'images', 'test')
+    result_dir = os.path.join(c.RESULTS_DIR, 'images', 'test')
 else:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'images')
+    result_dir = os.path.join(c.RESULTS_DIR, 'images')
 
 ###############################################################################
 

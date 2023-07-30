@@ -30,7 +30,7 @@ image_shape = (227, 227)
 this_is_a_test_run = False
 
 # Please double-check the directories:
-fit_stat_dir = c.REPO_DIR + f'/results/rfmp4a/gaussian_fit/{model_name}'
+fit_stat_dir = c.RESULTS_DIR + f'/rfmp4a/gaussian_fit/{model_name}'
 pdf_dir = fit_stat_dir
 
 ###############################################################################

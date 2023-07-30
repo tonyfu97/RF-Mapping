@@ -47,7 +47,7 @@ num_stim_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 hot_spot_sigma_rf_ratio = 1/30
 
 
-source_dir = os.path.join(c.REPO_DIR, 'results', 'test_num_stim')
+source_dir = os.path.join(c.RESULTS_DIR, 'test_num_stim')
 result_dir = source_dir
 
 ###############################################################################

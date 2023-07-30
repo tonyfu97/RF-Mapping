@@ -1173,7 +1173,7 @@ if __name__ == "__main__":
     # model = models.resnet18(pretrained=True).to(c.DEVICE)
     # model_name = 'resnet18'
 
-    # pdf_path = os.path.join(c.REPO_DIR,'results','rfmp4a','mapping', model_name,
+    # pdf_path = os.path.join(c.RESULTS_DIR,'rfmp4a','mapping', model_name,
     #                         f'{model_name}_test_grid.pdf')
     # make_rfmp4a_grid_pdf(pdf_path, model)
     pass
@@ -1250,5 +1250,5 @@ def make_rfmp4a_window_pdf(pdf_path, alpha=4.0):
 # Show the effect of windowing on bars
 # if __name__ == "__main__":
 #     for alpha in [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]:
-#         pdf_path = f"/Volumes/T7 Shield/borderownership/results (2023 summer)/rfmp4a/window_alpha{alpha}.pdf"
+#         pdf_path = f"{c.RESULTS_DIR}/rfmp4a/window_alpha{alpha}.pdf"
 #         make_rfmp4a_window_pdf(pdf_path, alpha)

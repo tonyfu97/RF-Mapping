@@ -34,14 +34,14 @@ top_n = 10
 
 # Please double-check the directories:
 if this_is_a_test_run:
-    source_dir = os.path.join(c.REPO_DIR, 'results', 'pasu', 'mapping', 'test')
+    source_dir = os.path.join(c.RESULTS_DIR, 'pasu', 'mapping', 'test')
 else:
-    source_dir = os.path.join(c.REPO_DIR, 'results', 'pasu', 'mapping', model_name)
+    source_dir = os.path.join(c.RESULTS_DIR, 'pasu', 'mapping', model_name)
     
 if this_is_a_test_run:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'pasu', 'analysis', 'test')
+    result_dir = os.path.join(c.RESULTS_DIR, 'pasu', 'analysis', 'test')
 else:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'pasu', 'analysis', model_name)
+    result_dir = os.path.join(c.RESULTS_DIR, 'pasu', 'analysis', model_name)
     
 
 ###############################################################################

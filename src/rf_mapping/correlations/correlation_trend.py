@@ -25,7 +25,7 @@ map1_name = 'gt'
 map2_name = 'rfmp4a'
 
 # Load the data
-file_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations', model_name)
+file_dir = os.path.join(c.RESULTS_DIR, 'compare', 'map_correlations', model_name)
 data_file_path = os.path.join(file_dir, f"{max_or_min}_map_r_{sigma_rf_ratio:.4f}.txt")
 data_df = pd.read_csv(data_file_path, sep=' ')
 

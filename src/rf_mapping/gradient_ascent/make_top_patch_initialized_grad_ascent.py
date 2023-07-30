@@ -57,7 +57,7 @@ LR = 0.1
 MOMENTUM = False
 
 # Set the result directory
-RESULT_DIR = os.path.join(c.REPO_DIR, 'results', 'gradient_ascent','mapping', MODEL_NAME)
+RESULT_DIR = os.path.join(c.RESULTS_DIR, 'gradient_ascent','mapping', MODEL_NAME)
 
 ########################### DON'T TOUCH CODE BELOW ############################
 
@@ -87,7 +87,7 @@ try it yourself:
 
 # Get the spatial indicies (for more info, see below)
 def get_max_min_indicies(layer_name):
-    spatial_index_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n',
+    spatial_index_path = os.path.join(c.RESULTS_DIR, 'ground_truth', 'top_n',
                                       MODEL_NAME, f"{layer_name}.npy")
     return np.load(spatial_index_path).astype(int)
 """

@@ -1167,7 +1167,7 @@ def make_pasu_grid_pdf(pdf_path, model):
 #     model_name = 'vgg16'
 #     model = models.resnet18()
 #     model_name = 'resnet18'
-#     pdf_path = os.path.join(c.REPO_DIR,'results','pasu','mapping', model_name,
+#     pdf_path = os.path.join(c.RESULTS_DIR,'pasu','mapping', model_name,
 #                             f'{model_name}_test_grid.pdf')
 #     make_pasu_grid_pdf(pdf_path, model)
 
@@ -1178,7 +1178,7 @@ def make_pasu_grid_pdf(pdf_path, model):
 #                                                                             #
 ###############################################################################
 def make_pasu_set_pdf(size):
-    pdf_path = os.path.join(c.REPO_DIR,'results','pasu', f'pasu_shapes_size{size}.pdf')
+    pdf_path = os.path.join(c.RESULTS_DIR,'pasu', f'pasu_shapes_size{size}.pdf')
     with PdfPages(pdf_path) as pdf:
         for si in range(51):
             num_angles = pasu_shape_nrotu[si]

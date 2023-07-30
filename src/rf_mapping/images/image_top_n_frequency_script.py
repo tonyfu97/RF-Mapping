@@ -35,10 +35,10 @@ is_random = True
 # Please double-check the directories:
 img_dir = c.IMG_DIR
 if is_random:
-    rank_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+    rank_dir = os.path.join(c.RESULTS_DIR, 'ground_truth',
                             'top_n_random', model_name)
 else:
-    rank_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+    rank_dir = os.path.join(c.RESULTS_DIR, 'ground_truth',
                             'top_n', model_name)
 result_dir = rank_dir
 

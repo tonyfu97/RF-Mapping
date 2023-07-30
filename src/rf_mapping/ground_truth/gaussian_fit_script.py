@@ -40,14 +40,14 @@ is_random = True
 
 # Please double-check the directories:
 if is_random:
-    backprop_sum_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+    backprop_sum_dir = os.path.join(c.RESULTS_DIR, 'ground_truth',
                                     'backprop_sum_random', model_name)
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+    result_dir = os.path.join(c.RESULTS_DIR, 'ground_truth',
                               'gaussian_fit_random', model_name)
 else:
-    backprop_sum_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+    backprop_sum_dir = os.path.join(c.RESULTS_DIR, 'ground_truth',
                                     'backprop_sum', model_name)
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+    result_dir = os.path.join(c.RESULTS_DIR, 'ground_truth',
                               'gaussian_fit', model_name)
 
 ###############################################################################

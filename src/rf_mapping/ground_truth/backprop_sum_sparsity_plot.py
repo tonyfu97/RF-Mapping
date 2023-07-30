@@ -29,7 +29,7 @@ model_name = 'vgg16'
 # model_name = 'resnet18'
 
 # Please double-check the directories:
-backprop_sum_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+backprop_sum_dir = os.path.join(c.RESULTS_DIR, 'ground_truth',
                                 'backprop_sum', model_name, 'abs')
 
 pdf_dir = backprop_sum_dir

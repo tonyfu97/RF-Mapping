@@ -140,8 +140,8 @@ if __name__ == '__main__':
     model_name = 'alexnet'
     sum_mode = 'abs'
 
-    backprop_sum_dir = c.REPO_DIR + f'/results/ground_truth/backprop_sum/{model_name}/{sum_mode}'
-    pdf_dir = c.REPO_DIR + f'/results/ground_truth/gaussian_fit/{model_name}/test'
+    backprop_sum_dir = c.RESULTS_DIR + f'/ground_truth/backprop_sum/{model_name}/{sum_mode}'
+    pdf_dir = c.RESULTS_DIR + f'/ground_truth/gaussian_fit/{model_name}/test'
 
     layer_name = "conv5"
     num_units = 5

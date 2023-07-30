@@ -49,14 +49,12 @@ unit_w_high_r  = {'layer_name': 'conv2', 'unit_i': 2}
 
 # Result paths:
 if this_is_a_test_run:
-    result_dir = os.path.join(c.REPO_DIR,
-                              'results',
+    result_dir = os.path.join(c.RESULTS_DIR,
                               'compare',
                               'map_correlations',
                               'test')
 else:
-    result_dir = os.path.join(c.REPO_DIR,
-                             'results',
+    result_dir = os.path.join(c.RESULTS_DIR,
                              'compare',
                              'map_correlations',
                               model_name)
@@ -69,7 +67,7 @@ fix_pix_thres = 0.1
 # Define helper functions:
 def load_maps(map_name, layer_name, max_or_min):
     """Loads the maps of the layer."""
-    mapping_dir = os.path.join(c.REPO_DIR, 'results')
+    mapping_dir = os.path.join(c.RESULTS_DIR)
     
     if map_name == 'gt':
         mapping_path = os.path.join(mapping_dir,
@@ -187,7 +185,7 @@ def plot_r_val(r_val, font_size):
 
 #########################  LOAD MAP CORRELATIONS  #############################
 
-max_map_corr_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations',
+max_map_corr_path = os.path.join(c.RESULTS_DIR, 'compare', 'map_correlations',
                                 model_name, f"max_map_r_0.0333.txt")
 
 max_map_corr_df = pd.read_csv(max_map_corr_path, sep=" ", header=0)

@@ -47,16 +47,16 @@ top_n = 1000
 this_is_a_test_run = False
 
 # Source directories
-rfmp4a_mapping_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping')
-rfmp4a_fit_dir     = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'gaussian_fit')
-rfmp4c7o_mapping_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4c7o', 'mapping')
-rfmp4c7o_fit_dir     = os.path.join(c.REPO_DIR, 'results', 'rfmp4c7o', 'gaussian_fit')
+rfmp4a_mapping_dir = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'mapping')
+rfmp4a_fit_dir     = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'gaussian_fit')
+rfmp4c7o_mapping_dir = os.path.join(c.RESULTS_DIR, 'rfmp4c7o', 'mapping')
+rfmp4c7o_fit_dir     = os.path.join(c.RESULTS_DIR, 'rfmp4c7o', 'gaussian_fit')
 
 # Result directories
 if this_is_a_test_run:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'rfmp4a_vs_rfmp4c7o', 'test')
+    result_dir = os.path.join(c.RESULTS_DIR, 'compare', 'rfmp4a_vs_rfmp4c7o', 'test')
 else:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'rfmp4a_vs_rfmp4c7o', model_name)
+    result_dir = os.path.join(c.RESULTS_DIR, 'compare', 'rfmp4a_vs_rfmp4c7o', model_name)
 
 ###############################################################################
 
@@ -115,7 +115,7 @@ set_column_names(c_w_t_df, W)
 set_column_names(c_w_b_df, W)
 
 # Pad the missing layers with NAN because not all layers are mapped.
-gt_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'gaussian_fit')
+gt_dir = os.path.join(c.RESULTS_DIR, 'ground_truth', 'gaussian_fit')
 gt_top_path = os.path.join(gt_dir, model_name, 'abs', f"{model_name}_gt_gaussian_top.txt")
 gt_t_df  = pd.read_csv(gt_top_path, sep=" ", header=None)
 set_column_names(gt_t_df, GT)

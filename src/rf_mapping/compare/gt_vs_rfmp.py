@@ -39,26 +39,26 @@ is_rfmp4a = False
 
 # Source directories
 if is_occlude:
-    gt_dir = os.path.join(c.REPO_DIR, 'results', 'occlude', 'gaussian_fit')
+    gt_dir = os.path.join(c.RESULTS_DIR, 'occlude', 'gaussian_fit')
 else:
-    gt_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'gaussian_fit')
+    gt_dir = os.path.join(c.RESULTS_DIR, 'ground_truth', 'gaussian_fit')
 
 if is_rfmp4a:
-    rfmp4_mapping_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping')
-    rfmp4_fit_dir     = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'gaussian_fit')
+    rfmp4_mapping_dir = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'mapping')
+    rfmp4_fit_dir     = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'gaussian_fit')
 else:
-    rfmp4_mapping_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4c7o', 'mapping')
-    rfmp4_fit_dir     = os.path.join(c.REPO_DIR, 'results', 'rfmp4c7o', 'gaussian_fit')
+    rfmp4_mapping_dir = os.path.join(c.RESULTS_DIR, 'rfmp4c7o', 'mapping')
+    rfmp4_fit_dir     = os.path.join(c.RESULTS_DIR, 'rfmp4c7o', 'gaussian_fit')
 
 # Result directories
 if is_rfmp4a and not is_occlude:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'gt_vs_rfmp4a', model_name)
+    result_dir = os.path.join(c.RESULTS_DIR, 'compare', 'gt_vs_rfmp4a', model_name)
 elif not is_rfmp4a and not is_occlude:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'gt_vs_rfmp4c7o', model_name)
+    result_dir = os.path.join(c.RESULTS_DIR, 'compare', 'gt_vs_rfmp4c7o', model_name)
 elif is_rfmp4a and is_occlude:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'occlude_vs_rfmp4a', model_name)
+    result_dir = os.path.join(c.RESULTS_DIR, 'compare', 'occlude_vs_rfmp4a', model_name)
 else:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', 'occlude_vs_rfmp4c7o', model_name)
+    result_dir = os.path.join(c.RESULTS_DIR, 'compare', 'occlude_vs_rfmp4c7o', model_name)
 
 ###############################################################################
 

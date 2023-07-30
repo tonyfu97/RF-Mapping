@@ -89,7 +89,7 @@ def write_txt(f, layer_name, unit_i, raw_params, explained_variance, map_size):
 
 def load_maps(map_name, layer_name, max_or_min, is_random, rf_size):
     """Loads the maps of the layer."""
-    mapping_dir = os.path.join(c.REPO_DIR, 'results')
+    mapping_dir = os.path.join(c.RESULTS_DIR)
     is_random_str = "_random" if is_random else ""
     
     if map_name == 'gt':
@@ -189,7 +189,7 @@ def load_maps(map_name, layer_name, max_or_min, is_random, rf_size):
 
 
 def get_result_dir(map_name, is_random, this_is_a_test_run):
-    mapping_dir = os.path.join(c.REPO_DIR, 'results')
+    mapping_dir = os.path.join(c.RESULTS_DIR)
     is_random_str = "_random" if is_random else ""
 
     if map_name in ('gt', 'gt_composite'):

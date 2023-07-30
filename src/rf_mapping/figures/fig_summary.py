@@ -29,7 +29,7 @@ sigma_rf_ratio = 1/30
 
 map_corr_dict = {}
 for model_name in num_layers_dict.keys():
-    max_map_corr_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'map_correlations',
+    max_map_corr_path = os.path.join(c.RESULTS_DIR, 'compare', 'map_correlations',
                                     model_name, f"max_map_r_{sigma_rf_ratio:.4f}.txt")
 
     max_map_corr_df = pd.read_csv(max_map_corr_path, sep=" ", header=0)
@@ -42,7 +42,7 @@ for model_name in num_layers_dict.keys():
 
 map_iou_dict = {}
 for model_name in num_layers_dict.keys():
-    max_map_iou_path = os.path.join(c.REPO_DIR, 'results', 'compare', 'iou',
+    max_map_iou_path = os.path.join(c.RESULTS_DIR, 'compare', 'iou',
                                     model_name, f"max_map_iou_{sigma_rf_ratio:.4f}.txt")
 
     max_map_iou_df = pd.read_csv(max_map_iou_path, sep=" ", header=0)
@@ -55,9 +55,9 @@ for model_name in num_layers_dict.keys():
 
 err_dist_dict = {}
 for model_name in num_layers_dict.keys():
-    gt_df_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'gaussian_fit',
+    gt_df_path = os.path.join(c.RESULTS_DIR, 'ground_truth', 'gaussian_fit',
                               model_name, 'abs', f"{model_name}_{map1_name}_hot_spot.txt")
-    rfmp_df_path = os.path.join(c.REPO_DIR, 'results', map2_name, 'gaussian_fit',
+    rfmp_df_path = os.path.join(c.RESULTS_DIR, map2_name, 'gaussian_fit',
                               model_name, f"{model_name}_{map2_name}_hot_spot.txt")
 
     gt_df = pd.read_csv(gt_df_path, sep=" ", header=0)
@@ -77,9 +77,9 @@ for model_name in num_layers_dict.keys():
 ###########################  LOAD HOT SPOT DATA  ##############################
 
 for model_name, err_dist_df in err_dist_dict.items():
-    gt_df_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'gaussian_fit',
+    gt_df_path = os.path.join(c.RESULTS_DIR, 'ground_truth', 'gaussian_fit',
                               model_name, 'abs', f"{model_name}_{map1_name}_gaussian_top.txt")
-    rfmp_df_path = os.path.join(c.REPO_DIR, 'results', map2_name, 'gaussian_fit',
+    rfmp_df_path = os.path.join(c.RESULTS_DIR, map2_name, 'gaussian_fit',
                               model_name, f"{model_name}_{map2_name}_gaussian_top.txt")
 
     gt_df = pd.read_csv(gt_df_path, sep=" ", header=0)
@@ -95,7 +95,7 @@ for model_name, err_dist_df in err_dist_dict.items():
 
 ################################  MAKE PDF  ###################################
 
-pdf_path = os.path.join(c.REPO_DIR, 'results', 'compare', f'{map1_name}_vs_{map2_name}',
+pdf_path = os.path.join(c.RESULTS_DIR, 'compare', f'{map1_name}_vs_{map2_name}',
                         f"{map1_name}_vs_{map2_name}_summary.pdf")
 with PdfPages(pdf_path) as pdf:
     plt.figure(figsize=(12, 6))

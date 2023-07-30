@@ -52,18 +52,18 @@ num_layers = len(rf_sizes)
 
 # Load CRI
 cri_num_images = 1000
-cri_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, f'cri_{cri_num_images}.txt')
+cri_path = os.path.join(c.RESULTS_DIR, 'ground_truth', 'cri', model_name, f'cri_{cri_num_images}.txt')
 cri_df = pd.read_csv(cri_path, sep=" ", header=None)
 cri_df.columns = ['LAYER', 'UNIT', 'CRI']
 
 # Load Rfmp4a dir
-rfmp4a_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', model_name)
+rfmp4a_dir = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'mapping', model_name)
 
 # Load Rfmp4c7o dir
-rfmp4c7o_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4c7o', 'mapping', model_name)
+rfmp4c7o_dir = os.path.join(c.RESULTS_DIR, 'rfmp4c7o', 'mapping', model_name)
 
 
-pdf_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name, f"{top_n_r}_avg_cri.pdf")
+pdf_path = os.path.join(c.RESULTS_DIR, 'ground_truth', 'cri', model_name, f"{top_n_r}_avg_cri.pdf")
 with PdfPages(pdf_path) as pdf:
     plt.figure(figsize=(num_layers*5, 10))
     for conv_i in range(num_layers):

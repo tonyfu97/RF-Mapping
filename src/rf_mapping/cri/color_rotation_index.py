@@ -31,7 +31,7 @@ this_is_a_test_run = False
 
 # Please double-check the directories:
 img_dir = c.IMG_DIR
-result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'cri', model_name)
+result_dir = os.path.join(c.RESULTS_DIR, 'ground_truth', 'cri', model_name)
 
 ###############################################################################
 

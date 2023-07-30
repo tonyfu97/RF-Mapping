@@ -51,14 +51,12 @@ all_map_names = ['gt', 'gt_composite', 'occlude_composite',
 
 # Result paths:
 if this_is_a_test_run:
-    result_dir = os.path.join(c.REPO_DIR,
-                              'results',
+    result_dir = os.path.join(c.RESULTS_DIR,
                               'compare',
                               'iou',
                               'test')
 else:
-    result_dir = os.path.join(c.REPO_DIR,
-                             'results',
+    result_dir = os.path.join(c.RESULTS_DIR,
                              'compare',
                              'iou',
                               model_name)
@@ -74,7 +72,7 @@ num_layers = len(rf_sizes)
 # Define helper functions:
 def load_maps(map_name, layer_name, max_or_min):
     """Loads the maps of the layer."""
-    mapping_dir = os.path.join(c.REPO_DIR, 'results')
+    mapping_dir = os.path.join(c.RESULTS_DIR)
     
     if map_name == 'gt':
         mapping_path = os.path.join(mapping_dir,

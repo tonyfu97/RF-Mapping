@@ -35,7 +35,7 @@ TOP_RANK = 0   # If 0, then the top bar of the unit will be used, etc.
 ALPHA = 4.0
 
 # Please specify the output directory and the pdf path
-output_dir = f"/Volumes/T7 Shield/borderownership/results (2023 summer)/rfmp4a/window/{MODEL_NAME}/tests"
+output_dir = f"{c.RESULTS_DIR}/rfmp4a/window/{MODEL_NAME}/tests"
 pdf_path = os.path.join(output_dir, f"{LAYER_NAME}_windowed_bars_test2.pdf")
 txt_path = os.path.join(output_dir, f"{LAYER_NAME}_windowed_bars_test2.txt")
 
@@ -86,8 +86,8 @@ logger = get_logger(os.path.join(output_dir, f"4a_windowed_bars_test2.log"), __f
 logger.info(f"Model = {MODEL_NAME}, layer = {LAYER_NAME}, top rank = {TOP_RANK}, alpha = {ALPHA}")
 
 # Load the top bars of the unit
-top_bar_path = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', MODEL_NAME, f"{LAYER_NAME}_top5000_responses.txt")
-splist_path = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', MODEL_NAME, f"{LAYER_NAME}_splist.txt")
+top_bar_path = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'mapping', MODEL_NAME, f"{LAYER_NAME}_top5000_responses.txt")
+splist_path = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'mapping', MODEL_NAME, f"{LAYER_NAME}_splist.txt")
 
 # Load the dataframes and name the columns
 top_bar_df = pd.read_csv(top_bar_path, sep='\s+')

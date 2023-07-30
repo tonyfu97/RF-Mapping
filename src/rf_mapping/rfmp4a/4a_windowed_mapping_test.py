@@ -29,13 +29,13 @@ UNIT_IDX = 201
 MAX_RF = 99
 ALPHA = 4.0
 
-pdf_path = f"/Volumes/T7 Shield/borderownership/results (2023 summer)/rfmp4a/window/{MODEL_NAME}/tests/{LAYER_NAME}_windowed_bars_test.pdf"
+pdf_path = f"{c.RESULTS_DIR}/rfmp4a/window/{MODEL_NAME}/tests/{LAYER_NAME}_windowed_bars_test.pdf"
 with PdfPages(pdf_path) as pdf:
     for UNIT_IDX in tqdm(range(384)):
         if UNIT_IDX != 2: continue
         # Load the top bars of the unit
-        top_bar_path = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', MODEL_NAME, f"{LAYER_NAME}_top5000_responses.txt")
-        splist_path = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', MODEL_NAME, f"{LAYER_NAME}_splist.txt")
+        top_bar_path = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'mapping', MODEL_NAME, f"{LAYER_NAME}_top5000_responses.txt")
+        splist_path = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'mapping', MODEL_NAME, f"{LAYER_NAME}_splist.txt")
 
         # Load the dataframes and name the columns
         top_bar_df = pd.read_csv(top_bar_path, sep='\s+')

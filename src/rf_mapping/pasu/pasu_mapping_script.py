@@ -26,9 +26,9 @@ batch_size = 10
 
 # Please double-check the directories:
 if this_is_a_test_run:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'pasu', 'mapping', 'test')
+    result_dir = os.path.join(c.RESULTS_DIR, 'pasu', 'mapping', 'test')
 else:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'pasu', 'mapping', model_name)
+    result_dir = os.path.join(c.RESULTS_DIR, 'pasu', 'mapping', model_name)
 
 ###############################################################################
 

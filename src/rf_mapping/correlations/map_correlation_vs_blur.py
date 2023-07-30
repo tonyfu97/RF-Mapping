@@ -38,8 +38,7 @@ all_map_names = ['gt', 'gt_composite', 'occlude_composite',
                  'rfmp4a', 'rfmp4c7o', 'rfmp_sin1', 'pasu']
 
 # File paths:
-corr_path = os.path.join(c.REPO_DIR,
-                         'results',
+corr_path = os.path.join(c.RESULTS_DIR,
                          'compare',
                          'map_correlations',
                          model_name)

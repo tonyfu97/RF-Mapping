@@ -33,7 +33,7 @@ LAYER_NAME = 'conv5'
 SIGMA_TO_RF_RATIO = 20
 
 # Please specify the source directory and the output pdf path
-output_dir = f"/Volumes/T7 Shield/borderownership/results (2023 summer)/rfmp4a/window/{MODEL_NAME}"
+output_dir = f"{c.RESULTS_DIR}/rfmp4a/window/{MODEL_NAME}"
 max_txt_path = os.path.join(output_dir, f"{LAYER_NAME}_max_windowed_map.txt")
 min_txt_path = os.path.join(output_dir, f"{LAYER_NAME}_min_windowed_map.txt")
 pdf_path = os.path.join(output_dir, f"{MODEL_NAME}_{LAYER_NAME}_windowed_bars.pdf")

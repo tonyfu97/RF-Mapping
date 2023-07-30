@@ -37,9 +37,9 @@ is_random = False
 img_dir = c.IMG_DIR
 
 if is_random:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n_random')
+    result_dir = os.path.join(c.RESULTS_DIR, 'ground_truth', 'top_n_random')
 else:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n')
+    result_dir = os.path.join(c.RESULTS_DIR, 'ground_truth', 'top_n')
 
 if this_is_a_test_run:
     result_dir = os.path.join(result_dir, 'test')

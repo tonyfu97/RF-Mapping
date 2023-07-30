@@ -36,14 +36,14 @@ image_shape = (227, 227)
 this_is_a_test_run = False
 
 # Source paths:
-mapping_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'mapping', model_name)
+mapping_dir = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'mapping', model_name)
 bar_counts_path = os.path.join(mapping_dir, f"{model_name}_rfmp4a_weighted_counts.txt")
 
 # Results paths:
 if this_is_a_test_run:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'gaussian_fit', 'test')
+    result_dir = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'gaussian_fit', 'test')
 else:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp4a', 'gaussian_fit', model_name)
+    result_dir = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'gaussian_fit', model_name)
 top_txt_path = os.path.join(result_dir, f"weighted_top.txt")
 bot_txt_path = os.path.join(result_dir, f"weighted_bot.txt")
 

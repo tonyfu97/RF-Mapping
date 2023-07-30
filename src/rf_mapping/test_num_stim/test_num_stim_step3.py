@@ -39,7 +39,7 @@ num_stim_list = [50, 100, 250, 500, 750, 1000, 1500, 2000, 5000]
 fxvar_thres = 0.7
 num_stim_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
-source_dir = os.path.join(c.REPO_DIR, 'results', 'test_num_stim')
+source_dir = os.path.join(c.RESULTS_DIR, 'test_num_stim')
 result_dir = source_dir
 
 ###############################################################################
@@ -141,9 +141,9 @@ def load_hot_spot_df(rfmp_name, model_name, layer_name, num_stim):
 
 
 def load_gt_gaussian_dfs(model_name):
-    top_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'gaussian_fit',
+    top_path = os.path.join(c.RESULTS_DIR, 'ground_truth', 'gaussian_fit',
                             model_name, 'abs', f"{model_name}_gt_gaussian_top.txt")
-    bot_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'gaussian_fit',
+    bot_path = os.path.join(c.RESULTS_DIR, 'ground_truth', 'gaussian_fit',
                             model_name, 'abs', f"{model_name}_gt_gaussian_bot.txt")
 
     # Load the txt files as pandas DF.

@@ -54,7 +54,7 @@ num_layers = len(rf_sizes)
 #############################  HELPER FUNCTIONS  ##############################
 
 def load_hot_spot_df(map_name, model_name, is_random):
-    mapping_dir = os.path.join(c.REPO_DIR, 'results')
+    mapping_dir = os.path.join(c.RESULTS_DIR)
     is_random_str = "_random" if is_random else ""
     
     if map_name == 'gt':
@@ -83,9 +83,9 @@ def load_hot_spot_df(map_name, model_name, is_random):
 
 def get_result_dir(map1_name, map2_name, model_name, this_is_a_test_run):
     if this_is_a_test_run:  
-        result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', f'{map1_name}_vs_{map2_name}', 'test')
+        result_dir = os.path.join(c.RESULTS_DIR, 'compare', f'{map1_name}_vs_{map2_name}', 'test')
     else:
-        result_dir = os.path.join(c.REPO_DIR, 'results', 'compare', f'{map1_name}_vs_{map2_name}', model_name)
+        result_dir = os.path.join(c.RESULTS_DIR, 'compare', f'{map1_name}_vs_{map2_name}', model_name)
     if not os.path.exists(result_dir):
         raise KeyError(f"{result_dir} does not exist.")
     return result_dir

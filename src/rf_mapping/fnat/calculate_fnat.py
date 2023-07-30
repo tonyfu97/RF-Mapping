@@ -33,9 +33,9 @@ this_is_a_test_run = False
 rfmp_name = 'rfmp4c7o'
 
 # Please double-check the directories:
-gt_response_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n', model_name)
-rfmp_response_dir = os.path.join(c.REPO_DIR, 'results', rfmp_name, 'mapping', model_name)
-result_dir = os.path.join(c.REPO_DIR, 'results', 'fnat', rfmp_name, model_name)
+gt_response_dir = os.path.join(c.RESULTS_DIR, 'ground_truth', 'top_n', model_name)
+rfmp_response_dir = os.path.join(c.RESULTS_DIR, rfmp_name, 'mapping', model_name)
+result_dir = os.path.join(c.RESULTS_DIR, 'fnat', rfmp_name, model_name)
 
 # Txt file to save fnat
 fnat_txt_path = os.path.join(result_dir, f"{rfmp_name}_fnat_{top_n_r}_avg.txt")

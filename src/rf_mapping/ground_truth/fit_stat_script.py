@@ -30,7 +30,7 @@ sum_modes = ['abs', 'sqr']
 image_shape = (227, 227)
 
 # Please double-check the directories:
-gaussian_fit_dir = c.REPO_DIR + f'/results/ground_truth/gaussian_fit/{model_name}'
+gaussian_fit_dir = c.RESULTS_DIR + f'/ground_truth/gaussian_fit/{model_name}'
 pdf_dir = gaussian_fit_dir
 
 ###############################################################################

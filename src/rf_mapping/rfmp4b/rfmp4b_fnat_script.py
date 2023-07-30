@@ -20,12 +20,12 @@ MAX_RF = 99
 XN = 127
 NUM_UNITS = 384
 
-RESULT_DIR = f"/Volumes/T7 Shield/borderownership/results (2023 summer)/rfmp4a/fnat/{MODEL_NAME}/{LAYER_NAME}"
+RESULT_DIR = f"{c.RESULTS_DIR}/rfmp4a/fnat/{MODEL_NAME}/{LAYER_NAME}"
 
 ################# Load the ground truth response of the layer #################
 
 N_TOP_NATURAL = 10
-gt_response_path = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'top_n', MODEL_NAME, f"{LAYER_NAME}_responses.npy")
+gt_response_path = os.path.join(c.RESULTS_DIR, 'ground_truth', 'top_n', MODEL_NAME, f"{LAYER_NAME}_responses.npy")
 gt_responses = np.load(gt_response_path)
 gt_responses = np.sort(gt_responses, axis=1)
 # Shape = [num_units, num_images, 2]. There are 2 columns:

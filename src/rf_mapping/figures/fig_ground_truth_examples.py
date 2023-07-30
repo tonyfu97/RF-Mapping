@@ -27,11 +27,11 @@ example_unit_ids = [0,1,2,3,4]
 rf_sigma_ratio = 1/30
 
 # Please double-check the directories:
-guided_backprop_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth',
+guided_backprop_dir = os.path.join(c.RESULTS_DIR, 'ground_truth',
                                 'backprop_sum', model_name, 'abs')
-occlude_dir = os.path.join(c.REPO_DIR, 'results', 'occlude', 'mapping',
+occlude_dir = os.path.join(c.RESULTS_DIR, 'occlude', 'mapping',
                            model_name)
-output_pdf_path = os.path.join(c.REPO_DIR, 'results', 'figures', f"{model_name}_gt_examples.pdf")
+output_pdf_path = os.path.join(c.RESULTS_DIR, 'figures', f"{model_name}_gt_examples.pdf")
 
 
 with PdfPages(output_pdf_path) as pdf:

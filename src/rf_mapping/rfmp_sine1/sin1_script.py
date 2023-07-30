@@ -27,9 +27,9 @@ response_thr = 0.5
 
 # Please double-check the directories:
 if this_is_a_test_run:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp_sin1', 'mapping', 'test')
+    result_dir = os.path.join(c.RESULTS_DIR, 'rfmp_sin1', 'mapping', 'test')
 else:
-    result_dir = os.path.join(c.REPO_DIR, 'results', 'rfmp_sin1', 'mapping', model_name)
+    result_dir = os.path.join(c.RESULTS_DIR, 'rfmp_sin1', 'mapping', model_name)
 
 ###############################################################################
 

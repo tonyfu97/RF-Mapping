@@ -27,7 +27,7 @@ model_name = 'alexnet'
 num_layers = 5
 
 
-gaussian_map_dir = os.path.join(c.REPO_DIR, 'results', 'ground_truth', 'gaussian_fit', model_name, 'abs')
+gaussian_map_dir = os.path.join(c.RESULTS_DIR, 'ground_truth', 'gaussian_fit', model_name, 'abs')
 
 gt_top_path = os.path.join(gaussian_map_dir, f'{model_name}_gt_gaussian_top.txt')
 gt_bot_path = os.path.join(gaussian_map_dir, f'{model_name}_gt_gaussian_bot.txt')
