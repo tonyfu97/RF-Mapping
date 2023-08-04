@@ -18,8 +18,8 @@ class GtGaussian(Enum):
     UNIT   = 1  # index of unit, 0...
     MUX    = 2  # mean of Gaussian along x-axis
     MUY    = 3  # mean of Gaussian along y-axis (negative)
-    SD1    = 4  # SD on one axis
-    SD2    = 5  # SD on orthogonal axis
+    SIGMA1 = 4  # SIMGA on one axis
+    SIGMA2 = 5  # SIMGA on orthogonal axis
     ORI    = 6  # orientation (0-180 deg) of longer axis, 0:horizontal, 45:upward to right
     AMP    = 7  # amplitude of Gaussian
     OFFSET = 8  # addivitve offset of Gaussian
@@ -75,8 +75,8 @@ class Rfmp4aWeighted(Enum):
     UNIT   = 1  # index of unit, 0...
     MUX    = 2  # mean of Gaussian along x-axis
     MUY    = 3  # mean of Gaussian along y-axis (negative)
-    SD1    = 4  # SD on one axis
-    SD2    = 5  # SD on orthogonal axis
+    SIGMA1 = 4  # SIMGA on one axis
+    SIGMA2 = 5  # SIMGA on orthogonal axis
     ORI    = 6  # orientation (0-180 deg) of longer axis, 0:horizontal, 45:upward to right
     AMP    = 7  # amplitude of Gaussian
     OFFSET = 8  # addivitve offset of Gaussian

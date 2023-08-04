@@ -30,7 +30,7 @@ model_name = 'alexnet'
 
 top_n_r = 10
 this_is_a_test_run = False
-rfmp_name = 'rfmp4c7o'
+rfmp_name = 'rfmp4a'
 
 # Please double-check the directories:
 gt_response_dir = os.path.join(c.RESULTS_DIR, 'ground_truth', 'top_n', model_name)

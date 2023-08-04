@@ -211,10 +211,10 @@ for conv_i, rf_size in enumerate(rf_sizes):
         # Load Gaussian fit results
         top_df, bot_df = load_gaussian_fit_df(rfmp_name, model_name, layer_name, num_stim)
 
-        top_sd1data = top_df.loc[(top_df.LAYER == layer_name) & (top_df.FXVAR > fxvar_thres), 'SD1']
-        top_sd2data = top_df.loc[(top_df.LAYER == layer_name) & (top_df.FXVAR > fxvar_thres), 'SD2']
-        bot_sd1data = bot_df.loc[(bot_df.LAYER == layer_name) & (bot_df.FXVAR > fxvar_thres), 'SD1']
-        bot_sd2data = bot_df.loc[(bot_df.LAYER == layer_name) & (bot_df.FXVAR > fxvar_thres), 'SD2']
+        top_sd1data = top_df.loc[(top_df.LAYER == layer_name) & (top_df.FXVAR > fxvar_thres), 'SIGMA1']
+        top_sd2data = top_df.loc[(top_df.LAYER == layer_name) & (top_df.FXVAR > fxvar_thres), 'SIGMA2']
+        bot_sd1data = bot_df.loc[(bot_df.LAYER == layer_name) & (bot_df.FXVAR > fxvar_thres), 'SIGMA1']
+        bot_sd2data = bot_df.loc[(bot_df.LAYER == layer_name) & (bot_df.FXVAR > fxvar_thres), 'SIGMA2']
 
         top_radii = geo_mean(top_sd1data, top_sd2data)
         # top_radii = top_radii[top_radii < rf_size/2]  # Remove radius that are too big (debatable?)

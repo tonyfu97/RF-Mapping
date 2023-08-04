@@ -29,7 +29,7 @@ UNIT_IDX = 201
 MAX_RF = 99
 ALPHA = 4.0
 
-pdf_path = f"{c.RESULTS_DIR}/rfmp4a/window/{MODEL_NAME}/tests/{LAYER_NAME}_windowed_bars_test.pdf"
+pdf_path = f"{c.RESULTS_DIR}/rfmp4a_windowed/{MODEL_NAME}/tests/{LAYER_NAME}_windowed_bars_test.pdf"
 with PdfPages(pdf_path) as pdf:
     for UNIT_IDX in tqdm(range(384)):
         if UNIT_IDX != 2: continue

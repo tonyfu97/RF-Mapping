@@ -31,7 +31,7 @@ TOP_RANK = 0   # If 0, then the top bar of the unit will be used, etc.
 ALPHA = 4.0
 
 # Please specify the output directory and the pdf path
-output_dir = f"{c.RESULTS_DIR}/rfmp4a/window/{MODEL_NAME}/tests"
+output_dir = f"{c.RESULTS_DIR}/rfmp4a_windowed/{MODEL_NAME}/tests"
 pdf_path = os.path.join(output_dir, f"{MODEL_NAME}_windowed_bars_test_nonlinearity.pdf")
 interactdive_path = os.path.join(output_dir, f"{MODEL_NAME}_windowed_bars_test_nonlinearity.html")
 

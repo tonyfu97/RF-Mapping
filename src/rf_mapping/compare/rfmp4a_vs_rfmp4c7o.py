@@ -960,11 +960,11 @@ def make_radius_color_pdf():
                 r_val = np.NaN
             plt.title(f'Non-overlap (top 90% mass, n={len(a_radius)}, r={r_val:.2f})')
 
-            a_sd1 = a_w_t_df.loc[(a_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres), 'SD1']
-            a_sd2 = a_w_t_df.loc[(a_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres), 'SD2']
+            a_sd1 = a_w_t_df.loc[(a_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres), 'SIGMA1']
+            a_sd2 = a_w_t_df.loc[(a_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres), 'SIGMA2']
             a_radius = geo_mean(a_sd1, a_sd2)
-            c_sd1 = c_w_t_df.loc[(c_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres), 'SD1']
-            c_sd2 = c_w_t_df.loc[(c_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres), 'SD2']
+            c_sd1 = c_w_t_df.loc[(c_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres), 'SIGMA1']
+            c_sd2 = c_w_t_df.loc[(c_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres), 'SIGMA2']
             c_radius = geo_mean(c_sd1, c_sd2)
             a_radius, c_radius = del_outliers(a_radius, c_radius, rf_size)
             plt.subplot(2,4,4)
@@ -1023,11 +1023,11 @@ def make_radius_color_pdf():
                 r_val = np.NaN
             plt.title(f'Non-overlap (bottom 90% mass, n={len(a_radius)}, r={r_val:.2f})')
 
-            a_sd1 = a_w_b_df.loc[(a_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres), 'SD1']
-            a_sd2 = a_w_b_df.loc[(a_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres), 'SD2']
+            a_sd1 = a_w_b_df.loc[(a_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres), 'SIGMA1']
+            a_sd2 = a_w_b_df.loc[(a_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres), 'SIGMA2']
             a_radius = geo_mean(a_sd1, a_sd2)
-            c_sd1 = c_w_b_df.loc[(c_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres), 'SD1']
-            c_sd2 = c_w_b_df.loc[(c_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres), 'SD2']
+            c_sd1 = c_w_b_df.loc[(c_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres), 'SIGMA1']
+            c_sd2 = c_w_b_df.loc[(c_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres), 'SIGMA2']
             c_radius = geo_mean(c_sd1, c_sd2)
             # Eliminate outliers (too big)
             a_radius, c_radius = del_outliers(a_radius, c_radius, rf_size)
@@ -1094,18 +1094,18 @@ def make_error_ori_pdf():
             
             # Get RFMP4a (Achromatic) data (top and bottom)
             a_w_t_data = a_w_t_df.loc[(a_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres)]
-            a_w_t_ecc = eccentricity(a_w_t_data['SD1'], a_w_t_data['SD2'])
+            a_w_t_ecc = eccentricity(a_w_t_data['SIGMA1'], a_w_t_data['SIGMA2'])
             a_w_t_ori = a_w_t_data['ORI']
             a_w_b_data = a_w_b_df.loc[(a_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres)]
-            a_w_b_ecc = eccentricity(a_w_b_data['SD1'], a_w_b_data['SD2'])
+            a_w_b_ecc = eccentricity(a_w_b_data['SIGMA1'], a_w_b_data['SIGMA2'])
             a_w_b_ori = a_w_b_data['ORI']
             
             # Get RFMP4c7o (Chromatic) data (top and bottom)
             c_w_t_data = c_w_t_df.loc[(c_w_t_df.LAYER == layer_name) & (a_w_t_df.FXVAR > fxvar_thres) & (c_w_t_df.FXVAR > fxvar_thres)]
-            c_w_t_ecc = eccentricity(c_w_t_data['SD1'], c_w_t_data['SD2'])
+            c_w_t_ecc = eccentricity(c_w_t_data['SIGMA1'], c_w_t_data['SIGMA2'])
             c_w_t_ori = c_w_t_data['ORI']
             c_w_b_data = c_w_b_df.loc[(c_w_b_df.LAYER == layer_name) & (a_w_b_df.FXVAR > fxvar_thres) & (c_w_b_df.FXVAR > fxvar_thres)]
-            c_w_b_ecc = eccentricity(c_w_b_data['SD1'], c_w_b_data['SD2'])
+            c_w_b_ecc = eccentricity(c_w_b_data['SIGMA1'], c_w_b_data['SIGMA2'])
             c_w_b_ori = c_w_b_data['ORI']
 
             plt.figure(figsize=(10,11))

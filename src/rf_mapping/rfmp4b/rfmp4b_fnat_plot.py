@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+import src.rf_mapping.constants as c
 
 MODEL_NAME = "alexnet"
 LAYER_NAME = "conv3"

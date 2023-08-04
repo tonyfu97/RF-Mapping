@@ -6,7 +6,7 @@ import sys
 sys.path.append('../..')
 import src.rf_mapping.constants as c
 
-all = ['log_file']
+all = ['get_logger']
 
 def get_logger(file_path, caller_file):
     """

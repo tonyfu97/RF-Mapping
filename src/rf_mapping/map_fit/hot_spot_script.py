@@ -33,7 +33,7 @@ model_name = 'alexnet'
 
 this_is_a_test_run = False
 is_random = False
-map_name = 'gt'
+map_name = 'rfmp4a_windowed'
 sigma_rf_ratio = 1/30
 
 
@@ -123,6 +123,22 @@ def load_maps(map_name, layer_name, max_or_min, is_random, rf_size):
                                     f"{layer_name}_weighted_{max_or_min}_barmaps.npy")
         maps = np.load(mapping_path)  # [unit, yn, xn]
         return smooth_maps(maps, sigma)
+    elif map_name == 'rfmp4a_windowed':
+        mapping_path = os.path.join(mapping_dir,
+                                    'rfmp4a_windowed',
+                                    'mapping',
+                                    model_name,
+                                    f"{layer_name}_windowed_bars_{max_or_min}.npy")
+        maps = np.load(mapping_path)  # [unit, yn, xn]
+        return smooth_maps(maps, sigma)
+    elif map_name == 'rfmp4a_windowed_delta':
+        mapping_path = os.path.join(mapping_dir,
+                                    'rfmp4a_windowed',
+                                    'mapping',
+                                    model_name,
+                                    f"{layer_name}_windowed_delta_{max_or_min}.npy")
+        maps = np.load(mapping_path)  # [unit, yn, xn]
+        return smooth_maps(maps, sigma)
     elif map_name == 'rfmp4c7o':
         mapping_path = os.path.join(mapping_dir,
                                     'rfmp4c7o',
@@ -178,7 +194,8 @@ def get_result_dir(map_name, is_random, this_is_a_test_run):
                                 f'gaussian_fit{is_random_str}',
                                 model_name,
                                 'abs')
-    elif map_name in ('occlude', 'occlude_composite', 'rfmp4a', 'rfmp4c7o',
+    elif map_name in ('occlude', 'occlude_composite', 'rfmp4a', 'rfmp4a_windowed',
+                      'rfmp4c7o',
                       'rfmp_sin1', 'pasu', 'block'):
         if map_name == 'occlude_composite':
             map_name = 'occlude'
@@ -284,8 +301,8 @@ for conv_i in range(len(layer_indices)):
                 with open(txt_file_path, 'a') as f:
                     write_txt(f, layer_name, unit_i, top_x, top_y, bot_x, bot_y, max_map.shape)
 
-                # write_pdf(pdf, layer_name, unit_i, max_map, min_map,
-                #         top_x, top_y, bot_x, bot_y)
+                write_pdf(pdf, layer_name, unit_i, max_map, min_map,
+                        top_x, top_y, bot_x, bot_y)
 
     else:
         composite_maps = load_maps(map_name, layer_name, '', is_random, rf_size)
@@ -303,4 +320,4 @@ for conv_i in range(len(layer_indices)):
                     # Fill the bot_x and bot_y columns with NaN
                     write_txt(f, layer_name, unit_i, top_x, top_y, np.NaN, np.NaN, composite_map.shape)
 
-                # write_composite_pdf(pdf, layer_name, unit_i, composite_map, top_x, top_y)
+                write_composite_pdf(pdf, layer_name, unit_i, composite_map, top_x, top_y)

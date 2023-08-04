@@ -274,8 +274,8 @@ def make_radius_pdf():
             plt.figure(figsize=(10,10))
             plt.suptitle(f"{model_name} {layer_name} RF radii of gt and occlude (n = {num_units_total}, ERF = {rf_size})", fontsize=14)
 
-            sd1data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'SD1']
-            sd2data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'SD2']
+            sd1data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'SIGMA1']
+            sd2data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres), 'SIGMA2']
             num_units_included = len(sd1data)
             radii = geo_mean(sd1data, sd2data)
             plt.subplot(2,2,1)
@@ -285,8 +285,8 @@ def make_radius_pdf():
             plt.ylim(ylim)
             plt.title(f'ground truth top (n = {num_units_included})')
 
-            sd1data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'SD1']
-            sd2data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'SD2']
+            sd1data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'SIGMA1']
+            sd2data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres), 'SIGMA2']
             num_units_included = len(sd1data)
             radii = geo_mean(sd1data, sd2data)
             plt.subplot(2,2,3)
@@ -297,8 +297,8 @@ def make_radius_pdf():
             plt.ylim(ylim)
             plt.title(f'ground truth bottom (n = {num_units_included})')
 
-            sd1data = oc_t_df.loc[(oc_t_df.LAYER == layer_name) & (oc_t_df.FXVAR > fxvar_thres), 'SD1']
-            sd2data = oc_t_df.loc[(oc_t_df.LAYER == layer_name) & (oc_t_df.FXVAR > fxvar_thres), 'SD2']
+            sd1data = oc_t_df.loc[(oc_t_df.LAYER == layer_name) & (oc_t_df.FXVAR > fxvar_thres), 'SIGMA1']
+            sd2data = oc_t_df.loc[(oc_t_df.LAYER == layer_name) & (oc_t_df.FXVAR > fxvar_thres), 'SIGMA2']
             num_units_included = len(sd1data)
             radii = geo_mean(sd1data, sd2data)
             plt.subplot(2,2,2)
@@ -307,8 +307,8 @@ def make_radius_pdf():
             plt.ylim(ylim)
             plt.title(f'occluder top (n = {num_units_included})')
 
-            sd1data = oc_b_df.loc[(oc_b_df.LAYER == layer_name) & (oc_b_df.FXVAR > fxvar_thres), 'SD1']
-            sd2data = oc_b_df.loc[(oc_b_df.LAYER == layer_name) & (oc_b_df.FXVAR > fxvar_thres), 'SD2']
+            sd1data = oc_b_df.loc[(oc_b_df.LAYER == layer_name) & (oc_b_df.FXVAR > fxvar_thres), 'SIGMA1']
+            sd2data = oc_b_df.loc[(oc_b_df.LAYER == layer_name) & (oc_b_df.FXVAR > fxvar_thres), 'SIGMA2']
             num_units_included = len(sd1data)
             radii = geo_mean(sd1data, sd2data)
             plt.subplot(2,2,4)
@@ -353,7 +353,7 @@ def make_ori_pdf():
 
             layer_data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres)]
             num_units_included = len(layer_data)
-            ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
+            ecc = eccentricity(layer_data['SIGMA1'], layer_data['SIGMA2'])
             ax = plt.subplot(221, projection='polar')
             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
             ax.scatter(-layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
@@ -363,7 +363,7 @@ def make_ori_pdf():
 
             layer_data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres)]
             num_units_included = len(layer_data)
-            ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
+            ecc = eccentricity(layer_data['SIGMA1'], layer_data['SIGMA2'])
             ax = plt.subplot(223, projection='polar')
             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
             ax.scatter(-layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
@@ -373,7 +373,7 @@ def make_ori_pdf():
 
             layer_data = oc_t_df.loc[(oc_t_df.LAYER == layer_name) & (oc_t_df.FXVAR > fxvar_thres)]
             num_units_included = len(layer_data)
-            ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
+            ecc = eccentricity(layer_data['SIGMA1'], layer_data['SIGMA2'])
             ax = plt.subplot(222, projection='polar')
             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
             ax.scatter(-layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
@@ -383,7 +383,7 @@ def make_ori_pdf():
 
             layer_data = oc_b_df.loc[(oc_b_df.LAYER == layer_name) & (oc_b_df.FXVAR > fxvar_thres)]
             num_units_included = len(layer_data)
-            ecc = eccentricity(layer_data['SD1'], layer_data['SD2'])
+            ecc = eccentricity(layer_data['SIGMA1'], layer_data['SIGMA2'])
             ax = plt.subplot(224, projection='polar')
             ax.scatter(layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
             ax.scatter(-layer_data['ORI']*math.pi/180, ecc, alpha=0.4)
@@ -517,11 +517,11 @@ def make_error_radius_pdf():
             plt.figure(figsize=(10,5))
             plt.suptitle(f"Comparing {model_name} {layer_name} RF radii of gt and occlude (n = {num_units_total}, ERF = {rf_size})", fontsize=16)
             
-            gt_sd1 = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres), 'SD1']
-            gt_sd2 = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres), 'SD2']
+            gt_sd1 = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres), 'SIGMA1']
+            gt_sd2 = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres), 'SIGMA2']
             gt_radius = geo_mean(gt_sd1, gt_sd2)
-            ot_sd1 = oc_t_df.loc[(oc_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres), 'SD1']
-            ot_sd2 = oc_t_df.loc[(oc_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres), 'SD2']
+            ot_sd1 = oc_t_df.loc[(oc_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres), 'SIGMA1']
+            ot_sd2 = oc_t_df.loc[(oc_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres), 'SIGMA2']
             ot_radius = geo_mean(ot_sd1, ot_sd2)
             num_top_units = len(gt_radius)
 
@@ -541,11 +541,11 @@ def make_error_radius_pdf():
             plt.title(f'GT vs. Occluder (top, n={num_top_units}, r={r_val:.2f})')
 
             
-            gb_sd1 = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres) & (oc_b_df.FXVAR > fxvar_thres), 'SD1']
-            gb_sd2 = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres) & (oc_b_df.FXVAR > fxvar_thres), 'SD2']
+            gb_sd1 = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres) & (oc_b_df.FXVAR > fxvar_thres), 'SIGMA1']
+            gb_sd2 = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres) & (oc_b_df.FXVAR > fxvar_thres), 'SIGMA2']
             gb_radius = geo_mean(gb_sd1, gb_sd2)
-            ob_sd1 = oc_b_df.loc[(oc_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres) & (oc_b_df.FXVAR > fxvar_thres), 'SD1']
-            ob_sd2 = oc_b_df.loc[(oc_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres) & (oc_b_df.FXVAR > fxvar_thres), 'SD2']
+            ob_sd1 = oc_b_df.loc[(oc_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres) & (oc_b_df.FXVAR > fxvar_thres), 'SIGMA1']
+            ob_sd2 = oc_b_df.loc[(oc_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres) & (oc_b_df.FXVAR > fxvar_thres), 'SIGMA2']
             ob_radius = geo_mean(ob_sd1, ob_sd2)
             num_bot_units = len(gb_radius)
             gb_radius, ob_radius = del_outliers(gb_radius, ob_radius, rf_size)
@@ -597,18 +597,18 @@ def make_error_ori_pdf():
             
             # Get ground truth data (top and bottom)
             gt_data = gt_t_df.loc[(gt_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres)]
-            gt_ecc = eccentricity(gt_data['SD1'], gt_data['SD2'])
+            gt_ecc = eccentricity(gt_data['SIGMA1'], gt_data['SIGMA2'])
             gt_ori = gt_data['ORI']
             gb_data = gt_b_df.loc[(gt_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres) & (oc_b_df.FXVAR > fxvar_thres)]
-            gb_ecc = eccentricity(gb_data['SD1'], gb_data['SD2'])
+            gb_ecc = eccentricity(gb_data['SIGMA1'], gb_data['SIGMA2'])
             gb_ori = gb_data['ORI']
             
             # Get weighted maps data (top and bottom)
             oc_t_data = oc_t_df.loc[(oc_t_df.LAYER == layer_name) & (gt_t_df.FXVAR > fxvar_thres) & (oc_t_df.FXVAR > fxvar_thres)]
-            oc_t_ecc = eccentricity(oc_t_data['SD1'], oc_t_data['SD2'])
+            oc_t_ecc = eccentricity(oc_t_data['SIGMA1'], oc_t_data['SIGMA2'])
             oc_t_ori = oc_t_data['ORI']
             oc_b_data = oc_b_df.loc[(oc_b_df.LAYER == layer_name) & (gt_b_df.FXVAR > fxvar_thres) & (oc_b_df.FXVAR > fxvar_thres)]
-            oc_b_ecc = eccentricity(oc_b_data['SD1'], oc_b_data['SD2'])
+            oc_b_ecc = eccentricity(oc_b_data['SIGMA1'], oc_b_data['SIGMA2'])
             oc_b_ori = oc_b_data['ORI']
 
             plt.figure(figsize=(10,11))

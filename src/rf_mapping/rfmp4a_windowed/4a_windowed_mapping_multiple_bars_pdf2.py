@@ -34,11 +34,13 @@ SIGMA_TO_RF_RATIO = 20
 ALPHA = 4.0  # window's sigma is bar_length / ALPHA. Default value is 4.0.
 
 # Please specify the source directory and the output pdf path
-output_dir = f"{c.RESULTS_DIR}/rfmp4a/window/{MODEL_NAME}"
+output_dir = f"{c.RESULTS_DIR}/rfmp4a_windowed/mapping/{MODEL_NAME}"
 max_txt_path = os.path.join(output_dir, f"{LAYER_NAME}_max_windowed_map.txt")
 min_txt_path = os.path.join(output_dir, f"{LAYER_NAME}_min_windowed_map.txt")
 splist_path = os.path.join(c.RESULTS_DIR, 'rfmp4a', 'mapping', MODEL_NAME, f"{LAYER_NAME}_splist.txt")
 pdf_path = os.path.join(output_dir, f"{MODEL_NAME}_{LAYER_NAME}_windowed_barmaps.pdf")
+max_npy_output_path = os.path.join(output_dir, f"{LAYER_NAME}_windowed_bars_max.npy")
+min_npy_output_path = os.path.join(output_dir, f"{LAYER_NAME}_windowed_bars_min.npy")
 
 # Log some information
 logger = get_logger(os.path.join(output_dir, '4a_windowed_mapping.log'), __file__)
@@ -64,9 +66,6 @@ SIGMA = MAX_RF / SIGMA_TO_RF_RATIO
 #################### DON'T TOUCH ANYTHING BELOW THIS LINE #####################
 
 # Helper functions
-def _add_bgval_to_bar(bar, bgval):
-    return bar * 2 + bgval
-
 def _get_windowed_bar(bar, coord, SIGMA):
     return bar * create_gaussian(SIGMA, coord, bar.shape)
 
@@ -92,13 +91,21 @@ def get_windowed_bar(bar_i, window):
     windowed_bar = _get_windowed_bar(bar, coord, SIGMA)
     return windowed_bar
 
+def crop_map(map_array, xn=XN, rf_size=MAX_RF):
+    # Crop the map
+    map_array = map_array[(xn - rf_size) // 2 : (xn + rf_size) // 2,
+                          (xn - rf_size) // 2 : (xn + rf_size) // 2]
+    return map_array
+
 ###############################################################################
 
 # Plot maps
 with PdfPages(pdf_path) as pdf:
+    max_maps_array = np.zeros((NUM_UNITS, MAX_RF, MAX_RF))
+    min_maps_array = np.zeros((NUM_UNITS, MAX_RF, MAX_RF))
     for unit_idx in tqdm(range(NUM_UNITS)):
-        max_map_array = np.zeros((XN, XN))
-        min_map_array = np.zeros((XN, XN))
+        max_map_array = np.zeros((MAX_RF, MAX_RF))
+        min_map_array = np.zeros((MAX_RF, MAX_RF))
 
         unit_max_map_df = max_map[max_map.UNIT == unit_idx]
         unit_min_map_df = min_map[min_map.UNIT == unit_idx]
@@ -115,7 +122,7 @@ with PdfPages(pdf_path) as pdf:
             R = unit_max_map_for_stim_i.iloc[0].R
 
             if R > 0:
-                max_map_array += get_windowed_bar(bar_i, max_window) * R
+                max_map_array += crop_map(get_windowed_bar(bar_i, max_window)) * R
 
         for bar_i in bar_i_min_list:
             # find the WINDOW with the smallest for this STIM_I
@@ -126,8 +133,12 @@ with PdfPages(pdf_path) as pdf:
             R = unit_min_map_for_stim_i.iloc[0].R
             
             if R < 0:
-                min_map_array += get_windowed_bar(bar_i, min_window) * abs(R)
-            
+                min_map_array += crop_map(get_windowed_bar(bar_i, min_window)) * abs(R)
+        
+        # Save the maps to array
+        max_maps_array[unit_idx] = max_map_array
+        min_maps_array[unit_idx] = min_map_array
+    
         plt.figure(figsize=(10, 5))
         plt.suptitle(f"{MODEL_NAME} {LAYER_NAME} unit {unit_idx}")
         plt.subplot(1, 2, 1)
@@ -137,4 +148,8 @@ with PdfPages(pdf_path) as pdf:
         pdf.savefig()
         plt.close()
     
-logger.info(f"Done. Results saved to {pdf_path}.")
+# Save the maps to npy
+np.save(max_npy_output_path, max_maps_array)
+np.save(min_npy_output_path, min_maps_array)
+    
+logger.info(f"Done. Results saved to {pdf_path}, {max_npy_output_path}, {min_npy_output_path}")

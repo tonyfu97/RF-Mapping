@@ -35,7 +35,7 @@ model_name = 'alexnet'
 
 this_is_a_test_run = False
 is_random = False
-map_name = 'block'
+map_name = 'rfmp4a_windowed'
 sigma_rf_ratio = 1/30
 
 
@@ -126,6 +126,13 @@ def load_maps(map_name, layer_name, max_or_min, is_random, rf_size):
                                     model_name,
                                     f"{layer_name}_weighted_{max_or_min}_barmaps.npy")
         return np.load(mapping_path)  # [unit, yn, xn]
+    elif map_name == 'rfmp4a_windowed':
+        mapping_path = os.path.join(mapping_dir,
+                                    'rfmp4a_windowed',
+                                    'mapping',
+                                    model_name,
+                                    f"{layer_name}_windowed_bars_{max_or_min}.npy")
+        return np.load(mapping_path)  # [unit, yn, xn]
     elif map_name == 'rfmp4c7o':
         mapping_path = os.path.join(mapping_dir,
                                     'rfmp4c7o',
@@ -177,7 +184,8 @@ def get_result_dir(map_name, is_random, this_is_a_test_run):
                                 f'gaussian_fit{is_random_str}',
                                 model_name,
                                 'abs')
-    elif map_name in ('occlude', 'occlude_composite', 'rfmp4a', 'rfmp4c7o',
+    elif map_name in ('occlude', 'occlude_composite', 'rfmp4a', 'rfmp4a_windowed',
+                      'rfmp4c7o',
                       'rfmp_sin1', 'pasu', 'block'):
         if map_name == 'occlude_composite':
             map_name = 'occlude'

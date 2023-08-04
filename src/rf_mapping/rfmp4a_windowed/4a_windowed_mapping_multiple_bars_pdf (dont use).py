@@ -6,6 +6,11 @@ The "maps" are actually a text file, and this script plots "max" the responses
 of the windowed bars to the coordinates of the corners/edges of the windowed
 bars.
 
+"Dont use" because this script has not address the following issues:
+1. Each bar is plotted multiple times, once for each window. This is not what
+we want. We want to plot the windowed bar only once.
+2. The final image size should be RF size, not XN.
+
 Tony Fu, June 2023
 """
 import os
@@ -33,10 +38,12 @@ LAYER_NAME = 'conv5'
 SIGMA_TO_RF_RATIO = 20
 
 # Please specify the source directory and the output pdf path
-output_dir = f"{c.RESULTS_DIR}/rfmp4a/window/{MODEL_NAME}"
+output_dir = f"{c.RESULTS_DIR}/rfmp4a_windowed/{MODEL_NAME}"
 max_txt_path = os.path.join(output_dir, f"{LAYER_NAME}_max_windowed_map.txt")
 min_txt_path = os.path.join(output_dir, f"{LAYER_NAME}_min_windowed_map.txt")
 pdf_path = os.path.join(output_dir, f"{MODEL_NAME}_{LAYER_NAME}_windowed_bars.pdf")
+max_npy_output_path = os.path.join(output_dir, f"{LAYER_NAME}_windowed_delta_max.npy")
+min_npy_output_path = os.path.join(output_dir, f"{LAYER_NAME}_windowed_delta_min.npy")
 
 # Log some information
 logger = get_logger(os.path.join(output_dir, '4a_windowed_mapping.log'), __file__)
@@ -57,6 +64,8 @@ SIGMA = MAX_RF / SIGMA_TO_RF_RATIO
 
 # Plot delta maps
 with PdfPages(pdf_path) as pdf:
+    max_maps_array = np.zeros((NUM_UNITS, XN, XN))
+    min_maps_array = np.zeros((NUM_UNITS, XN, XN))
     for unit_idx in tqdm(range(NUM_UNITS)):
         max_map_array = np.zeros((XN, XN))
         min_map_array = np.zeros((XN, XN))
@@ -76,6 +85,10 @@ with PdfPages(pdf_path) as pdf:
             
         for _, row in unit_min_map_df.iterrows():
             min_map_array[make_idx(row.Y), make_idx(row.X)] += max(-row.R, 0)
+            
+        # Save the maps to array (not smoothed)
+        max_maps_array[unit_idx] = max_map_array
+        min_maps_array[unit_idx] = min_map_array
 
         # Gaussian smooth the map
         max_map_array = gaussian_filter(max_map_array, sigma=SIGMA)
@@ -89,5 +102,9 @@ with PdfPages(pdf_path) as pdf:
         plt.imshow(min_map_array, cmap='gray')
         pdf.savefig()
         plt.close()
+
+# Save the maps to npy
+np.save(max_npy_output_path, max_maps_array)
+np.save(min_npy_output_path, min_maps_array)
     
-logger.info(f"Done. Results saved to {pdf_path}.")
+logger.info(f"Done. Results saved to {pdf_path}, {max_npy_output_path}, {min_npy_output_path}")

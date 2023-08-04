@@ -35,7 +35,7 @@ RESPONSE_THR = 0.5  # Only use bars with original response > max(r_max * RESPONS
 MAX_NUM_BARS = 100
 
 # Please specify the output directory and the pdf path
-output_dir = f"{c.RESULTS_DIR}/rfmp4a/window/{MODEL_NAME}"
+output_dir = f"{c.RESULTS_DIR}/rfmp4a_windowed/{MODEL_NAME}"
 max_txt_path = os.path.join(output_dir, f"{LAYER_NAME}_max_windowed_map.txt")
 min_txt_path = os.path.join(output_dir, f"{LAYER_NAME}_min_windowed_map.txt")
 
